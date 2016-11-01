@@ -1312,6 +1312,10 @@ bool FUntypedBulkData::FlushAsyncLoading(void* Dest)
 	{
 		WaitForAsyncLoading();
 		FMemory::Memcpy(Dest, BulkDataAsync.Get(), GetBulkDataSize());
+		///// wutongfei
+		BulkDataAsync.Deallocate();
+		ResetAsyncData();
+		/////
 	}
 	return bIsLoadingAsync;
 }
