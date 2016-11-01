@@ -1041,6 +1041,10 @@ namespace UnrealBuildTool
 						}
 
 						// Propagate command-line options
+						if ( UnrealBuildTool.CommandLineContains( "-2017" ) )
+						{
+							UBTArguments.Append(" -2017");
+						}
 						if ( UnrealBuildTool.CommandLineContains( "-2015" ) )
 						{
 							UBTArguments.Append( " -2015" );
@@ -1129,11 +1133,7 @@ namespace UnrealBuildTool
 							BuildHostPlatform.Current.Platform == UnrealTargetPlatform.Win64) && 
 							(int)(UHTResult) < 0)
 						{
-							Log.TraceInformation("Error: Failed to generate code for {0} - Prerequests may not be installed", ActualTargetName);
-						}
-						else
-						{
-							Log.TraceInformation("Error: Failed to generate code for {0} - error code: {2} ({1})", ActualTargetName, (int)UHTResult, UHTResult.ToString());
+							Log.TraceInformation(String.Format("UnrealHeaderTool failed with exit code 0x{0:X} - check that UE4 prerequisites are installed.", (int)UHTResult));
 						}
 						return false;
 					}

@@ -284,6 +284,7 @@ void SPropertyEditorAsset::Construct( const FArguments& InArgs, const TSharedPtr
 			[
 				SAssignNew( CustomContentBox, SVerticalBox )
 				+ SVerticalBox::Slot()
+				.Padding(0.0f, 4.0f, 0.0f, 0.0f)
 				[
 					AssetComboButton.ToSharedRef()
 				]
@@ -502,6 +503,10 @@ FText SPropertyEditorAsset::OnGetAssetName() const
 			{
 				AActor* Actor = CastChecked<AActor>(Value.Object);
 				Name = FText::FromString(Actor->GetActorLabel());
+			}
+			else if (UField* AsField = Cast<UField>(Value.Object))
+			{
+				Name = AsField->GetDisplayNameText();
 			}
 			else
 			{

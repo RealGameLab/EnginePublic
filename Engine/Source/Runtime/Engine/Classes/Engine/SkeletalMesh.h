@@ -12,6 +12,7 @@
 #include "Interfaces/Interface_CollisionDataProvider.h"
 #include "Interfaces/Interface_AssetUserData.h"
 #include "BoneIndices.h"
+#include "Components.h"
 #include "SkeletalMesh.generated.h"
 
 /** The maximum number of skeletal mesh LODs allowed. */
@@ -24,11 +25,11 @@ class UAnimInstance;
 #if WITH_APEX_CLOTHING
 struct FApexClothCollisionVolumeData;
 
-namespace physx
+namespace nvidia
 {
 	namespace apex
 	{
-		class NxClothingAsset;
+		class ClothingAsset;
 	}
 }
 #endif
@@ -436,8 +437,12 @@ struct FClothingAssetData
 	UPROPERTY(EditAnywhere, Transient, Category = ClothingAssetData)
 	FClothPhysicsProperties PhysicsProperties;
 
+	UPROPERTY(Transient)
+	/** Apex stores only the bones that cloth needs. We need a mapping from apex bone index to UE bone index. */
+	TArray<int32> ApexToUnrealBoneMapping;
+
 #if WITH_APEX_CLOTHING
-	physx::apex::NxClothingAsset* ApexClothingAsset;
+	nvidia::apex::ClothingAsset* ApexClothingAsset;
 
 	/** Collision volume data for showing to the users whether collision shape is correct or not */
 	TArray<FApexClothCollisionVolumeData> ClothCollisionVolumes;
@@ -452,9 +457,6 @@ struct FClothingAssetData
 	 */
 	TArray<FClothVisualizationInfo> ClothVisualizationInfos;
 
-	/** Apex stores only the bones that cloth needs. We need a mapping from apex bone index to UE bone index. */
-	TArray<int32> ApexToUnrealBoneMapping;
-
 	/** currently mapped morph target name */
 	FName PreparedMorphTargetName;
 
@@ -468,7 +470,10 @@ struct FClothingAssetData
 	friend FArchive& operator<<(FArchive& Ar, FClothingAssetData& A);
 
 	// get resource size
+	DEPRECATED(4.14, "GetResourceSize is deprecated. Please use GetResourceSizeEx or GetResourceSizeBytes instead.")
 	SIZE_T GetResourceSize() const;
+	void GetResourceSizeEx(FResourceSizeEx& CumulativeResourceSize) const;
+	SIZE_T GetResourceSizeBytes() const;
 };
 
 //~ Begin Material Interface for USkeletalMesh - contains a material and a shadow casting flag
@@ -526,6 +531,10 @@ struct FSkeletalMaterial
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SkeletalMesh)
 	FName						ImportedMaterialSlotName;
 #endif //WITH_EDITORONLY_DATA
+
+	/** Data used for texture streaming relative to each UV channels. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = SkeletalMesh)
+	FMeshUVChannelInfo			UVChannelData;
 };
 
 class FSkeletalMeshResource;
@@ -689,14 +698,6 @@ public:
 
 #endif // WITH_EDITORONLY_DATA
 
-	/**
-	 * Allows artists to adjust the distance where textures using UV 0 are streamed in/out.
-	 * 1.0 is the default, whereas a higher value increases the streamed-in resolution.
-	 * Value can be < 0 (from legcay content, or code changes)
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=TextureStreaming, meta=(ClampMin = 0))
-	float StreamingDistanceMultiplier;
-
 	UPROPERTY(Category=Mesh, BlueprintReadWrite)
 	TArray<UMorphTarget*> MorphTargets;
 
@@ -752,9 +753,6 @@ private:
 	/** Skeletal mesh source data */
 	class FSkeletalMeshSourceData* SourceData;
 
-	/** The cached streaming texture factors.  If the array doesn't have MAX_TEXCOORDS entries in it, the cache is outdated. */
-	TArray<float> CachedStreamingTextureFactors;
-
 	/** 
 	 *	Array of named socket locations, set up in editor and used as a shortcut instead of specifying 
 	 *	everything explicitly to AttachComponent in the SkeletalMeshComponent. 
@@ -780,13 +778,21 @@ public:
 	/** Release CPU access version of buffer */
 	void ReleaseCPUResources();
 
-	/**
-	 * Returns the scale dependent texture factor used by the texture streaming code.	
+	/** 
+	 * Update the material UV channel data used by the texture streamer. 
 	 *
-	 * @param RequestedUVIndex UVIndex to look at
-	 * @return scale dependent texture factor
+	 * @param bResetOverrides		True if overridden values should be reset.
 	 */
-	float GetStreamingTextureFactor( int32 RequestedUVIndex );
+	ENGINE_API void UpdateUVChannelData(bool bResetOverrides);
+
+	/**
+	 * Returns the UV channel data for a given material index. Used by the texture streamer.
+	 * This data applies to all lod-section using the same material.
+	 *
+	 * @param MaterialIndex		the material index for which to get the data for.
+	 * @return the data, or null if none exists.
+	 */
+	ENGINE_API const FMeshUVChannelInfo* GetUVChannelData(int32 MaterialIndex) const;
 
 	/**
 	 * Gets the center point from which triangles should be sorted, if any.
@@ -815,7 +821,7 @@ public:
 	virtual void GetAssetRegistryTags(TArray<FAssetRegistryTag>& OutTags) const override;
 	virtual FString GetDesc() override;
 	virtual FString GetDetailedInfoInternal() const override;
-	virtual SIZE_T GetResourceSize(EResourceSizeMode::Type Mode) override;
+	virtual void GetResourceSizeEx(FResourceSizeEx& CumulativeResourceSize) override;
 	static void AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector);
 	//~ End UObject Interface.
 
@@ -942,7 +948,7 @@ public:
 	ENGINE_API void	 GetOriginSectionIndicesWithCloth(int32 LODIndex, int32 AssetIndex, TArray<uint32>& OutSectionIndices);
 	ENGINE_API void	 GetClothSectionIndices(int32 LODIndex, int32 AssetIndex, TArray<uint32>& OutSectionIndices);
 	//moved from ApexClothingUtils because of compile issues
-	ENGINE_API void  LoadClothCollisionVolumes(int32 AssetIndex, physx::apex::NxClothingAsset* ClothingAsset);
+	ENGINE_API void  LoadClothCollisionVolumes(int32 AssetIndex, nvidia::apex::ClothingAsset* ClothingAsset);
 	ENGINE_API bool IsMappedClothingLOD(int32 LODIndex, int32 AssetIndex);
 	ENGINE_API int32 GetClothAssetIndex(int32 LODIndex, int32 SectionIndex);
 	ENGINE_API void BuildApexToUnrealBoneMapping();

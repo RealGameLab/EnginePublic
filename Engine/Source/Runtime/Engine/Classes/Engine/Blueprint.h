@@ -2,12 +2,12 @@
 
 #pragma once
 
+#include "CoreNetTypes.h"
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraph/EdGraphNode.h"
 #include "Engine/EngineTypes.h"
 #include "BlueprintCore.h"
 #include "Blueprint.generated.h"
-
 
 /**
  * Enumerates states a blueprint can be in.
@@ -186,6 +186,9 @@ struct FBPVariableDescription
 
 	UPROPERTY(EditAnywhere, Category=BPVariableRepNotify)
 	FName RepNotifyFunc;
+
+	UPROPERTY(EditAnywhere, Category=BPVariableDescription)
+	TEnumAsByte<ELifetimeCondition> ReplicationCondition;
 
 	/** Metadata information for this variable */
 	UPROPERTY(EditAnywhere, Category=BPVariableDescription)
@@ -459,6 +462,14 @@ class ENGINE_API UBlueprint : public UBlueprintCore
 
 	UPROPERTY()
 	TArray<class UEdGraphPin_Deprecated*> DeprecatedPinWatches;
+
+	/** Index map for component template names */
+	UPROPERTY()
+	TMap<FName, int32> ComponentTemplateNameIndex;
+
+	/** Maps old to new component template names */
+	UPROPERTY(transient)
+	TMap<FName, FName> OldToNewComponentTemplateNames;
 #endif // WITH_EDITORONLY_DATA
 
 public:
@@ -643,6 +654,7 @@ public:
 	virtual void PreSave(const class ITargetPlatform* TargetPlatform) override;
 #endif // WITH_EDITORONLY_DATA
 	virtual void Serialize(FArchive& Ar) override;
+	virtual void GetPreloadDependencies(TArray<UObject*>& OutDeps) override;
 	virtual FString GetDesc(void) override;
 	virtual void TagSubobjects(EObjectFlags NewFlags) override;
 	virtual bool NeedsLoadForClient() const override;

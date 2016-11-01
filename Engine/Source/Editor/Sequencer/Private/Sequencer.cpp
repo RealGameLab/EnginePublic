@@ -1224,11 +1224,14 @@ void FSequencer::ResetViewRange()
 	const float OutputViewSize = OutRange - InRange;
 	const float OutputChange = OutputViewSize * 0.1f;
 
-	InRange -= OutputChange;
-	OutRange += OutputChange;
+	if (OutputChange > 0)
+	{
+		InRange -= OutputChange;
+		OutRange += OutputChange;
 
-	SetClampRange(TRange<float>(InRange, OutRange));	
-	SetViewRange(TRange<float>(InRange, OutRange), EViewRangeInterpolation::Animated);
+		SetClampRange(TRange<float>(InRange, OutRange));	
+		SetViewRange(TRange<float>(InRange, OutRange), EViewRangeInterpolation::Animated);
+	}
 }
 
 
@@ -1262,6 +1265,40 @@ void FSequencer::ZoomOutViewRange()
 	ZoomViewRange(0.1f);
 }
 
+bool GetMovieSceneSectionPlayRange(UMovieSceneSection* InSection, TRange<float>& OutBounds)
+{
+	if (InSection->IsInfinite())
+	{
+		TRange<float> KeyBounds = TRange<float>::Empty();
+		 
+		TSet<FKeyHandle> KeyHandles;
+		InSection->GetKeyHandles(KeyHandles, TRange<float>());
+		for (auto KeyHandle : KeyHandles)
+		{
+			TOptional<float> KeyTime = InSection->GetKeyTime(KeyHandle);
+			if (KeyTime.IsSet())
+			{
+				if (KeyBounds.IsEmpty())
+				{
+					KeyBounds = TRange<float>(KeyTime.GetValue());
+				}
+				else
+				{
+					KeyBounds = TRange<float>( FMath::Min(KeyBounds.GetLowerBoundValue(), KeyTime.GetValue()),
+												FMath::Max(KeyBounds.GetUpperBoundValue(), KeyTime.GetValue()) );
+				}
+			}
+		}
+
+		OutBounds = KeyBounds;
+		return KeyHandles.Num() > 0;
+	}
+	else
+	{
+		OutBounds = InSection->GetRange();
+		return true;
+	}
+}
 
 void FSequencer::UpdatePlaybackRange()
 {
@@ -1272,17 +1309,36 @@ void FSequencer::UpdatePlaybackRange()
 
 		if (AllSections.Num() > 0)
 		{
-			TRange<float> NewBounds = AllSections[0]->GetRange();
+			TRange<float> NewBounds = TRange<float>::Empty();
+
+			TRange<float> OutBounds;
+			if (GetMovieSceneSectionPlayRange(AllSections[0], OutBounds))
+			{
+				NewBounds = OutBounds;
+			}
 	
 			for (auto MovieSceneSection : AllSections)
 			{
-				NewBounds = TRange<float>( FMath::Min(NewBounds.GetLowerBoundValue(), MovieSceneSection->GetRange().GetLowerBoundValue()),
-											FMath::Max(NewBounds.GetUpperBoundValue(), MovieSceneSection->GetRange().GetUpperBoundValue()) );
+				if (GetMovieSceneSectionPlayRange(MovieSceneSection, OutBounds))
+				{
+					if (NewBounds.IsEmpty())
+					{
+						NewBounds = OutBounds;
+					}
+					else
+					{
+						NewBounds = TRange<float>( FMath::Min(NewBounds.GetLowerBoundValue(), OutBounds.GetLowerBoundValue()),
+												FMath::Max(NewBounds.GetUpperBoundValue(), OutBounds.GetUpperBoundValue()) );
+					}
+				}
 			}
 
 			// When the playback range is determined by the section bounds, don't mark the change in the playback range otherwise the scene will be marked dirty
-			const bool bAlwaysMarkDirty = false;
-			FocusedMovieScene->SetPlaybackRange(NewBounds.GetLowerBoundValue(), NewBounds.GetUpperBoundValue(), bAlwaysMarkDirty);
+			if (!NewBounds.IsDegenerate())
+			{
+				const bool bAlwaysMarkDirty = false;
+				FocusedMovieScene->SetPlaybackRange(NewBounds.GetLowerBoundValue(), NewBounds.GetUpperBoundValue(), bAlwaysMarkDirty);
+			}
 		}
 	}
 	else
@@ -1787,7 +1843,8 @@ void FSequencer::PossessPIEViewports(UObject* CameraObject, UObject* UnlockIfCam
 		// skip unlocking if the current view target differs
 		AActor* UnlockIfCameraActor = Cast<AActor>(UnlockIfCameraObject);
 
-		if ((CameraObject == nullptr) && (UnlockIfCameraActor != ViewTarget))
+		// if unlockIfCameraActor is valid, release lock if currently locked to object
+		if (CameraObject == nullptr && UnlockIfCameraActor != nullptr && UnlockIfCameraActor != ViewTarget)
 		{
 			return;
 		}
@@ -3526,6 +3583,9 @@ void FSequencer::GetActorRecordingState( bool& bIsRecording /* In+Out */ ) const
 void FSequencer::PostUndo(bool bSuccess)
 {
 	NotifyMovieSceneDataChanged( EMovieSceneDataChangeType::Unknown );
+	bUpdatingSequencerSelection = true;
+	SynchronizeSequencerSelectionWithExternalSelection();
+	bUpdatingSequencerSelection = false;
 	OnActivateSequenceEvent.Broadcast( *SequenceInstanceStack.Top() );
 }
 

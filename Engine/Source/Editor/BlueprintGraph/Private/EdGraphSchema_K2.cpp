@@ -25,7 +25,6 @@
 #include "ComponentTypeRegistry.h"
 #include "BlueprintComponentNodeSpawner.h"
 #include "AssetRegistryModule.h"
-#include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "HotReloadInterface.h"
 
 #include "K2Node_CastByteToEnum.h"
@@ -36,6 +35,7 @@
 #include "K2Node_SetFieldsInStruct.h"
 #include "K2Node_ConvertAsset.h"
 #include "GenericCommands.h"
+#include "BlueprintSupport.h" // for FLegacyEditorOnlyBlueprintOptions::IsTypeProhibited()
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -752,7 +752,7 @@ bool UEdGraphSchema_K2::CanFunctionBeUsedInGraph(const UClass* InClass, const UF
 					auto BP = FBlueprintEditorUtils::FindBlueprintForGraph(InDestGraph);
 					const bool bIsFunctLib = BP && (EBlueprintType::BPTYPE_FunctionLibrary == BP->BlueprintType);
 					UClass* ParentClass = BP ? BP->ParentClass : NULL;
-					const bool bIncompatibleParrent = ParentClass && (!ParentClass->GetDefaultObject()->ImplementsGetWorld() && !ParentClass->HasMetaData(FBlueprintMetadata::MD_ShowWorldContextPin));
+					const bool bIncompatibleParrent = ParentClass && (!ParentClass->GetDefaultObject()->ImplementsGetWorld() && !ParentClass->HasMetaDataHierarchical(FBlueprintMetadata::MD_ShowWorldContextPin));
 					if (!bIsFunctLib && bIncompatibleParrent)
 					{
 						if (OutReason != nullptr)
@@ -1114,8 +1114,7 @@ bool UEdGraphSchema_K2::IsAllowableBlueprintVariableType(const class UClass* InC
 			return true;
 		}
 
-		static const FBoolConfigValueHelper NotBlueprintType(TEXT("EditoronlyBP"), TEXT("bBlueprintIsNotBlueprintType"));
-		if (NotBlueprintType && InClass->IsChildOf(UBlueprint::StaticClass()))
+		if (FLegacyEditorOnlyBlueprintOptions::IsTypeProhibited(InClass))
 		{
 			return false;
 		}
@@ -1277,7 +1276,7 @@ bool UEdGraphSchema_K2::PinDefaultValueIsEditable(const UEdGraphPin& InGraphPin)
 	return true;
 }
 
-void UEdGraphSchema_K2::SelectAllInputNodes(UEdGraph* Graph, UEdGraphPin* InGraphPin)
+void UEdGraphSchema_K2::SelectAllNodesInDirection(TEnumAsByte<enum EEdGraphPinDirection> InDirection, UEdGraph* Graph, UEdGraphPin* InGraphPin)
 {
 	TArray<UEdGraphPin*> AllPins = InGraphPin->LinkedTo;
 
@@ -1294,13 +1293,9 @@ void UEdGraphSchema_K2::SelectAllInputNodes(UEdGraph* Graph, UEdGraphPin* InGrap
 		TArray<UEdGraphPin*> LinkedPins = Pin->GetOwningNode()->GetAllPins();
 		for (UEdGraphPin* InputPin : LinkedPins)
 		{
-			if (InputPin->Direction == EEdGraphPinDirection::EGPD_Output)
+			if (InputPin->Direction == InDirection)
 			{
-				continue;
-			}
-			else
-			{
-				SelectAllInputNodes(Graph, InputPin);
+				SelectAllNodesInDirection(InDirection, Graph, InputPin);
 			}
 		}
 	}
@@ -1333,10 +1328,10 @@ void UEdGraphSchema_K2::GetContextMenuActions(const UEdGraph* CurrentGraph, cons
 				if (InGraphPin->LinkedTo.Num() > 0)
 				{
 					MenuBuilder->AddMenuEntry(
-						LOCTEXT("SelectAllInputNodes", "Select All Input Nodes"),
-						LOCTEXT("SelectAllInputNodesTooltip", "Adds all input Nodes linked to this Pin to selection"),
+						InGraphPin->Direction == EEdGraphPinDirection::EGPD_Input ? LOCTEXT("SelectAllInputNodes", "Select All Input Nodes") : LOCTEXT("SelectAllOutputNodes", "Select All Output Nodes"),
+						InGraphPin->Direction == EEdGraphPinDirection::EGPD_Input ? LOCTEXT("SelectAllInputNodesTooltip", "Adds all input Nodes linked to this Pin to selection") : LOCTEXT("SelectAllOutputNodesTooltip", "Adds all output Nodes linked to this Pin to selection"),
 						FSlateIcon(),
-						FUIAction(FExecuteAction::CreateUObject((UEdGraphSchema_K2*const)this, &UEdGraphSchema_K2::SelectAllInputNodes, const_cast<UEdGraph*>(CurrentGraph), const_cast<UEdGraphPin*>(InGraphPin))));
+						FUIAction(FExecuteAction::CreateUObject((UEdGraphSchema_K2*const)this, &UEdGraphSchema_K2::SelectAllNodesInDirection, InGraphPin->Direction, const_cast<UEdGraph*>(CurrentGraph), const_cast<UEdGraphPin*>(InGraphPin))));
 
 					if(InGraphPin->LinkedTo.Num() > 1)
 					{
@@ -4175,37 +4170,8 @@ bool UEdGraphSchema_K2::ArePinTypesCompatible(const FEdGraphPinType& Output, con
 	}
 
 	// Pins representing BLueprint objects and subclass of UObject can match when EditoronlyBP.bAllowClassAndBlueprintPinMatching=true (BaseEngine.ini)
-	// It's required for converting all UBlueprint references into UClass.
-	struct FObjClassAndBlueprintHelper
-	{
-	private:
-		bool bAllow;
-	public:
-		FObjClassAndBlueprintHelper() : bAllow(false)
-		{
-			GConfig->GetBool(TEXT("EditoronlyBP"), TEXT("bAllowClassAndBlueprintPinMatching"), bAllow, GEditorIni);
-		}
-
-		bool Match(const FEdGraphPinType& A, const FEdGraphPinType& B, const UEdGraphSchema_K2& Schema) const
-		{
-			if (bAllow && (B.PinCategory == Schema.PC_Object) && (A.PinCategory == Schema.PC_Class))
-			{
-				const bool bAIsObjectClass = (UObject::StaticClass() == A.PinSubCategoryObject.Get());
-				const UClass* BClass = Cast<UClass>(B.PinSubCategoryObject.Get());
-				const bool bBIsBlueprintObj = BClass && BClass->IsChildOf(UBlueprint::StaticClass());
-				return bAIsObjectClass && bBIsBlueprintObj;
-			}
-			return false;
-		}
-	};
-
-	static FObjClassAndBlueprintHelper MatchHelper;
-	if (MatchHelper.Match(Input, Output, *this) || MatchHelper.Match(Output, Input, *this))
-	{
-		return true;
-	}
-
-	return false;
+	// It's required for converting all UBlueprint references into UClass.	
+	return FLegacyEditorOnlyBlueprintUtils::DoPinsMatch(Input, Output);
 }
 
 void UEdGraphSchema_K2::BreakNodeLinks(UEdGraphNode& TargetNode) const

@@ -41,15 +41,6 @@ public class UnrealCEFSubProcessTarget : TargetRules
 			);
 	}
 
-    public override bool ConfigureToolchain(TargetInfo Target)
-    {
-        if (Target.Platform == UnrealTargetPlatform.Win32 || Target.Platform == UnrealTargetPlatform.Win64)
-        {
-            WindowsPlatform.Compiler = WindowsCompiler.VisualStudio2013;
-        }
-        return true;
-    }
-
 	public override void SetupGlobalEnvironment(
 		TargetInfo Target,
 		ref LinkEnvironmentConfiguration OutLinkEnvironmentConfiguration,
@@ -81,29 +72,4 @@ public class UnrealCEFSubProcessTarget : TargetRules
 		// Epic Games Launcher needs to run on OS X 10.9, so CEFSubProcess needs this as well
 		OutCPPEnvironmentConfiguration.bEnableOSX109Support = true;
 	}
-
-    public override bool GUBP_AlwaysBuildWithTools(UnrealTargetPlatform InHostPlatform, out bool bInternalToolOnly, out bool SeparateNode, out bool CrossCompile)
-    {
-        bInternalToolOnly = false;
-        SeparateNode = false;
-        CrossCompile = false;
-        return true;
-    }
-
-    public override List<UnrealTargetPlatform> GUBP_ToolPlatforms(UnrealTargetPlatform InHostPlatform)
-    {
-		if(InHostPlatform == UnrealTargetPlatform.Win64)
-		{
-			return new List<UnrealTargetPlatform>{ UnrealTargetPlatform.Win32, UnrealTargetPlatform.Win64 };
-		}
-		else
-		{
-			return new List<UnrealTargetPlatform> { InHostPlatform };
-		}
-    }
-
-    public override bool GUBP_NeedsPlatformSpecificDLLs()
-    {
-        return true;
-    }
 }

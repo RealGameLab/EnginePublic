@@ -15,6 +15,12 @@
 
 DECLARE_FLOAT_COUNTER_STAT(TEXT("Distortion"), Stat_GPU_Distortion, STATGROUP_GPU);
 
+static TAutoConsoleVariable<int32> CVarDisableDistortion(
+														 TEXT("r.DisableDistortion"),
+														 0,
+														 TEXT("Prevents distortion effects from rendering.  Saves a full-screen framebuffer's worth of memory."),
+														 ECVF_Default);
+
 /**
 * A pixel shader for rendering the full screen refraction pass
 */
@@ -276,7 +282,7 @@ public:
 
 		float Ratio = View.UnscaledViewRect.Width() / (float)View.UnscaledViewRect.Height();
 		float Params[4];
-		Params[0] = View.ViewMatrices.ProjMatrix.M[0][0];
+		Params[0] = View.ViewMatrices.GetProjectionMatrix().M[0][0];
 		Params[1] = Ratio;
 		Params[2] = (float)View.UnscaledViewRect.Width();
 		Params[3] = (float)View.UnscaledViewRect.Height();
@@ -1041,8 +1047,11 @@ void FSceneRenderer::RenderDistortionES2(FRHICommandListImmediate& RHICmdList)
 			break;
 		}
 	}
-			
-	if (bRender)
+	
+	static IConsoleVariable* CVar = IConsoleManager::Get().FindConsoleVariable(TEXT("r.DisableDistortion"));
+	int32 DisableDistortion = CVar->GetInt();
+	
+	if (bRender && !DisableDistortion)
 	{
 		// Apply distortion
 		SCOPED_DRAW_EVENT(RHICmdList, Distortion);

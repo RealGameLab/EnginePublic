@@ -167,6 +167,13 @@ public:
 	DECLARE_MULTICAST_DELEGATE_OneParam(FApplicationReceivedRemoteNotificationDelegate, FString);
 	DECLARE_MULTICAST_DELEGATE_TwoParams(FApplicationReceivedLocalNotificationDelegate, FString, int);
 
+
+
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnFConfigFileCreated, const FConfigFile *);
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnFConfigFileDeleted, const FConfigFile *);
+	static FOnFConfigFileCreated OnFConfigCreated;
+	static FOnFConfigFileDeleted OnFConfigDeleted;
+
 	// called when the user grants permission to register for remote notifications
 	static FApplicationRegisteredForRemoteNotificationsDelegate ApplicationRegisteredForRemoteNotificationsDelegate;
 
@@ -217,11 +224,11 @@ public:
 	DECLARE_DELEGATE_RetVal_OneParam(bool, FStringAssetReferenceLoaded, const FName&);
 	static FStringAssetReferenceLoaded StringAssetReferenceLoaded;
 
-	/** Sent when the platform needs the user to fix headset tracking on startup */
+	/** Sent when the platform needs the user to fix headset tracking on startup (PS4 Morpheus only) */
 	DECLARE_MULTICAST_DELEGATE(FVRHeadsetTrackingInitializingAndNeedsHMDToBeTrackedDelegate);
 	static FVRHeadsetTrackingInitializingAndNeedsHMDToBeTrackedDelegate VRHeadsetTrackingInitializingAndNeedsHMDToBeTrackedDelegate;
 
-	/** Sent when the platform finds that needed headset tracking on startup has completed */
+	/** Sent when the platform finds that needed headset tracking on startup has completed (PS4 Morpheus only) */
 	DECLARE_MULTICAST_DELEGATE(FVRHeadsetTrackingInitializedDelegate);
 	static FVRHeadsetTrackingInitializedDelegate VRHeadsetTrackingInitializedDelegate;
 
@@ -237,6 +244,18 @@ public:
 	DECLARE_MULTICAST_DELEGATE(FVRHeadsetReconnected);
 	static FVRHeadsetReconnected VRHeadsetReconnected;
 
+	/** Sent when connection to VR HMD connection is refused by the player */
+	DECLARE_MULTICAST_DELEGATE(FVRHeadsetConnectCanceled);
+	static FVRHeadsetConnectCanceled VRHeadsetConnectCanceled;
+
+	/** Sent when the VR HMD detects that it has been put on by the player. */
+	DECLARE_MULTICAST_DELEGATE(FVRHeadsetPutOnHead);
+	static FVRHeadsetPutOnHead VRHeadsetPutOnHead;
+
+	/** Sent when the VR HMD detects that it has been taken off by the player. */
+	DECLARE_MULTICAST_DELEGATE(FVRHeadsetRemovedFromHead);
+	static FVRHeadsetRemovedFromHead VRHeadsetRemovedFromHead;
+
 	/** Sent when application code changes the user activity hint string for analytics, crash reports, etc */
 	DECLARE_MULTICAST_DELEGATE_OneParam(FOnUserActivityStringChanged, const FString&);
 	static FOnUserActivityStringChanged UserActivityStringChanged;
@@ -249,7 +268,11 @@ public:
 	DECLARE_MULTICAST_DELEGATE_OneParam(FOnCrashOverrideParamsChanged, const FCrashOverrideParameters&);
 	static FOnCrashOverrideParamsChanged CrashOverrideParamsChanged;
 	
-		// Callback for platform specific very early init code.
+	/** Sent by engine code when the "vanilla" status of the engine changes */
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnIsVanillaProductChanged, bool);
+	static FOnIsVanillaProductChanged IsVanillaProductChanged;
+
+	// Callback for platform specific very early init code.
 	DECLARE_MULTICAST_DELEGATE(FOnPreMainInit);
 	static FOnPreMainInit& GetPreMainInitDelegate();
 	
@@ -278,6 +301,9 @@ public:
 	// event and prevent the default check/ensure process occuring
 	DECLARE_DELEGATE_RetVal_TwoParams(bool, FImageIntegrityChanged, const TCHAR*, int32);
 	static FImageIntegrityChanged OnImageIntegrityChanged;
+
+	// Called when OOM event occurs, after backup memory has been freed, so there's some hope of being effective
+	static FSimpleMulticastDelegate OnOutOfMemory;
 
 private:
 

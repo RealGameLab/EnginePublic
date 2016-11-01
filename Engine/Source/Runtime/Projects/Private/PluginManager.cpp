@@ -201,6 +201,16 @@ void FPluginManager::ReadAllPlugins(TMap<FString, TSharedRef<FPlugin>>& Plugins,
 		ReadPluginsInDirectory(FPaths::GamePluginsDir(), EPluginLoadedFrom::GameProject, Plugins);
 	}
 
+	const FProjectDescriptor* Project = IProjectManager::Get().GetCurrentProject();
+	if (Project != nullptr)
+	{
+		// If they have a list of additional directories to check, add those plugins too
+		for (const FString& Dir : Project->GetAdditionalPluginDirectories())
+		{
+			ReadPluginsInDirectory(Dir, EPluginLoadedFrom::Engine, Plugins);
+		}
+	}
+
 	for (const FString& ExtraSearchPath : ExtraSearchPaths)
 	{
 		ReadPluginsInDirectory(ExtraSearchPath, EPluginLoadedFrom::GameProject, Plugins);
@@ -393,6 +403,12 @@ bool FPluginManager::ConfigureEnabledPlugins()
 #else
 				Plugin->bEnabled = true;
 #endif
+
+				if (Plugin->bEnabled && FPlatformMisc::ShouldDisablePluginAtRuntime(Plugin->Name))
+				{
+					Plugin->bEnabled = false;
+					AllEnabledPlugins.Remove(Plugin->Name);
+				}
 			}
 		}
 
@@ -508,7 +524,7 @@ bool FPluginManager::ConfigureEnabledPlugins()
 				}
 			}
 		}
-		
+
 		// Mount all the plugin content folders and pak files
 		TArray<FString>	FoundPaks;
 		FPakFileSearchVisitor PakVisitor(FoundPaks);

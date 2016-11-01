@@ -390,12 +390,6 @@ bool FAndroidMisc::AllowRenderThread()
 		return false;
 	}
 
-	if (FAndroidMisc::ShouldUseVulkan())
-	{
-		// @todo vulkan: stop forcing no RT!
-		return false;
-	}
-
 	// there is a crash with the nvidia tegra dual core processors namely the optimus 2x and xoom 
 	// when running multithreaded it can't handle multiple threads using opengl (bug)
 	// tested with lg optimus 2x and motorola xoom 
@@ -1074,6 +1068,17 @@ int32 FAndroidMisc::GetAndroidBuildVersion()
 	return AndroidBuildVersion;
 }
 
+bool FAndroidMisc::ShouldDisablePluginAtRuntime(const FString& PluginName)
+{
+#if PLATFORM_ANDROID_ARM64 || PLATFORM_ANDROID_X64
+	// disable OnlineSubsystemGooglePlay for unsupported Android architectures
+	if (PluginName.Equals(TEXT("OnlineSubsystemGooglePlay")))
+	{
+		return true;
+	}
+#endif
+	return false;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -1501,6 +1506,14 @@ FString FAndroidMisc::GetVulkanVersion()
 	return VulkanVersionString;
 }
 
+extern bool AndroidThunkCpp_HasMetaDataKey(const FString& Key);
+
+bool FAndroidMisc::IsDaydreamApplication()
+{
+	static const bool bIsDaydreamApplication = AndroidThunkCpp_HasMetaDataKey(TEXT("com.epicgames.ue4.GameActivity.bDaydream"));
+	return bIsDaydreamApplication;
+}
+
 #if !UE_BUILD_SHIPPING
 bool FAndroidMisc::IsDebuggerPresent()
 {
@@ -1538,6 +1551,12 @@ int FAndroidMisc::GetVolumeState(double* OutTimeOfChangeInSec)
 	return v;
 }
 
+const TCHAR* FAndroidMisc::GamePersistentDownloadDir()
+{
+	extern FString GExternalFilePath;
+	return *GExternalFilePath;
+}
+
 FAndroidMisc::FBatteryState FAndroidMisc::GetBatteryState()
 {
 	FBatteryState CurState;
@@ -1550,5 +1569,11 @@ FAndroidMisc::FBatteryState FAndroidMisc::GetBatteryState()
 bool FAndroidMisc::AreHeadPhonesPluggedIn()
 {
 	return HeadPhonesArePluggedIn;
+}
+
+bool FAndroidMisc::HasActiveWiFiConnection()
+{
+	extern bool AndroidThunkCpp_HasActiveWiFiConnection();
+	return AndroidThunkCpp_HasActiveWiFiConnection();
 }
 

@@ -51,6 +51,9 @@
 #if !defined(PLATFORM_LINUX)
 	#define PLATFORM_LINUX 0
 #endif
+#if !defined(PLATFORM_WOLF)
+	#define PLATFORM_WOLF 0
+#endif
 
 // Platform specific compiler pre-setup.
 #if PLATFORM_WINDOWS
@@ -69,6 +72,8 @@
 	#include "HTML5/HTML5PlatformCompilerPreSetup.h"
 #elif PLATFORM_LINUX
 	#include "Linux/LinuxPlatformCompilerPreSetup.h"
+#elif PLATFORM_WOLF
+	#include "WolfPlat/WolfPlatformCompilerPreSetup.h"
 #else
 	#error Unknown Compiler
 #endif
@@ -103,6 +108,8 @@
 	#include "HTML5/HTML5Platform.h"
 #elif PLATFORM_LINUX
 	#include "Linux/LinuxPlatform.h"
+#elif PLATFORM_WOLF
+	#include "WolfPlat/WolfPlatform.h"
 #else
 	#error Unknown Compiler
 #endif
@@ -122,6 +129,9 @@
 // Base defines, these have defaults
 #ifndef PLATFORM_LITTLE_ENDIAN
 	#define PLATFORM_LITTLE_ENDIAN				0
+#endif
+#ifndef PLATFORM_SUPPORTS_UNALIGNED_INT_LOADS
+	#define PLATFORM_SUPPORTS_UNALIGNED_INT_LOADS	0
 #endif
 #ifndef PLATFORM_EXCEPTIONS_DISABLED
 	#define PLATFORM_EXCEPTIONS_DISABLED		!PLATFORM_DESKTOP
@@ -208,6 +218,9 @@
 #ifndef PLATFORM_HAS_BSD_SOCKET_FEATURE_GETHOSTNAME
 	#define PLATFORM_HAS_BSD_SOCKET_FEATURE_GETHOSTNAME	1
 #endif
+#ifndef PLATFORM_HAS_BSD_SOCKET_FEATURE_GETADDRINFO
+	#define PLATFORM_HAS_BSD_SOCKET_FEATURE_GETADDRINFO	1
+#endif
 #ifndef PLATFORM_HAS_BSD_SOCKET_FEATURE_CLOSE_ON_EXEC
 	#define PLATFORM_HAS_BSD_SOCKET_FEATURE_CLOSE_ON_EXEC	0
 #endif
@@ -252,6 +265,10 @@
 
 #ifndef PLATFORM_USES_FIXED_GMalloc_CLASS
 	#define PLATFORM_USES_FIXED_GMalloc_CLASS		0
+#endif
+
+#ifndef PLATFORM_USES_STACKBASED_MALLOC_CRASH
+	#define PLATFORM_USES_STACKBASED_MALLOC_CRASH	0
 #endif
 
 #ifndef PLATFORM_SUPPORTS_MULTIPLE_NATIVE_WINDOWS
@@ -494,57 +511,6 @@
 #define private_subobject public
 #endif
 
-// explicit bool support
-namespace FHasOperatorImpl
-{
-	struct FNotSpecified {};
-
-	template <typename T>
-	struct FReturnValueCheck
-	{
-		static char (&Func())[2];
-	};
-
-	template <>
-	struct FReturnValueCheck<FNotSpecified>
-	{
-		static char (&Func())[1];
-	};
-
-	template <typename T>
-	FNotSpecified operator==(const T&, const T&);
-
-	template <typename T>
-	FNotSpecified operator!=(const T&, const T&);
-
-	template <typename T>
-	const T& Make();
-
-	template <typename T>
-	struct Equals
-	{
-		enum { Value = sizeof(FReturnValueCheck<decltype(Make<T>() == Make<T>())>::Func()) == sizeof(char[2]) };
-	};
-
-	template <typename T>
-	struct NotEquals
-	{
-		enum { Value = sizeof(FReturnValueCheck<decltype(Make<T>() != Make<T>())>::Func()) == sizeof(char[2]) };
-	};
-}
-
-template <typename T>
-struct THasOperatorEquals
-{
-	enum { Value = FHasOperatorImpl::Equals<T>::Value };
-};
-
-template <typename T>
-struct THasOperatorNotEquals
-{
-	enum { Value = FHasOperatorImpl::NotEquals<T>::Value };
-};
-
 // Console ANSICHAR/TCHAR command line handling
 #if PLATFORM_COMPILER_HAS_TCHAR_WMAIN
 #define INT32_MAIN_INT32_ARGC_TCHAR_ARGV() int32 wmain(int32 ArgC, TCHAR* ArgV[])
@@ -736,6 +702,8 @@ namespace TypeTests
 	#include "HTML5/HTML5PlatformCompilerSetup.h"
 #elif PLATFORM_LINUX
 	#include "Linux/LinuxPlatformCompilerSetup.h"
+#elif PLATFORM_WOLF
+	#include "WolfPlat/WolfPlatformCompilerSetup.h"
 #else
 	#error Unknown Compiler
 #endif

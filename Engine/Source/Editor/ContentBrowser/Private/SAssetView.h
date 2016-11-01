@@ -157,6 +157,9 @@ public:
 		/** Called when a folder is entered */
 		SLATE_EVENT( FOnPathSelected, OnPathSelected )
 
+		/** Columns to hide by default */
+		SLATE_ARGUMENT( TArray<FString>, HiddenColumnNames )
+
 	SLATE_END_ARGS()
 
 	~SAssetView();
@@ -888,6 +891,9 @@ private:
 
 	/** Flag set if the user is currently searching */
 	bool bUserSearching;
+	
+	/** Whether or not to notify about newly selected items on on the next asset sync */
+	bool bShouldNotifyNextAssetSync;
 
 	/** A struct to hold data for the deferred creation of assets */
 	struct FCreateDeferredAssetData
@@ -952,6 +958,7 @@ private:
 	FQuickJumpData QuickJumpData;
 	
 	/** Column filtering state */
+	TArray<FString> DefaultHiddenColumnNames;
 	TArray<FString> HiddenColumnNames;
 	int32 NumVisibleColumns;
 public:

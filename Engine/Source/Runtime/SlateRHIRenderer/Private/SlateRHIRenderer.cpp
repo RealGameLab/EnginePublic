@@ -321,6 +321,7 @@ void FSlateRHIRenderer::ConditionalResizeViewport( FViewportInfo* ViewInfo, uint
 		ViewInfo->ProjectionMatrix = CreateProjectionMatrix( NewWidth, NewHeight );
 		ViewInfo->bFullscreen = bFullscreen;
 
+		PreResizeBackBufferDelegate.Broadcast(&ViewInfo->ViewportRHI);
 		if( IsValidRef( ViewInfo->ViewportRHI ) )
 		{
 			RHIResizeViewport(ViewInfo->ViewportRHI, NewWidth, NewHeight, bFullscreen);
@@ -329,6 +330,8 @@ void FSlateRHIRenderer::ConditionalResizeViewport( FViewportInfo* ViewInfo, uint
 		{
 			ViewInfo->ViewportRHI = RHICreateViewport(ViewInfo->OSWindow, NewWidth, NewHeight, bFullscreen, ViewInfo->PixelFormat);
 		}
+
+		PostResizeBackBufferDelegate.Broadcast(&ViewInfo->ViewportRHI);
 	}
 }
 
@@ -816,7 +819,7 @@ void FSlateRHIRenderer::CopyWindowsToVirtualScreenBuffer(const TArray<FString>& 
 		RHICmdList.SetDepthStencilState(TStaticDepthStencilState<false,CF_Always>::GetRHI());
 
 		// @todo livestream: Ideally this "desktop background color" should be configurable in the editor's preferences
-		RHICmdList.Clear(true, FLinearColor(0.8f, 0.00f, 0.0f), false, 0.f, false, 0x00, FIntRect());
+		RHICmdList.ClearColorTexture(Context.CrashReportResource->GetBuffer(), FLinearColor(0.8f, 0.00f, 0.0f), FIntRect());
 	});
 
 	// draw windows to buffer

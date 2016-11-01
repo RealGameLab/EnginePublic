@@ -1,10 +1,5 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
-/*=============================================================================
-	GameInstance.cpp: Implementation of GameInstance class
-=============================================================================*/
-
-
 #include "EnginePrivate.h"
 #include "Engine/GameInstance.h"
 #include "Engine/Engine.h"
@@ -12,8 +7,10 @@
 #include "Engine/DemoNetDriver.h"
 #include "Engine/LatentActionManager.h"
 #include "Engine/NetworkObjectList.h"
+#include "GameFramework/GameModeBase.h"
 #include "GameFramework/OnlineSession.h"
 #include "GameFramework/PlayerState.h"
+#include "GameFramework/GameModeBase.h"
 
 #if WITH_EDITOR
 #include "UnrealEd.h"
@@ -24,6 +21,7 @@ UGameInstance::UGameInstance(const FObjectInitializer& ObjectInitializer)
 , TimerManager(new FTimerManager())
 , LatentActionManager(new FLatentActionManager())
 {
+	TimerManager->SetGameInstance(this);
 }
 
 void UGameInstance::FinishDestroy()
@@ -787,6 +785,13 @@ void UGameInstance::StartRecordingReplay(const FString& Name, const FString& Fri
 	check( CurrentWorld->DemoNetDriver != NULL );
 
 	CurrentWorld->DemoNetDriver->SetWorld( CurrentWorld );
+
+	// Set the new demo driver as the current collection's driver
+	FLevelCollection* CurrentLevelCollection = CurrentWorld->FindCollectionByType(ELevelCollectionType::DynamicSourceLevels);
+	if (CurrentLevelCollection)
+	{
+		CurrentLevelCollection->SetDemoNetDriver(CurrentWorld->DemoNetDriver);
+	}
 
 	FString Error;
 

@@ -567,6 +567,7 @@ static void InitRHICapabilitiesForGL()
 	#undef LOG_GL_STRING
 
 	GRHIAdapterName = FOpenGL::GetAdapterName();
+	GRHIAdapterInternalDriverVersion = ANSI_TO_TCHAR((const ANSICHAR*)glGetString(GL_VERSION));
 
 	// Log all supported extensions.
 #if PLATFORM_WINDOWS
@@ -741,6 +742,7 @@ static void InitRHICapabilitiesForGL()
 	UE_LOG(LogRHI, Log, TEXT("PLATFORM_ANDROID"));
 #endif
 
+	GMaxTextureSamplers = Value_GL_MAX_TEXTURE_IMAGE_UNITS;
 	GMaxTextureMipCount = FMath::CeilLogTwo(Value_GL_MAX_TEXTURE_SIZE) + 1;
 	GMaxTextureMipCount = FMath::Min<int32>(MAX_TEXTURE_MIP_COUNT, GMaxTextureMipCount);
 	GMaxTextureDimensions = Value_GL_MAX_TEXTURE_SIZE;
@@ -760,6 +762,7 @@ static void InitRHICapabilitiesForGL()
 	GSupportsMultipleRenderTargets = FOpenGL::SupportsMultipleRenderTargets();
 	GSupportsWideMRT = FOpenGL::SupportsWideMRT();
 	GSupportsTexture3D = FOpenGL::SupportsTexture3D();
+	GSupportsMobileMultiView = FOpenGL::SupportsMobileMultiView();
 	GSupportsResourceView = FOpenGL::SupportsResourceView();
 		
 	GSupportsShaderFramebufferFetch = FOpenGL::SupportsShaderFramebufferFetch();
@@ -996,6 +999,10 @@ static void InitRHICapabilitiesForGL()
 	GPixelFormats[ PF_DepthStencil		].BlockBytes	 = 4;
 	GPixelFormats[ PF_FloatRGB			].BlockBytes	 = 4;
 	GPixelFormats[ PF_FloatRGBA			].BlockBytes	 = 8;
+
+	// Temporary fix for nvidia driver issue with non-power-of-two shadowmaps (9/8/2016) UE-35312
+	// @TODO revisit this with newer drivers
+	GRHINeedsUnatlasedCSMDepthsWorkaround = true;
 }
 
 FDynamicRHI* FOpenGLDynamicRHIModule::CreateRHI(ERHIFeatureLevel::Type InRequestedFeatureLevel)
@@ -1023,6 +1030,27 @@ FOpenGLDynamicRHI::FOpenGLDynamicRHI()
 	InitRHICapabilitiesForGL();
 
 	check(PlatformOpenGLCurrentContext(PlatformDevice) == CONTEXT_Shared);
+
+	if (PlatformCanEnableGPUCapture())
+	{
+		EnableIdealGPUCaptureOptions(true);
+
+		// Disable persistent mapping
+		{
+			auto* CVar = IConsoleManager::Get().FindConsoleVariable(TEXT("OpenGL.UBODirectWrite"));
+			if (CVar)
+			{
+				CVar->Set(false);
+			}
+		}
+		{
+			auto* CVar = IConsoleManager::Get().FindConsoleVariable(TEXT("OpenGL.UseStagingBuffer"));
+			if (CVar)
+			{
+				CVar->Set(false);
+			}
+		}
+	}
 
 	PrivateOpenGLDevicePtr = this;
 }

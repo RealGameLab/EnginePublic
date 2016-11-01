@@ -106,8 +106,6 @@ FActorComponentCreatePhysicsSignature UActorComponent::CreatePhysicsDelegate;
 // Destroy Physics global delegate
 FActorComponentDestroyPhysicsSignature UActorComponent::DestroyPhysicsDelegate;
 
-const FString UActorComponent::ComponentTemplateNameSuffix(TEXT("_GEN_VARIABLE"));
-
 UActorComponent::UActorComponent(const FObjectInitializer& ObjectInitializer /*= FObjectInitializer::Get()*/)
 	: Super(ObjectInitializer)
 {
@@ -668,7 +666,11 @@ void UActorComponent::OnRegister()
 
 	if (bAutoActivate)
 	{
-		Activate(true);
+		AActor* Owner = GetOwner();
+		if (!WorldPrivate->IsGameWorld() || Owner == nullptr || Owner->IsActorInitialized())
+		{
+			Activate(true);
+		}
 	}
 }
 
@@ -1409,7 +1411,7 @@ void UActorComponent::Activate(bool bReset)
 		SetComponentTickEnabled(true);
 		bIsActive = true;
 
-		OnComponentActivated.Broadcast(bReset);
+		OnComponentActivated.Broadcast(this, bReset);
 	}
 }
 
@@ -1420,7 +1422,7 @@ void UActorComponent::Deactivate()
 		SetComponentTickEnabled(false);
 		bIsActive = false;
 
-		OnComponentDeactivated.Broadcast();
+		OnComponentDeactivated.Broadcast(this);
 	}
 }
 

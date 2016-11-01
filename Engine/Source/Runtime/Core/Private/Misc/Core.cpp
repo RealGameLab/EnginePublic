@@ -57,12 +57,15 @@ CORE_API const FText GNone	= LOCTEXT("None",	"None");
 		bool GIsGameAgnosticExe = true;
 	#endif
 #else
-	// Otherwise only modular editors are game agnostic.
-	#if IS_PROGRAM || IS_MONOLITHIC
-		bool GIsGameAgnosticExe = false;
-	#else
-		bool GIsGameAgnosticExe = true;
-	#endif
+	// In monolithic Editor builds, implemented by the IMPLEMENT_GAME_MODULE macro or by UE4Game module.
+	#if !IS_MONOLITHIC || !UE_EDITOR
+		// Otherwise only modular editors are game agnostic.
+		#if IS_PROGRAM || IS_MONOLITHIC
+			bool GIsGameAgnosticExe = false;
+		#else
+			bool GIsGameAgnosticExe = true;
+		#endif
+	#endif //!IS_MONOLITHIC || !UE_EDITOR
 #endif
 
 /** When saving out of the game, this override allows the game to load editor only properties **/
@@ -201,6 +204,8 @@ bool (*IsAsyncLoadingMultithreaded)() = &IsAsyncLoadingCoreInternal;
 
 /** Whether the editor is currently loading a package or not												*/
 bool					GIsEditorLoadingPackage				= false;
+/** Whether the cooker is currently loading a package or not												*/
+bool					GIsCookerLoadingPackage = false;
 /** Whether GWorld points to the play in editor world														*/
 bool					GIsPlayInEditorWorld			= false;
 /** Unique ID for multiple PIE instances running in one process */
@@ -233,8 +238,6 @@ bool					GIsFirstInstance				= true;
 float GHitchThresholdMS = 60.0f;
 /** Size to break up data into when saving compressed data													*/
 int32					GSavingCompressionChunkSize		= SAVING_COMPRESSION_CHUNK_SIZE;
-/** Whether we are using the seekfree/ cooked loading codepath.												*/
-bool					GUseSeekFreeLoading				= false;
 /** Thread ID of the main/game thread																		*/
 uint32					GGameThreadId					= 0;
 uint32					GRenderThreadId					= 0;
@@ -269,6 +272,16 @@ bool					GPumpingMessagesOutsideOfMainLoop = false;
 /** Enables various editor and HMD hacks that allow the experimental VR editor feature to work, perhaps at the expense of other systems */
 bool					GEnableVREditorHacks = false;
 
+// Constrain bandwidth if wanted. Value is in MByte/ sec.
+float GAsyncIOBandwidthLimit = 0.0f;
+static FAutoConsoleVariableRef CVarAsyncIOBandwidthLimit(
+	TEXT("s.AsyncIOBandwidthLimit"),
+	GAsyncIOBandwidthLimit,
+	TEXT("Constrain bandwidth if wanted. Value is in MByte/ sec."),
+	ECVF_Default
+	);
+
+
 DEFINE_STAT(STAT_AudioMemory);
 DEFINE_STAT(STAT_TextureMemory);
 DEFINE_STAT(STAT_MemoryPhysXTotalAllocationSize);
@@ -276,7 +289,6 @@ DEFINE_STAT(STAT_MemoryICUTotalAllocationSize);
 DEFINE_STAT(STAT_MemoryICUDataFileAllocationSize);
 DEFINE_STAT(STAT_AnimationMemory);
 DEFINE_STAT(STAT_PrecomputedVisibilityMemory);
-DEFINE_STAT(STAT_PrecomputedShadowDepthMapMemory);
 DEFINE_STAT(STAT_PrecomputedLightVolumeMemory);
 DEFINE_STAT(STAT_SkeletalMeshVertexMemory);
 DEFINE_STAT(STAT_SkeletalMeshIndexMemory);
@@ -330,6 +342,7 @@ DEFINE_LOG_CATEGORY(LogNetPackageMap);
 DEFINE_LOG_CATEGORY(LogNetSerialization);
 DEFINE_LOG_CATEGORY(LogMemory);
 DEFINE_LOG_CATEGORY(LogProfilingDebugging);
+DEFINE_LOG_CATEGORY(LogWolf);
 
 DEFINE_LOG_CATEGORY(LogTemp);
 

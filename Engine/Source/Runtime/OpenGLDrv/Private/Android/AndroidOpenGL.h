@@ -79,6 +79,10 @@ typedef void (GL_APIENTRYP PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC) (GLenum t
 /** from ES 3.0 but can be called on certain Adreno devices */
 typedef void (GL_APIENTRYP PFNGLTEXSTORAGE2DPROC) (GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
 
+// Mobile multi-view
+typedef void (GL_APIENTRYP PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC) (GLenum target, GLenum attachment, GLuint texture, GLint level, GLint baseViewIndex, GLsizei numViews);
+typedef void (GL_APIENTRYP PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVRPROC) (GLenum target, GLenum attachment, GLuint texture, GLint level, GLsizei samples, GLint baseViewIndex, GLsizei numViews);
+
 extern PFNGLGENQUERIESEXTPROC 			glGenQueriesEXT;
 extern PFNGLDELETEQUERIESEXTPROC 		glDeleteQueriesEXT;
 extern PFNGLISQUERYEXTPROC 				glIsQueryEXT ;
@@ -135,6 +139,10 @@ extern PFNGLBINDBUFFERBASEPROC			glBindBufferBase;
 extern PFNGLGETUNIFORMBLOCKINDEXPROC	glGetUniformBlockIndex;
 extern PFNGLUNIFORMBLOCKBINDINGPROC		glUniformBlockBinding;
 
+extern PFNGLFRAMEBUFFERTEXTUREMULTIVIEWOVRPROC glFramebufferTextureMultiviewOVR;
+extern PFNGLFRAMEBUFFERTEXTUREMULTISAMPLEMULTIVIEWOVRPROC glFramebufferTextureMultisampleMultiviewOVR;
+extern PFNGLVERTEXATTRIBIPOINTERPROC	glVertexAttribIPointer;
+
 #include "OpenGLES2.h"
 
 
@@ -148,22 +156,10 @@ extern "C"
 
 struct FAndroidOpenGL : public FOpenGLES2
 {
-	static FORCEINLINE bool IsBuiltForES31()
-	{
-		static int32 ES31BuiltState = -1;
-		if(ES31BuiltState == -1)
-		{
-			bool bBuildForES31 = false;
-			GConfig->GetBool(TEXT("/Script/AndroidRuntimeSettings.AndroidRuntimeSettings"), TEXT("bBuildForES31"), bBuildForES31, GEngineIni);
-			ES31BuiltState = bBuildForES31 ? 1 : 0;
-		}
-		return ES31BuiltState == 1;
-	}
-
 	static FORCEINLINE bool IsES31Usable()
 	{
-		static const auto CVarDisableES31 = IConsoleManager::Get().FindTConsoleVariableDataInt(TEXT("r.Android.DisableOpenGLES31Support"));
-		return bES31Support && IsBuiltForES31() && CVarDisableES31->GetValueOnAnyThread() == 0;
+		check(CurrentFeatureLevelSupport != EFeatureLevelSupport::Invalid);
+		return CurrentFeatureLevelSupport == EFeatureLevelSupport::ES31;
 	}
 
 	static FORCEINLINE EShaderPlatform GetShaderPlatform()
@@ -423,6 +419,18 @@ struct FAndroidOpenGL : public FOpenGLES2
 		glBufferSubData(Target, Offset, Size, Data);
 	}
 
+	static FORCEINLINE void VertexAttribIPointer(GLuint Index, GLint Size, GLenum Type, GLsizei Stride, const GLvoid* Pointer)
+	{
+		if (bES30Support)
+		{
+			glVertexAttribIPointer(Index, Size, Type, Stride, Pointer);
+		}
+		else
+		{
+			glVertexAttribPointer(Index, Size, Type, GL_FALSE, Stride, Pointer);
+		}
+	}
+
 	// Adreno doesn't support HALF_FLOAT
 	static FORCEINLINE int32 GetReadHalfFloatPixelsEnum()				{ return GL_FLOAT; }
 
@@ -446,11 +454,15 @@ struct FAndroidOpenGL : public FOpenGLES2
 	static FORCEINLINE bool SupportsWideMRT()							{ return bES31Support; }
 	static FORCEINLINE bool SupportsResourceView()						{ return bSupportsTextureBuffer; }
 	static FORCEINLINE bool SupportsTexture3D()							{ return bES30Support; }
-
+	static FORCEINLINE bool SupportsMobileMultiView()					{ return bSupportsMobileMultiView; }
 	static FORCEINLINE bool UseES30ShadingLanguage()
 	{
 		return bUseES30ShadingLanguage;
 	}
+	static FORCEINLINE bool SupportsTextureMaxLevel()					{ return bES31Support; }
+	static FORCEINLINE GLenum GetVertexHalfFloatFormat() { return bES31Support ? GL_HALF_FLOAT : GL_HALF_FLOAT_OES; }
+
+	static FORCEINLINE GLenum GetDepthFormat() { return GL_DEPTH_COMPONENT24; }
 
 	static void ProcessExtensions(const FString& ExtensionsString);
 
@@ -474,6 +486,19 @@ struct FAndroidOpenGL : public FOpenGLES2
 
 	/** Whether device supports Hidden Surface Removal */
 	static bool bHasHardwareHiddenSurfaceRemoval;
+
+	/** Whether device supports mobile multi-view */
+	static bool bSupportsMobileMultiView;
+
+	enum class EFeatureLevelSupport : uint8
+	{
+		Invalid,	// no feature level has yet been determined
+		ES2,
+		ES31,
+	};
+
+	/** Describes which feature level is currently being supported */
+	static EFeatureLevelSupport CurrentFeatureLevelSupport;
 };
 
 typedef FAndroidOpenGL FOpenGL;

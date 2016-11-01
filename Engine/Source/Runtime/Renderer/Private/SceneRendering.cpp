@@ -71,6 +71,12 @@ static TAutoConsoleVariable<int32> CVarMultiView(
 	TEXT("Currently only supported by the PS4 RHI."),
 	ECVF_ReadOnly | ECVF_RenderThreadSafe);
 
+static TAutoConsoleVariable<int32> CVarMobileMultiView(
+	TEXT("vr.MobileMultiView"),
+	0,
+	TEXT("0 to disable mobile multi-view, 1 to enable.\n"),
+	ECVF_ReadOnly | ECVF_RenderThreadSafe);
+
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 static TAutoConsoleVariable<float> CVarGeneralPurposeTweak(
 	TEXT("r.GeneralPurposeTweak"),
@@ -380,6 +386,7 @@ void FViewInfo::Init()
 	bUsesGlobalDistanceField = false;
 	bUsesLightingChannels = false;
 	bTranslucentSurfaceLighting = false;
+	bUsesSceneDepth = false;
 
 	ExponentialFogParameters = FVector4(0,1,1,0);
 	ExponentialFogColor = FVector::ZeroVector;
@@ -415,6 +422,9 @@ void FViewInfo::Init()
 	NumBoxReflectionCaptures = 0;
 	NumSphereReflectionCaptures = 0;
 	FurthestReflectionCaptureDistance = 0;
+
+	// Disable HDR encoding for editor elements.
+	EditorSimpleElementCollector.BatchedElements.EnableMobileHDREncoding(false);
 }
 
 FViewInfo::~FViewInfo()
@@ -529,11 +539,14 @@ void FViewInfo::SetupUniformBufferParameters(
 
 	// Create the view's uniform buffer.
 
+	// Mobile multi-view is not side by side
+	const FIntRect EffectiveViewRect = (bIsMobileMultiViewEnabled) ? FIntRect(0, 0, ViewRect.Width(), ViewRect.Height()) : ViewRect;
+
 	// TODO: We should use a view and previous view uniform buffer to avoid code duplication and keep consistency
 	SetupCommonViewUniformBufferParameters(
 		ViewUniformShaderParameters, 
 		SceneContext.GetBufferSizeXY(),
-		ViewRect, 
+		EffectiveViewRect,
 		EffectiveTranslatedViewMatrix, 
 		EffectiveViewToTranslatedWorld, 
 		PrevViewMatrices, 
@@ -754,8 +767,7 @@ void FViewInfo::SetupUniformBufferParameters(
 
 		bool bApplyPrecomputedBentNormalShadowing = 
 			SkyLight->bCastShadows 
-			&& SkyLight->bWantsStaticShadowing
-			&& SkyLight->bPrecomputedLightingIsValid;
+			&& SkyLight->bWantsStaticShadowing;
 
 		ViewUniformShaderParameters.SkyLightParameters = bApplyPrecomputedBentNormalShadowing ? 1 : 0;
 	}
@@ -808,7 +820,7 @@ void FViewInfo::InitRHIResources()
 	FBox VolumeBounds[TVC_MAX];
 
 	/** The view transform, starting from world-space points translated by -ViewOrigin. */
-	FMatrix TranslatedViewMatrix = FTranslationMatrix(-ViewMatrices.PreViewTranslation) * ViewMatrices.ViewMatrix;
+	FMatrix TranslatedViewMatrix = FTranslationMatrix(-ViewMatrices.GetPreViewTranslation()) * ViewMatrices.GetViewMatrix();
 
 	check(IsInRenderingThread());
 
@@ -819,7 +831,7 @@ void FViewInfo::InitRHIResources()
 	SetupUniformBufferParameters(
 		SceneContext,
 		TranslatedViewMatrix,
-		InvViewMatrix * FTranslationMatrix(ViewMatrices.PreViewTranslation),
+		ViewMatrices.GetInvViewMatrix() * FTranslationMatrix(ViewMatrices.GetPreViewTranslation()),
 		VolumeBounds,
 		TVC_MAX,
 		*CachedViewUniformShaderParameters);
@@ -1394,16 +1406,10 @@ void FSceneRenderer::RenderCustomDepthPassAtLocation(FRHICommandListImmediate& R
 
 void FSceneRenderer::RenderCustomDepthPass(FRHICommandListImmediate& RHICmdList)
 {
-	if(FeatureLevel < ERHIFeatureLevel::SM4)
-	{
-		// not yet supported on lower end platforms
-		return;
-	}
-
 	// do we have primitives in this pass?
 	bool bPrimitives = false;
 
-	if(!Scene->World || (Scene->World->WorldType != EWorldType::Preview && Scene->World->WorldType != EWorldType::Inactive))
+	if(!Scene->World || (Scene->World->WorldType != EWorldType::EditorPreview && Scene->World->WorldType != EWorldType::Inactive))
 	{
 		for(int32 ViewIndex = 0; ViewIndex < Views.Num(); ++ViewIndex)
 		{
@@ -1616,9 +1622,7 @@ static void RenderViewFamily_RenderThread(FRHICommandListImmediate& RHICmdList, 
 
 	{
 		SCOPE_CYCLE_COUNTER(STAT_TotalSceneRenderingTime);
-		
-		GPU_STATS_UPDATE(RHICmdList);
-		
+	
 		if(SceneRenderer->ViewFamily.EngineShowFlags.HitProxies)
 		{
 			// Render the scene's hit proxies.
@@ -1853,8 +1857,8 @@ void FRendererModule::RenderPostOpaqueExtensions(const FSceneView& View, FRHICom
 {
 	check(IsInRenderingThread());
 	FPostOpaqueRenderParameters RenderParameters;
-	RenderParameters.ViewMatrix = View.ViewMatrices.ViewMatrix;
-	RenderParameters.ProjMatrix = View.ViewMatrices.ProjMatrix;
+	RenderParameters.ViewMatrix = View.ViewMatrices.GetViewMatrix();
+	RenderParameters.ProjMatrix = View.ViewMatrices.GetProjectionMatrix();
 	RenderParameters.DepthTexture = SceneContext.GetSceneDepthSurface()->GetTexture2D();
 	RenderParameters.SmallDepthTexture = SceneContext.GetSmallDepthSurface()->GetTexture2D();
 
@@ -1869,8 +1873,8 @@ void FRendererModule::RenderOverlayExtensions(const FSceneView& View, FRHIComman
 {
 	check(IsInRenderingThread());
 	FPostOpaqueRenderParameters RenderParameters;
-	RenderParameters.ViewMatrix = View.ViewMatrices.ViewMatrix;
-	RenderParameters.ProjMatrix = View.ViewMatrices.ProjMatrix;
+	RenderParameters.ViewMatrix = View.ViewMatrices.GetViewMatrix();
+	RenderParameters.ProjMatrix = View.ViewMatrices.GetProjectionMatrix();
 	RenderParameters.DepthTexture = SceneContext.GetSceneDepthSurface()->GetTexture2D();
 	RenderParameters.SmallDepthTexture = SceneContext.GetSmallDepthSurface()->GetTexture2D();
 
@@ -2009,7 +2013,7 @@ static void DisplayInternals(FRHICommandListImmediate& RHICmdList, FSceneView& I
 
 		CANVAS_HEADER(TEXT("View:"))
 		CANVAS_LINE(false, TEXT("  TemporalJitter: %.2f/%.2f"), InView.TemporalJitterPixelsX, InView.TemporalJitterPixelsY)
-		CANVAS_LINE(false, TEXT("  ViewProjectionMatrix Hash: %x"), InView.ViewProjectionMatrix.ComputeHash())
+		CANVAS_LINE(false, TEXT("  ViewProjectionMatrix Hash: %x"), InView.ViewMatrices.GetViewProjectionMatrix().ComputeHash())
 		CANVAS_LINE(false, TEXT("  ViewLocation: %s"), *InView.ViewLocation.ToString())
 		CANVAS_LINE(false, TEXT("  ViewRotation: %s"), *InView.ViewRotation.ToString())
 		CANVAS_LINE(false, TEXT("  ViewRect: %s"), *InView.ViewRect.ToString())

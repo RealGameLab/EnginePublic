@@ -287,10 +287,10 @@ FArchive& operator<<(FArchive& Ar,FShaderType*& Ref)
 }
 
 
-TRefCountPtr<FShader> FShaderType::FindShaderById(const FShaderId& Id)
+FShader* FShaderType::FindShaderById(const FShaderId& Id)
 {
 	check(IsInGameThread());
-	TRefCountPtr<FShader> Result = ShaderIdMap.FindRef(Id);
+	FShader* Result = ShaderIdMap.FindRef(Id);
 	return Result;
 }
 
@@ -495,10 +495,10 @@ void FShaderResource::Release()
 }
 
 
-TRefCountPtr<FShaderResource> FShaderResource::FindShaderResourceById(const FShaderResourceId& Id)
+FShaderResource* FShaderResource::FindShaderResourceById(const FShaderResourceId& Id)
 {
 	check(IsInGameThread());
-	TRefCountPtr<FShaderResource> Result = ShaderResourceIdMap.FindRef(Id);
+	FShaderResource* Result = ShaderResourceIdMap.FindRef(Id);
 	return Result;
 }
 
@@ -970,7 +970,7 @@ bool FShader::SerializeBase(FArchive& Ar, bool bShadersInline)
 			ResourceId.SpecificShaderTypeName = Type->LimitShaderResourceToThisType() ? Type->GetName() : NULL;
 
 			// use it to look up in the registered resource map
-			TRefCountPtr<FShaderResource> ExistingResource = FShaderResource::FindShaderResourceById(ResourceId);
+			FShaderResource* ExistingResource = FShaderResource::FindShaderResourceById(ResourceId);
 			SetResource(ExistingResource);
 		}
 	}
@@ -1037,7 +1037,7 @@ void FShader::RegisterSerializedResource()
 {
 	if (SerializedResource)
 	{
-		TRefCountPtr<FShaderResource> ExistingResource = FShaderResource::FindShaderResourceById(SerializedResource->GetId());
+		FShaderResource* ExistingResource = FShaderResource::FindShaderResourceById(SerializedResource->GetId());
 
 		// Reuse an existing shader resource if a matching one already exists in memory
 		if (ExistingResource)
@@ -1700,9 +1700,13 @@ void ShaderMapAppendKeyString(EShaderPlatform Platform, FString& KeyString)
 	{
 		static const auto CVarInstancedStereo = IConsoleManager::Get().FindTConsoleVariableDataInt(TEXT("vr.InstancedStereo"));
 		static const auto CVarMultiView = IConsoleManager::Get().FindTConsoleVariableDataInt(TEXT("vr.MultiView"));
+		static const auto CVarMobileMultiView = IConsoleManager::Get().FindTConsoleVariableDataInt(TEXT("vr.MobileMultiView"));
 
 		const bool bIsInstancedStereo = ((Platform == EShaderPlatform::SP_PCD3D_SM5 || Platform == EShaderPlatform::SP_PS4) && (CVarInstancedStereo && CVarInstancedStereo->GetValueOnGameThread() != 0));
 		const bool bIsMultiView = (Platform == EShaderPlatform::SP_PS4 && (CVarMultiView && CVarMultiView->GetValueOnGameThread() != 0));
+
+		const bool bIsAndroidGLES = (Platform == EShaderPlatform::SP_OPENGL_ES3_1_ANDROID || Platform == EShaderPlatform::SP_OPENGL_ES2_ANDROID);
+		const bool bIsMobileMultiView = (bIsAndroidGLES && (CVarMobileMultiView && CVarMobileMultiView->GetValueOnGameThread() != 0));
 
 		if (bIsInstancedStereo)
 		{
@@ -1712,6 +1716,11 @@ void ShaderMapAppendKeyString(EShaderPlatform Platform, FString& KeyString)
 			{
 				KeyString += TEXT("_MVIEW");
 			}
+		}
+
+		if (bIsMobileMultiView)
+		{
+			KeyString += TEXT("_MMVIEW");
 		}
 	}
 
@@ -1766,6 +1775,12 @@ void ShaderMapAppendKeyString(EShaderPlatform Platform, FString& KeyString)
 		{
 			KeyString += TEXT("_UnInt");
 		}
+	}
+
+	if (IsMobilePlatform(Platform))
+	{
+		static IConsoleVariable* CVar = IConsoleManager::Get().FindConsoleVariable(TEXT("r.Mobile.DisableVertexFog"));
+		KeyString += (CVar && CVar->GetInt() != 0) ? TEXT("_NoVFog") : TEXT("");
 	}
 
 	if (Platform == SP_PS4)

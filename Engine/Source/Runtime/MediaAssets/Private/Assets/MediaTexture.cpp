@@ -105,18 +105,23 @@ void UMediaTexture::ReleaseTextureSinkBuffer()
 
 void UMediaTexture::ShutdownTextureSink()
 {
-	if (ClearColor.A != 0.0f)
-	{
-		// reset to 1x1 clear color
-		SinkDimensions = FIntPoint(1, 1);
-		SinkFormat = EMediaTextureSinkFormat::CharBGRA;
-		SinkMode = EMediaTextureSinkMode::Unbuffered;
+	UE_LOG(LogMediaAssets, Verbose, TEXT("MediaTexture shutting down sink."));
 
-		FScopeLock Lock(&CriticalSection);
-		if (Resource != nullptr)
-		{
-			((FMediaTextureResource*)Resource)->InitializeBuffer(SinkDimensions, SinkFormat, SinkMode);
-		}
+	if (ClearColor.A == 0.0f)
+	{
+		return;
+	}
+
+	// reset to 1x1 clear color
+	SinkDimensions = FIntPoint(1, 1);
+	SinkFormat = EMediaTextureSinkFormat::CharBGRA;
+	SinkMode = EMediaTextureSinkMode::Unbuffered;
+
+	FScopeLock Lock(&CriticalSection);
+
+	if (Resource != nullptr)
+	{
+		((FMediaTextureResource*)Resource)->InitializeBuffer(SinkDimensions, SinkFormat, SinkMode);
 	}
 }
 
@@ -201,9 +206,14 @@ FString UMediaTexture::GetDesc()
 }
 
 
-SIZE_T UMediaTexture::GetResourceSize(EResourceSizeMode::Type Mode)
+void UMediaTexture::GetResourceSizeEx(FResourceSizeEx& CumulativeResourceSize)
 {
-	return (Resource != nullptr) ? ((FMediaTextureResource*)Resource)->GetResourceSize() : 0;
+	Super::GetResourceSizeEx(CumulativeResourceSize);
+
+	if (Resource)
+	{
+		((FMediaTextureResource*)Resource)->GetResourceSizeEx(CumulativeResourceSize);
+	}
 }
 
 

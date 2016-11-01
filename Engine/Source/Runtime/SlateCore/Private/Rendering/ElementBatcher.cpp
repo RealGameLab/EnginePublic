@@ -106,26 +106,11 @@ void FSlateElementBatcher::AddElements(FSlateDrawLayer& InDrawLayer)
 
 	DrawLayer = &InDrawLayer;
 
-#if SLATE_POOL_DRAW_ELEMENTS
-	const TArray<FSlateDrawElement*>& DrawElements = InDrawLayer.DrawElements;
-#else
 	const TArray<FSlateDrawElement>& DrawElements = InDrawLayer.DrawElements;
-#endif
 
 	for( int32 DrawElementIndex = 0; DrawElementIndex < DrawElements.Num(); ++DrawElementIndex )
 	{
-#if SLATE_POOL_DRAW_ELEMENTS
-		if ( DrawElementIndex < ( DrawElements.Num() - 1 ) )
-		{
-			FPlatformMisc::Prefetch(DrawElements[DrawElementIndex + 1]);
-		}
-#endif
-
-#if SLATE_POOL_DRAW_ELEMENTS
-		const FSlateDrawElement& DrawElement = *DrawElements[DrawElementIndex];
-#else
 		const FSlateDrawElement& DrawElement = DrawElements[DrawElementIndex];
-#endif
 
 		const FSlateRect& InClippingRect = DrawElement.GetClippingRect();
 	
@@ -1483,7 +1468,6 @@ void FSlateElementBatcher::AddViewportElement( const FSlateDrawElement& DrawElem
 	//const FVector2D& InPosition = DrawElement.GetPosition();
 	//const FVector2D& Size = DrawElement.GetSize();
 	const FVector2D& LocalSize = DrawElement.GetLocalSize();
-	//float Scale = DrawElement.GetScale();
 	const FSlateDataPayload& InPayload = DrawElement.GetDataPayload();
 	const FSlateRect& InClippingRect = DrawElement.GetClippingRect();
 	ESlateDrawEffect::Type InDrawEffects = DrawElement.GetDrawEffects();
@@ -1524,7 +1508,8 @@ void FSlateElementBatcher::AddViewportElement( const FSlateDrawElement& DrawElem
 	// If the viewport disallows scaling, force size to current texture size.
 	if (ViewportResource != nullptr && !InPayload.bAllowViewportScaling)
 	{
-		BotRight = FVector2D(ViewportResource->GetWidth(), ViewportResource->GetHeight());
+		const float Scale = DrawElement.GetScale();
+		BotRight = FVector2D(ViewportResource->GetWidth() / Scale, ViewportResource->GetHeight() / Scale);
 	}
 
 	FVector2D TopRight = FVector2D( BotRight.X, TopLeft.Y);

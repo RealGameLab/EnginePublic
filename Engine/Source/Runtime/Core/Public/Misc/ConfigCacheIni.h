@@ -157,17 +157,8 @@ public:
 	bool operator==( const FConfigSection& Other ) const;
 	bool operator!=( const FConfigSection& Other ) const;
 
-	void ReplaceOrAdd(const FName Key, FString Value)
-	{
-		if (FConfigValue* ConfigValue = FConfigSectionMap::Find(Key))
-		{
-			*ConfigValue = FConfigValue(MoveTemp(Value));
-		}
-		else
-		{
-			Add(Key, MoveTemp(Value));
-		}
-	}
+	// process the '+' and '.' commands, takingf into account ArrayOfStruct unique keys
+	void HandleAddCommand(FName Key, const FString& Value, bool bAppendValueIfNotArrayOfStructsKeyUsed);
 
 	template<typename Allocator> 
 	void MultiFind(const FName Key, TArray<FConfigValue, Allocator>& OutValues, const bool bMaintainOrder = false) const
@@ -192,6 +183,8 @@ public:
 		}
 	}
 
+	// look for "array of struct" keys for overwriting single entries of an array
+	TMap<FName, FString> ArrayOfStructKeys;
 };
 
 /**
@@ -232,6 +225,8 @@ enum class EConfigFileHierarchy : uint8
 
 	// Engine/Config/*.ini
 	EngineDirBase,
+	// Engine/Config/Platform/BasePlatform* ini
+	EngineDir_BasePlatform,
 	// Engine/Config/NotForLicensees/*.ini
 	EngineDirBase_NotForLicensees,
 	// Engine/Config/NoRedist/*.ini -Not supported at this time.
@@ -300,6 +295,9 @@ public:
 	FConfigFile( int32 ) {}	// @todo UE4 DLL: Workaround for instantiated TMap template during DLLExport (TMap::FindRef)
 	CORE_API ~FConfigFile();
 	
+	// looks for a section by name, and creates an empty one if it can't be found
+	FConfigSection* FindOrAddSection(const FString& Name);
+
 	bool operator==( const FConfigFile& Other ) const;
 	bool operator!=( const FConfigFile& Other ) const;
 
@@ -312,6 +310,7 @@ public:
 	CORE_API bool GetString( const TCHAR* Section, const TCHAR* Key, FString& Value ) const;
 	CORE_API bool GetText( const TCHAR* Section, const TCHAR* Key, FText& Value ) const;
 	CORE_API bool GetInt64( const TCHAR* Section, const TCHAR* Key, int64& Value ) const;
+	CORE_API bool GetBool( const TCHAR* Section, const TCHAR* Key, bool& Value ) const;
 
 	CORE_API void SetString( const TCHAR* Section, const TCHAR* Key, const TCHAR* Value );
 	CORE_API void SetText( const TCHAR* Section, const TCHAR* Key, const FText& Value );
@@ -363,6 +362,10 @@ public:
 	static FString GenerateExportedPropertyLine(const FString& PropertyName, const FString& PropertyValue);
 
 private:
+
+	// This holds per-object config class names, with their ArrayOfStructKeys. Since the POC sections are all unique,
+	// we can't track it just in that section. This is expected to be empty/small
+	TMap<FString, TMap<FName, FString> > PerObjectConfigArrayOfStructKeys;
 
 	/** 
 	 * Save the source hierarchy which was loaded out to a backup file so we can check future changes in the base/default configs
@@ -807,6 +810,15 @@ private:
  * @param SetBy anything in ECVF_LastSetMask e.g. ECVF_SetByScalability
  */
 CORE_API void ApplyCVarSettingsGroupFromIni(const TCHAR* InSectionBaseName, int32 InGroupNumber, const TCHAR* InIniFilename, uint32 SetBy);
+
+/**
+* Helper function to read the contents of an ini file and a specified group of cvar parameters, where sections in the ini file are marked [InName@TagName]
+* @param InSectionBaseName - The base name of the section to apply cvars from (i.e. the bit before the @)
+* @param InSectionTag - The group name required. e.g. 'Cine'
+* @param InIniFilename - The ini filename
+* @param SetBy anything in ECVF_LastSetMask e.g. ECVF_SetByScalability
+*/
+CORE_API void ApplyCVarSettingsGroupFromIni(const TCHAR* InSectionBaseName, const TCHAR* InSectionTag, const TCHAR* InIniFilename, uint32 SetBy);
 
 /**
  * Helper function to read the contents of an ini file and a specified group of cvar parameters, where sections in the ini file are marked [InName]

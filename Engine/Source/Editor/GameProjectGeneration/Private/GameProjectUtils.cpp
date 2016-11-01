@@ -35,6 +35,7 @@
 #include "Sound/SoundEffectSource.h"
 
 #include "PlatformInfo.h"
+#include "BlueprintSupport.h" // for FLegacyEditorOnlyBlueprintOptions::GetDefaultEditorConfig()
 
 #define LOCTEXT_NAMESPACE "GameProjectUtils"
 
@@ -1826,12 +1827,7 @@ bool GameProjectUtils::GenerateConfigFiles(const FProjectInformation& InProjectI
 	// DefaultEditor.ini
 	{
 		const FString DefaultEditorIniFilename = ProjectConfigPath / TEXT("DefaultEditor.ini");
-		FString FileContents;
-		FileContents += TEXT("[EditoronlyBP]") LINE_TERMINATOR;
-		FileContents += TEXT("bAllowClassAndBlueprintPinMatching=true") LINE_TERMINATOR;
-		FileContents += TEXT("bReplaceBlueprintWithClass=true") LINE_TERMINATOR;
-		FileContents += TEXT("bDontLoadBlueprintOutsideEditor=true") LINE_TERMINATOR;
-		FileContents += TEXT("bBlueprintIsNotBlueprintType=true") LINE_TERMINATOR;
+		FString FileContents = FLegacyEditorOnlyBlueprintOptions::GetDefaultEditorConfig();
 
 		if (WriteOutputFile(DefaultEditorIniFilename, FileContents, OutFailReason))
 		{
@@ -2479,6 +2475,28 @@ void GameProjectUtils::ClearSupportedTargetPlatforms()
 		}
 
 		IProjectManager::Get().ClearSupportedTargetPlatformsForCurrentProject();
+	}
+}
+
+void GameProjectUtils::UpdateAdditionalPluginDirectory(const FString& InDir, const bool bAddOrRemove)
+{
+	const FString& ProjectFilename = FPaths::GetProjectFilePath();
+	if (!ProjectFilename.IsEmpty())
+	{
+		// First attempt to check out the file if SCC is enabled
+		if (ISourceControlModule::Get().IsEnabled())
+		{
+			FText UnusedFailReason;
+			CheckoutGameProjectFile(ProjectFilename, UnusedFailReason);
+		}
+
+		// Second make sure the file is writable
+		if (FPlatformFileManager::Get().GetPlatformFile().IsReadOnly(*ProjectFilename))
+		{
+			FPlatformFileManager::Get().GetPlatformFile().SetReadOnly(*ProjectFilename, false);
+		}
+
+		IProjectManager::Get().UpdateAdditionalPluginDirectory(InDir, bAddOrRemove);
 	}
 }
 

@@ -195,7 +195,7 @@ static void ExtractPropertyTextures(FbxSurfaceMaterial *FbxMaterial, TSharedPtr<
 		int32 LayeredTextureCount = FbxProperty.GetSrcObjectCount<FbxLayeredTexture>();
 		if (LayeredTextureCount == 0)
 		{
-			int32 TextureCount = FbxProperty.GetSrcObjectCount<FbxTexture>();
+			int32 TextureCount = FbxProperty.GetSrcObjectCount<FbxFileTexture>();
 			if (TextureCount > 0)
 			{
 				for (int32 TextureIndex = 0; TextureIndex < TextureCount; ++TextureIndex)
@@ -942,15 +942,12 @@ FFeedbackContext*	Warn
 
 	//We are a scene import set the flag for the reimport factory for both static mesh and skeletal mesh
 	StaticMeshImportData->bImportAsScene = true;
-	StaticMeshImportData->bImportMaterials = GlobalImportSettings->bImportMaterials;
 	StaticMeshImportData->FbxSceneImportDataReference = ReimportData;
 
 	SkeletalMeshImportData->bImportAsScene = true;
-	SkeletalMeshImportData->bImportMaterials = GlobalImportSettings->bImportMaterials;
 	SkeletalMeshImportData->FbxSceneImportDataReference = ReimportData;
 
 	AnimSequenceImportData->bImportAsScene = true;
-	AnimSequenceImportData->bImportMaterials = GlobalImportSettings->bImportMaterials;
 	AnimSequenceImportData->FbxSceneImportDataReference = ReimportData;
 
 	//Get the scene root node
@@ -1059,7 +1056,7 @@ FFeedbackContext*	Warn
 bool UFbxSceneImportFactory::SetStaticMeshComponentOverrideMaterial(UStaticMeshComponent* StaticMeshComponent, TSharedPtr<FFbxNodeInfo> NodeInfo)
 {
 	bool bOverrideMaterial = false;
-	UStaticMesh *StaticMesh = StaticMeshComponent->StaticMesh;
+	UStaticMesh *StaticMesh = StaticMeshComponent->GetStaticMesh();
 	if (StaticMesh->StaticMaterials.Num() == NodeInfo->Materials.Num())
 	{
 		for (int32 MaterialIndex = 0; MaterialIndex < NodeInfo->Materials.Num(); ++MaterialIndex)

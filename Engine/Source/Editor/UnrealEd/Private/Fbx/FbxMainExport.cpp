@@ -724,7 +724,7 @@ void FFbxExporter::ExportStaticMesh(AActor* Actor, UStaticMeshComponent* StaticM
 	}
 
 	// Retrieve the static mesh rendering information at the correct LOD level.
-	UStaticMesh* StaticMesh = StaticMeshComponent->StaticMesh;
+	UStaticMesh* StaticMesh = StaticMeshComponent->GetStaticMesh();
 	if (StaticMesh == NULL || !StaticMesh->HasValidRenderData())
 	{
 		return;
@@ -1282,7 +1282,7 @@ bool FFbxExporter::ExportMatinee(AMatineeActor* InMatineeActor)
 					if(SkeletalMeshComp)
 					{
 						FMatineeAnimTrackAdapter AnimTrackAdapter(InMatineeActor);
-						ExportAnimTrack(AnimTrackAdapter, SkeletalMeshComp);
+						ExportAnimTrack(AnimTrackAdapter, Actor, SkeletalMeshComp);
 					}
 				}
 			}
@@ -1363,7 +1363,7 @@ bool FFbxExporter::ExportLevelSequence( UMovieScene* MovieScene, const TArray<FG
 	{
 		return false;
 	}
-
+			
 	for ( const FMovieSceneBinding& MovieSceneBinding : MovieScene->GetBindings() )
 	{
 		// If there are specific bindings to export, export those only
@@ -1396,10 +1396,14 @@ bool FFbxExporter::ExportLevelSequence( UMovieScene* MovieScene, const TArray<FG
 				// now it should export everybody
 				if ( FbxActor )
 				{
+					USkeletalMeshComponent* SkeletalMeshComp = Cast<USkeletalMeshComponent>( Actor->GetComponentByClass( USkeletalMeshComponent::StaticClass() ) );
+					
+					const bool bSkip3DTransformTrack = SkeletalMeshComp && GetDefault<UEditorPerProjectUserSettings>()->bMapSkeletalMotionToRoot;
+
 					// Look for the tracks that we currently support
 					for ( UMovieSceneTrack* Track : MovieSceneBinding.GetTracks() )
 					{
-						if ( Track->IsA( UMovieScene3DTransformTrack::StaticClass() ) )
+						if ( Track->IsA( UMovieScene3DTransformTrack::StaticClass() ) && !bSkip3DTransformTrack )
 						{
 							UMovieScene3DTransformTrack* TransformTrack = (UMovieScene3DTransformTrack*)Track;
 							ExportLevelSequence3DTransformTrack( *FbxActor, *TransformTrack, Actor, MovieScene->GetPlaybackRange() );
@@ -1411,11 +1415,10 @@ bool FFbxExporter::ExportLevelSequence( UMovieScene* MovieScene, const TArray<FG
 						}
 						else if ( Track->IsA( UMovieSceneSkeletalAnimationTrack::StaticClass() ) )
 						{
-							USkeletalMeshComponent* SkeletalMeshComp = Cast<USkeletalMeshComponent>( Actor->GetComponentByClass( USkeletalMeshComponent::StaticClass() ) );
 							if ( SkeletalMeshComp )
 							{
 								FLevelSequenceAnimTrackAdapter AnimTrackAdapter( MovieScenePlayer, MovieScene );
-								ExportAnimTrack( AnimTrackAdapter, SkeletalMeshComp );
+								ExportAnimTrack( AnimTrackAdapter, Actor, SkeletalMeshComp );
 							}
 						}
 					}
@@ -1524,7 +1527,7 @@ FbxNode* FFbxExporter::ExportActor(AActor* Actor, bool bExportComponents, INodeN
 				USkeletalMeshComponent* SkelMeshComp = Cast<USkeletalMeshComponent>( Component );
 				UChildActorComponent* ChildActorComp = Cast<UChildActorComponent>( Component );
 
-				if( StaticMeshComp && StaticMeshComp->StaticMesh)
+				if( StaticMeshComp && StaticMeshComp->GetStaticMesh())
 				{
 					ComponentsToExport.Add( StaticMeshComp );
 				}
@@ -1590,7 +1593,7 @@ FbxNode* FFbxExporter::ExportActor(AActor* Actor, bool bExportComponents, INodeN
 				USkeletalMeshComponent* SkelMeshComp = Cast<USkeletalMeshComponent>( Component );
 				UChildActorComponent* ChildActorComp = Cast<UChildActorComponent>( Component );
 
-				if (StaticMeshComp && StaticMeshComp->StaticMesh)
+				if (StaticMeshComp && StaticMeshComp->GetStaticMesh())
 				{
 					if (USplineMeshComponent* SplineMeshComp = Cast<USplineMeshComponent>(StaticMeshComp))
 					{
@@ -1603,7 +1606,7 @@ FbxNode* FFbxExporter::ExportActor(AActor* Actor, bool bExportComponents, INodeN
 					else
 					{
 						const int32 LODIndex = (StaticMeshComp->ForcedLodModel > 0 ? StaticMeshComp->ForcedLodModel - 1 : /* auto-select*/ 0);
-						ExportStaticMeshToFbx(StaticMeshComp->StaticMesh, LODIndex, *StaticMeshComp->GetName(), ExportNode);
+						ExportStaticMeshToFbx(StaticMeshComp->GetStaticMesh(), LODIndex, *StaticMeshComp->GetName(), ExportNode);
 					}
 				}
 				else if (SkelMeshComp && SkelMeshComp->SkeletalMesh)
@@ -3531,7 +3534,7 @@ FbxNode* FFbxExporter::ExportStaticMeshToFbx(const UStaticMesh* StaticMesh, int3
 
 void FFbxExporter::ExportSplineMeshToFbx(const USplineMeshComponent* SplineMeshComp, const TCHAR* MeshName, FbxNode* FbxActor)
 {
-	const UStaticMesh* StaticMesh = SplineMeshComp->StaticMesh;
+	const UStaticMesh* StaticMesh = SplineMeshComp->GetStaticMesh();
 	check(StaticMesh);
 
 	const int32 LODIndex = (SplineMeshComp->ForcedLodModel > 0 ? SplineMeshComp->ForcedLodModel - 1 : /* auto-select*/ 0);
@@ -3791,7 +3794,7 @@ void FFbxExporter::ExportSplineMeshToFbx(const USplineMeshComponent* SplineMeshC
 
 void FFbxExporter::ExportInstancedMeshToFbx(const UInstancedStaticMeshComponent* InstancedMeshComp, const TCHAR* MeshName, FbxNode* FbxActor)
 {
-	const UStaticMesh* StaticMesh = InstancedMeshComp->StaticMesh;
+	const UStaticMesh* StaticMesh = InstancedMeshComp->GetStaticMesh();
 	check(StaticMesh);
 
 	const int32 LODIndex = (InstancedMeshComp->ForcedLodModel > 0 ? InstancedMeshComp->ForcedLodModel - 1 : /* auto-select*/ 0);

@@ -36,6 +36,8 @@
 #include "IDocumentation.h"
 #include "PersonaUtils.h"
 
+#include "BoneSelectionWidget.h"
+
 #define LOCTEXT_NAMESPACE "SSkeletonTree"
 
 static const FName	ColumnID_BoneLabel( "BoneName" );
@@ -247,7 +249,8 @@ FReply SSkeletonTreeRow::OnDrop( const FGeometry& MyGeometry, const FDragDropEve
 			*static_cast<FName*>( Item->GetData() ) != SocketInfo.Socket->BoneName )
 		{
 			// The socket can be dropped here if we're a bone and NOT the socket's existing parent
-			GetEditableSkeleton()->SetSocketParent(SocketInfo.Socket->SocketName, *static_cast<FName*>(Item->GetData()));
+			USkeletalMesh* SkeletalMesh = GetSkeletonTree()->GetPreviewScene().IsValid() ? GetSkeletonTree()->GetPreviewScene()->GetPreviewMeshComponent()->SkeletalMesh : nullptr;
+			GetEditableSkeleton()->SetSocketParent(SocketInfo.Socket->SocketName, *static_cast<FName*>(Item->GetData()), SkeletalMesh);
 
 			GetSkeletonTree()->CreateFromSkeleton();
 
@@ -655,6 +658,7 @@ void FDisplayedSocketInfo::GenerateWidgetForNameColumn( TSharedPtr< SHorizontalB
 	Box->AddSlot()
 	.AutoWidth()
 	.Padding(2, 0, 0, 0)
+	.VAlign(VAlign_Center)
 	[
 		SAssignNew( InlineWidget, SInlineEditableTextBlock )
 			.ColorAndOpacity( this, &FDisplayedSocketInfo::GetTextColor )
@@ -677,6 +681,7 @@ void FDisplayedSocketInfo::GenerateWidgetForNameColumn( TSharedPtr< SHorizontalB
 
 		Box->AddSlot()
 		.AutoWidth()
+		.VAlign(VAlign_Center)
 		[
 			SNew( STextBlock )
 			.ColorAndOpacity( FLinearColor::Gray )
@@ -754,7 +759,8 @@ bool FDisplayedSocketInfo::CanCustomizeSocket() const
 {
 	// If the socket is on the skeleton, we have a valid mesh
 	// and there isn't one of the same name on the mesh, we can customize it
-	return (GetEditableSkeleton()->GetSkeletalMesh() && !IsSocketCustomized());
+	USkeletalMesh* SkeletalMesh = GetSkeletonTree()->GetPreviewScene().IsValid() ? GetSkeletonTree()->GetPreviewScene()->GetPreviewMeshComponent()->SkeletalMesh : nullptr;
+	return (SkeletalMesh && !IsSocketCustomized());
 }
 
 void FDisplayedSocketInfo::RequestRename()
@@ -777,7 +783,8 @@ bool FDisplayedSocketInfo::OnVerifySocketNameChanged( const FText& InText, FText
 	}
 	else
 	{
-		bVerifyName = !GetEditableSkeleton()->DoesSocketAlreadyExist( SocketData, NewText, ParentType);
+		USkeletalMesh* SkeletalMesh = GetSkeletonTree()->GetPreviewScene().IsValid() ? GetSkeletonTree()->GetPreviewScene()->GetPreviewMeshComponent()->SkeletalMesh : nullptr;
+		bVerifyName = !GetEditableSkeleton()->DoesSocketAlreadyExist( SocketData, NewText, ParentType, SkeletalMesh );
 
 		// Needs to be checked on verify.
 		if ( !bVerifyName )
@@ -796,7 +803,8 @@ void FDisplayedSocketInfo::OnCommitSocketName( const FText& InText, ETextCommit:
 	FText NewText = FText::TrimPrecedingAndTrailing(InText);
 
 	// Notify skeleton tree of socket rename
-	GetEditableSkeleton()->RenameSocket(SocketData->SocketName, FName(*NewText.ToString()));
+	USkeletalMesh* SkeletalMesh = GetSkeletonTree()->GetPreviewScene().IsValid() ? GetSkeletonTree()->GetPreviewScene()->GetPreviewMeshComponent()->SkeletalMesh : nullptr;
+	GetEditableSkeleton()->RenameSocket(SocketData->SocketName, FName(*NewText.ToString()), SkeletalMesh);
 }
 
 FReply FDisplayedSocketInfo::OnDragDetected(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
@@ -954,6 +962,76 @@ void FDisplayedAttachedAssetInfo::OnItemDoubleClicked()
 
 	FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
 	ContentBrowserModule.Get().SyncBrowserToAssets( AssetsToSync );
+}
+
+//////////////////////////////////////////////////////////////////////////
+// FDisplayedVirtualBoneInfo
+
+TSharedRef<ITableRow> FDisplayedVirtualBoneInfo::MakeTreeRowWidget(
+	const TSharedRef<STableViewBase>& OwnerTable,
+	FText FilterText)
+{
+	return
+		SNew(SSkeletonTreeRow, OwnerTable)
+		.Item(SharedThis(this))
+		.FilterText(FilterText)
+		.SkeletonTree(SkeletonTree);
+}
+
+EVisibility FDisplayedVirtualBoneInfo::GetLODIconVisibility() const
+{
+	return EVisibility::Visible;
+}
+
+void FDisplayedVirtualBoneInfo::GenerateWidgetForNameColumn(TSharedPtr< SHorizontalBox > Box, FText& FilterText, FIsSelected InIsSelected)
+{
+	const FSlateBrush* LODIcon = FEditorStyle::GetBrush("SkeletonTree.LODBone");
+
+	Box->AddSlot()
+		.AutoWidth()
+		.Padding(FMargin(0.0f, 1.0f))
+		.VAlign(VAlign_Center)
+		.HAlign(HAlign_Center)
+		[
+			SNew(SImage)
+			.ColorAndOpacity(FSlateColor::UseForeground())
+		.Image(LODIcon)
+		.Visibility(this, &FDisplayedVirtualBoneInfo::GetLODIconVisibility)
+		];
+
+	FText ToolTip = GetBoneToolTip();
+	Box->AddSlot()
+		.AutoWidth()
+		.Padding(2, 0, 0, 0)
+		.VAlign(VAlign_Center)
+		[
+			SNew(STextBlock)
+			.ColorAndOpacity(this, &FDisplayedVirtualBoneInfo::GetBoneTextColor)
+		.Text(FText::FromName(BoneName))
+		.HighlightText(FilterText)
+		.Font(this, &FDisplayedVirtualBoneInfo::GetBoneTextFont)
+		.ToolTipText(ToolTip)
+		];
+}
+
+TSharedRef< SWidget > FDisplayedVirtualBoneInfo::GenerateWidgetForDataColumn(const FName& DataColumnName)
+{
+	return SNullWidget::NullWidget;
+}
+
+FSlateFontInfo FDisplayedVirtualBoneInfo::GetBoneTextFont() const
+{
+	return FEditorStyle::GetWidgetStyle<FTextBlockStyle>("SkeletonTree.BoldFont").Font;
+}
+
+FSlateColor FDisplayedVirtualBoneInfo::GetBoneTextColor() const
+{
+	return FSlateColor(FLinearColor(0.4f, 0.4f, 1.f));
+}
+
+FText FDisplayedVirtualBoneInfo::GetBoneToolTip()
+{
+	return LOCTEXT("VirtualBone_ToolTip", "Virtual Bones are added in editor and allow space switching between two different bones in the skeleton.");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1306,7 +1384,7 @@ void SSkeletonTree::CreateFromSkeleton(USkeletalMeshSocket* SocketToRename /*= n
 
 	if( BoneFilter != EBoneFilter::None )
 	{
-		for (int32 BoneIndex = 0; BoneIndex < RefSkeleton.GetNum(); ++BoneIndex)
+		for (int32 BoneIndex = 0; BoneIndex < RefSkeleton.GetRawBoneNum(); ++BoneIndex)
 		{
 			const FName& BoneName = RefSkeleton.GetBoneName(BoneIndex);
 			if ( !FilterText.IsEmpty() && !BoneName.ToString().Contains( FilterText.ToString()) )
@@ -1395,10 +1473,11 @@ void SSkeletonTree::CreateFromSkeleton(USkeletalMeshSocket* SocketToRename /*= n
 		AddSocketsFromData( Skeleton.Sockets, ESocketParentType::Skeleton, SocketToRename );
 	}
 	
+	USkeletalMesh* SkeletalMesh = GetPreviewScene().IsValid() ? GetPreviewScene()->GetPreviewMeshComponent()->SkeletalMesh : nullptr;
 	if ( SocketFilter == ESocketFilter::Active || SocketFilter == ESocketFilter::All || SocketFilter == ESocketFilter::Mesh )
 	{
 		// Add the sockets for the mesh
-		if ( USkeletalMesh* const SkeletalMesh = GetEditableSkeletonInternal()->GetSkeletalMesh() )
+		if (SkeletalMesh)
 		{
 			AddSocketsFromData( SkeletalMesh->GetMeshOnlySocketList(), ESocketParentType::Mesh, SocketToRename );
 		}
@@ -1407,9 +1486,14 @@ void SSkeletonTree::CreateFromSkeleton(USkeletalMeshSocket* SocketToRename /*= n
 	//Add the attached mesh items last, these are the most child like of all the items that can go in the skeleton tree
 
 	// Mesh attached items...
-	if ( USkeletalMesh* const SkeletalMesh = GetEditableSkeletonInternal()->GetSkeletalMesh() )
+	if (SkeletalMesh)
 	{
 		AddAttachedAssets( SkeletalMesh->PreviewAttachedAssetContainer );
+	}
+
+	if (BoneFilter != EBoneFilter::None)
+	{
+		AddVirtualBones(Skeleton.GetVirtualBones());
 	}
 
 	// ...skeleton attached items
@@ -1433,15 +1517,16 @@ void SSkeletonTree::AddSocketsFromData(const TArray< USkeletalMeshSocket* >& Soc
 
 		bool bIsCustomized = false;
 
+		USkeletalMesh* SkeletalMesh = GetPreviewScene().IsValid() ? GetPreviewScene()->GetPreviewMeshComponent()->SkeletalMesh : nullptr;
 		if (ParentType == ESocketParentType::Mesh)
 		{
-			bIsCustomized = GetEditableSkeletonInternal()->DoesSocketAlreadyExist(NULL, FText::FromName(Socket->SocketName), ESocketParentType::Skeleton);
+			bIsCustomized = GetEditableSkeletonInternal()->DoesSocketAlreadyExist(NULL, FText::FromName(Socket->SocketName), ESocketParentType::Skeleton, SkeletalMesh);
 		}
 		else
 		{
-			if (USkeletalMesh* const Mesh = GetEditableSkeletonInternal()->GetSkeletalMesh())
+			if (SkeletalMesh)
 			{
-				bIsCustomized = GetEditableSkeletonInternal()->DoesSocketAlreadyExist(NULL, FText::FromName(Socket->SocketName), ESocketParentType::Mesh);
+				bIsCustomized = GetEditableSkeletonInternal()->DoesSocketAlreadyExist(NULL, FText::FromName(Socket->SocketName), ESocketParentType::Mesh, SkeletalMesh);
 
 				if (SocketFilter == ESocketFilter::Active && bIsCustomized)
 				{
@@ -1470,6 +1555,29 @@ void SSkeletonTree::AddSocketsFromData(const TArray< USkeletalMeshSocket* >& Soc
 	}
 }
 
+void SSkeletonTree::AddVirtualBones(const TArray<FVirtualBone>& VirtualBones)
+{
+	for (const FVirtualBone& VirtualBone: VirtualBones)
+	{
+		if (!FilterText.IsEmpty() && !VirtualBone.VirtualBoneName.ToString().Contains(FilterText.ToString()))
+		{
+			continue;
+		}
+
+		TSharedRef<FDisplayedVirtualBoneInfo> DisplayBone = FDisplayedVirtualBoneInfo::Make(VirtualBone.VirtualBoneName, SharedThis(this));
+		
+		DisplayMirror.Add(DisplayBone);
+
+		if (!AttachToParent(DisplayBone, VirtualBone.SourceBoneName, (int32)ESkeletonTreeRowType::Bone))
+		{
+			// Just add it to the list if the parent bone isn't currently displayed
+			SkeletonRowList.Add(DisplayBone);
+		}
+
+		SkeletonTreeView->SetItemExpansion(DisplayBone, true);
+	}
+}
+
 class FBoneTreeSelection
 {
 public:
@@ -1478,6 +1586,7 @@ public:
 	TArray<TSharedPtr<FDisplayedMeshBoneInfo>> SelectedBones;
 	TArray<TSharedPtr<FDisplayedSocketInfo>> SelectedSockets;
 	TArray<TSharedPtr<FDisplayedAttachedAssetInfo>> SelectedAssets;
+	TArray<TSharedPtr<FDisplayedVirtualBoneInfo>> SelectedVirtualBones;
 
 	FBoneTreeSelection(TArray<TSharedPtr<FDisplayedTreeRowInfo>> InSelectedItems) : SelectedItems(InSelectedItems)
 	{
@@ -1502,6 +1611,11 @@ public:
 					SelectedAssets.Add( StaticCastSharedPtr< FDisplayedAttachedAssetInfo >(Item) );
 					break;
 				}
+				case ESkeletonTreeRowType::VirtualBone:
+				{
+					SelectedVirtualBones.Add(StaticCastSharedPtr< FDisplayedVirtualBoneInfo >(Item));
+					break;
+				}
 				default:
 				{
 					check(false); // Unknown row type!
@@ -1524,25 +1638,7 @@ public:
 	{
 		if(IsSingleItemSelected())
 		{
-			switch (ItemType)
-			{
-				case ESkeletonTreeRowType::Bone:
-				{
-					return SelectedBones.Num() == 1;
-				}
-				case ESkeletonTreeRowType::Socket:
-				{
-					return SelectedSockets.Num() == 1;
-				}
-				case ESkeletonTreeRowType::AttachedAsset:
-				{
-					return SelectedAssets.Num() == 1;
-				}
-				default:
-				{
-					check(false); // Unknown type
-				}
-			}
+			return GetNumSelected(ItemType) == 1;
 		}
 		return false;
 	}
@@ -1555,26 +1651,35 @@ public:
 
 	bool HasSelectedOfType(ESkeletonTreeRowType ItemType) const
 	{
+		return GetNumSelected(ItemType) > 0;
+	}
+
+	int32 GetNumSelected(ESkeletonTreeRowType ItemType) const
+	{
 		switch (ItemType)
 		{
 			case ESkeletonTreeRowType::Bone:
 			{
-				return SelectedBones.Num() > 0;
+				return SelectedBones.Num();
 			}
 			case ESkeletonTreeRowType::Socket:
 			{
-				return SelectedSockets.Num() > 0;
+				return SelectedSockets.Num();
 			}
 			case ESkeletonTreeRowType::AttachedAsset:
 			{
-				return SelectedAssets.Num() > 0;
+				return SelectedAssets.Num();
+			}
+			case ESkeletonTreeRowType::VirtualBone:
+			{
+				return SelectedVirtualBones.Num();
 			}
 			default:
 			{
 				check(false); // Unknown type
 			}
 		}
-		return false;
+		return 0;
 	}
 };
 
@@ -1587,7 +1692,7 @@ TSharedPtr< SWidget > SSkeletonTree::CreateContextMenu()
 	const bool CloseAfterSelection = true;
 	FMenuBuilder MenuBuilder( CloseAfterSelection, UICommandList );
 	{
-		if(BoneTreeSelection.HasSelectedOfType(ESkeletonTreeRowType::AttachedAsset) || BoneTreeSelection.HasSelectedOfType(ESkeletonTreeRowType::Socket))
+		if(BoneTreeSelection.HasSelectedOfType(ESkeletonTreeRowType::AttachedAsset) || BoneTreeSelection.HasSelectedOfType(ESkeletonTreeRowType::Socket) || BoneTreeSelection.HasSelectedOfType(ESkeletonTreeRowType::VirtualBone))
 		{
 			MenuBuilder.BeginSection("SkeletonTreeSelectedItemsActions", LOCTEXT( "SelectedActions", "Selected Item Actions" ) );
 			MenuBuilder.AddMenuEntry( Actions.DeleteSelectedRows );
@@ -1606,6 +1711,10 @@ TSharedPtr< SWidget > SSkeletonTree::CreateContextMenu()
 				MenuBuilder.AddMenuEntry( Actions.PasteSockets );
 				MenuBuilder.AddMenuEntry( Actions.PasteSocketsToSelectedBone );
 			}
+
+			MenuBuilder.AddSubMenu(LOCTEXT("AddVirtualBone", "Add Virtual Bone"),
+				LOCTEXT("AddVirtualBone_ToolTip", "Adds a virtual bone to the skeleton."),
+				FNewMenuDelegate::CreateSP(this, &SSkeletonTree::FillVirtualBoneSubmenu, BoneTreeSelection.SelectedBones));
 
 			MenuBuilder.EndSection();
 
@@ -1753,6 +1862,37 @@ TSharedPtr< SWidget > SSkeletonTree::CreateContextMenu()
 	return MenuBuilder.MakeWidget();
 }
 
+void SSkeletonTree::FillVirtualBoneSubmenu(FMenuBuilder& MenuBuilder, TArray<TSharedPtr<FDisplayedMeshBoneInfo>> SourceBones)
+{
+	const bool bShowVirtualBones = false;
+	TSharedRef<SWidget> MenuContent = SNew(SBoneTreeMenu, GetEditableSkeletonInternal())
+		.bShowVirtualBones(false)
+		.Title(LOCTEXT("TargetBonePickerTitle", "Pick Target Bone..."))
+		.OnBoneSelectionChanged(this, &SSkeletonTree::OnVirtualTargetBonePicked, SourceBones);
+	MenuBuilder.AddWidget(MenuContent, FText::GetEmpty(), true);
+}
+
+void SSkeletonTree::OnVirtualTargetBonePicked(FName TargetBoneName, TArray<TSharedPtr<FDisplayedMeshBoneInfo>> SourceBones)
+{
+	FSlateApplication::Get().DismissAllMenus();
+
+	for (const TSharedPtr<FDisplayedMeshBoneInfo>& SourceBone : SourceBones)
+	{
+		if(SourceBone.IsValid())
+		{
+			FName SourceBoneName = SourceBone->GetRowItemName();
+			if(!GetEditableSkeletonInternal()->HandleAddVirtualBone(SourceBoneName, TargetBoneName))
+			{
+				UE_LOG(LogAnimation, Log, TEXT("Could not create space switch bone from %s to %s, it already exists"), *SourceBoneName.ToString(), *TargetBoneName.ToString());
+			}
+			else
+			{
+				CreateFromSkeleton();
+			}
+		}
+	}
+
+}
 
 void SSkeletonTree::CreateMenuForBoneReduction(FMenuBuilder& MenuBuilder, SSkeletonTree * Widget, int32 LODIndex, bool bIncludeSelected)
 {
@@ -1820,7 +1960,7 @@ void SSkeletonTree::RemoveFromLOD(int32 LODIndex, bool bIncludeSelected, bool bI
 				}
 				else
 				{
-					for (int32 ChildIndex = BoneIndex + 1; ChildIndex < RefSkeleton.GetNum(); ++ChildIndex)
+					for (int32 ChildIndex = BoneIndex + 1; ChildIndex < RefSkeleton.GetRawBoneNum(); ++ChildIndex)
 					{
 						if (RefSkeleton.GetParentIndex(ChildIndex) == BoneIndex)
 						{
@@ -1954,7 +2094,8 @@ void SSkeletonTree::OnPasteSockets(bool bPasteToSelectedBone)
 	if ( TreeSelection.IsSingleOfTypeSelected(ESkeletonTreeRowType::Bone) )
 	{
 		FName DestBoneName = bPasteToSelectedBone ? *static_cast<FName*>( TreeSelection.GetSingleSelectedItem()->GetData() ) : NAME_None;
-		GetEditableSkeletonInternal()->HandlePasteSockets(DestBoneName);
+		USkeletalMesh* SkeletalMesh = GetPreviewScene().IsValid() ? GetPreviewScene()->GetPreviewMeshComponent()->SkeletalMesh : nullptr;
+		GetEditableSkeletonInternal()->HandlePasteSockets(DestBoneName, SkeletalMesh);
 
 		CreateFromSkeleton();
 	}
@@ -1985,7 +2126,8 @@ void SSkeletonTree::OnCustomizeSocket()
 	if(TreeSelection.IsSingleOfTypeSelected(ESkeletonTreeRowType::Socket))
 	{
 		USkeletalMeshSocket* SocketToCustomize = static_cast<USkeletalMeshSocket*>( TreeSelection.GetSingleSelectedItem()->GetData() );
-		GetEditableSkeletonInternal()->HandleCustomizeSocket(SocketToCustomize);
+		USkeletalMesh* SkeletalMesh = GetPreviewScene().IsValid() ? GetPreviewScene()->GetPreviewMeshComponent()->SkeletalMesh : nullptr;
+		GetEditableSkeletonInternal()->HandleCustomizeSocket(SocketToCustomize, SkeletalMesh);
 		CreateFromSkeleton();
 	}
 }
@@ -2053,7 +2195,7 @@ void  SSkeletonTree::OnRemoveAllAssets()
 
 bool SSkeletonTree::CanRemoveAllAssets() const
 {
-	USkeletalMesh* const SkeletalMesh = GetEditableSkeletonInternal()->GetSkeletalMesh();
+	USkeletalMesh* SkeletalMesh = GetPreviewScene().IsValid() ? GetPreviewScene()->GetPreviewMeshComponent()->SkeletalMesh : nullptr;
 
 	const bool bHasPreviewAttachedObjects = GetEditableSkeletonInternal()->GetSkeleton().PreviewAttachedAssetContainer.Num() > 0;
 	const bool bHasMeshPreviewAttachedObjects = ( SkeletalMesh && SkeletalMesh->PreviewAttachedAssetContainer.Num() );
@@ -2096,7 +2238,7 @@ void SSkeletonTree::OnSelectionChanged(TSharedPtr<FDisplayedTreeRowInfo> Selecti
 					FDisplayedTreeRowInfoPtr Item = *(ItemIt);
 
 					// Test SelectInfo so we don't end up in an infinite loop due to delegates calling each other
-					if (SelectInfo != ESelectInfo::Direct && Item->GetType() == ESkeletonTreeRowType::Bone)
+					if (SelectInfo != ESelectInfo::Direct && (Item->GetType() == ESkeletonTreeRowType::Bone || Item->GetType() == ESkeletonTreeRowType::VirtualBone))
 					{
 						FName BoneName = *static_cast<FName *>(Item->GetData());
 
@@ -2538,12 +2680,13 @@ void SSkeletonTree::OnDeleteSelectedRows()
 {
 	FBoneTreeSelection TreeSelection(SkeletonTreeView->GetSelectedItems());
 
-	if(TreeSelection.HasSelectedOfType(ESkeletonTreeRowType::AttachedAsset) || TreeSelection.HasSelectedOfType(ESkeletonTreeRowType::Socket))
+	if(TreeSelection.HasSelectedOfType(ESkeletonTreeRowType::AttachedAsset) || TreeSelection.HasSelectedOfType(ESkeletonTreeRowType::Socket) || TreeSelection.HasSelectedOfType(ESkeletonTreeRowType::VirtualBone))
 	{
 		FScopedTransaction Transaction( LOCTEXT( "SkeletonTreeDeleteSelected", "Delete selected sockets/meshes/bones from skeleton tree" ) );
 
 		DeleteAttachedAssets( TreeSelection.SelectedAssets );
 		DeleteSockets( TreeSelection.SelectedSockets );
+		DeleteVirtualBones( TreeSelection.SelectedVirtualBones );
 
 		CreateFromSkeleton();
 	}
@@ -2580,6 +2723,22 @@ void SSkeletonTree::DeleteSockets(const TArray<TSharedPtr<FDisplayedSocketInfo>>
 
 	GetEditableSkeletonInternal()->HandleDeleteSockets(SocketInfo, GetPreviewScene());
 }
+
+void SSkeletonTree::DeleteVirtualBones(const TArray<TSharedPtr<FDisplayedVirtualBoneInfo>>& InDisplayedVirtualBonestInfos)
+{
+	DeselectAll();
+
+	TArray<FName> VirtualBoneInfo;
+
+	for (const TSharedPtr<FDisplayedVirtualBoneInfo>& DisplayedVirtualBoneInfo : InDisplayedVirtualBonestInfos)
+	{
+		FName* VBToDelete = static_cast<FName*>(DisplayedVirtualBoneInfo->GetData());
+		VirtualBoneInfo.Add(*VBToDelete);
+	}
+
+	GetEditableSkeletonInternal()->HandleDeleteVirtualBones(VirtualBoneInfo, GetPreviewScene());
+}
+
 
 void SSkeletonTree::AddAttachedAssets( const FPreviewAssetAttachContainer& AttachedObjects )
 {
@@ -2716,7 +2875,8 @@ void SSkeletonTree::OnLODSwitched()
 
 void SSkeletonTree::DuplicateAndSelectSocket(const FSelectedSocketInfo& SocketInfoToDuplicate, const FName& NewParentBoneName /*= FName()*/)
 {
-	USkeletalMeshSocket* NewSocket = GetEditableSkeleton()->DuplicateSocket(SocketInfoToDuplicate, NewParentBoneName);
+	USkeletalMesh* SkeletalMesh = GetPreviewScene().IsValid() ? GetPreviewScene()->GetPreviewMeshComponent()->SkeletalMesh : nullptr;
+	USkeletalMeshSocket* NewSocket = GetEditableSkeleton()->DuplicateSocket(SocketInfoToDuplicate, NewParentBoneName, SkeletalMesh);
 
 	if (GetPreviewScene().IsValid())
 	{

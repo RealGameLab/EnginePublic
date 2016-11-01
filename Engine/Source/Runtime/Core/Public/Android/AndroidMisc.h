@@ -34,6 +34,7 @@ struct CORE_API FAndroidMisc : public FGenericPlatformMisc
 	static bool ControlScreensaver(EScreenSaverAction Action);
 	static bool AllowRenderThread();
 	static bool HasPlatformFeature(const TCHAR* FeatureName);
+	static bool ShouldDisablePluginAtRuntime(const FString& PluginName);
 
 	static bool AllowThreadHeartBeat()
 	{
@@ -83,6 +84,7 @@ struct CORE_API FAndroidMisc : public FGenericPlatformMisc
 	static bool IsControllerAssignedToGamepad(int32 ControllerId);
 	// Returns current volume, 0-100 (%)
 	static int GetVolumeState(double* OutTimeOfChangeInSec = nullptr);
+	static const TCHAR* GamePersistentDownloadDir();
 
 	enum EBatteryState
 	{
@@ -101,6 +103,7 @@ struct CORE_API FAndroidMisc : public FGenericPlatformMisc
 
 	static FBatteryState GetBatteryState();
 	static bool AreHeadPhonesPluggedIn();
+	static bool HasActiveWiFiConnection();
 
 	/** @return Memory representing a true type or open type font provided by the platform as a default font for unreal to consume; empty array if the default font failed to load. */
 	static TArray<uint8> GetSystemFontBytes();
@@ -118,9 +121,11 @@ struct CORE_API FAndroidMisc : public FGenericPlatformMisc
 	static FString GetGLVersion();
 	static bool SupportsFloatingPointRenderTargets();
 	static bool SupportsShaderFramebufferFetch();
+	static bool SupportsShaderIOBlocks();
 	static int GetAndroidBuildVersion();
 	static bool ShouldUseVulkan();
 	static FString GetVulkanVersion();
+	static bool IsDaydreamApplication();
 
 #if !UE_BUILD_SHIPPING
 	static bool IsDebuggerPresent();

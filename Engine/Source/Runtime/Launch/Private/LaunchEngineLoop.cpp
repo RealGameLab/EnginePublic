@@ -841,6 +841,8 @@ int32 FEngineLoop::PreInit( const TCHAR* CmdLine )
 			FString ProjPath = FPaths::GetProjectFilePath();
 			if (FPaths::FileExists(ProjPath) == false)
 			{
+				// display it multiple ways, it's very important error message...
+				FPlatformMisc::LowLevelOutputDebugStringf(TEXT("Project file not found: %s"), *ProjPath);
 				UE_LOG(LogInit, Display, TEXT("Project file not found: %s"), *ProjPath);
 				UE_LOG(LogInit, Display, TEXT("\tAttempting to find via project info helper."));
 				// Use the uprojectdirs
@@ -1133,7 +1135,7 @@ int32 FEngineLoop::PreInit( const TCHAR* CmdLine )
 	if(ModuleEnumerator.RegisterWithModuleManager())
 	{
 		const FVersionManifest& Manifest = ModuleEnumerator.GetInitialManifest();
-		if(Manifest.Changelist != 0 && !FEngineVersion::OverrideCurrentVersionChangelist(Manifest.Changelist))
+		if(Manifest.Changelist != 0 && !FEngineVersion::OverrideCurrentVersionChangelist(Manifest.Changelist, Manifest.CompatibleChangelist))
 		{
 			UE_LOG(LogInit, Fatal, TEXT("Couldn't update engine changelist to %d."), Manifest.Changelist);
 		}
@@ -1188,7 +1190,11 @@ int32 FEngineLoop::PreInit( const TCHAR* CmdLine )
 	FScopeCycleCounter CycleCount_AfterStats( GET_STATID( STAT_FEngineLoop_PreInit_AfterStats ) );
 
 	// Load Core modules required for everything else to work (needs to be loaded before InitializeRenderingCVarsCaching)
-	LoadCoreModules();
+	if (!LoadCoreModules())
+	{
+		UE_LOG(LogInit, Error, TEXT("Failed to load Core modules."));
+		return 1;
+	}
 
 #if WITH_ENGINE
 	extern ENGINE_API void InitializeRenderingCVarsCaching();
@@ -1271,6 +1277,7 @@ int32 FEngineLoop::PreInit( const TCHAR* CmdLine )
 	ApplyCVarSettingsFromIni(TEXT("/Script/Engine.RendererOverrideSettings"), *GEngineIni, ECVF_SetByProjectSetting);
 	ApplyCVarSettingsFromIni(TEXT("/Script/Engine.StreamingSettings"), *GEngineIni, ECVF_SetByProjectSetting);
 	ApplyCVarSettingsFromIni(TEXT("/Script/Engine.GarbageCollectionSettings"), *GEngineIni, ECVF_SetByProjectSetting);
+	ApplyCVarSettingsFromIni(TEXT("/Script/Engine.NetworkSettings"), *GEngineIni, ECVF_SetByProjectSetting);
 
 #if !UE_SERVER
 	if (!IsRunningDedicatedServer())
@@ -1409,7 +1416,9 @@ int32 FEngineLoop::PreInit( const TCHAR* CmdLine )
 		InitializeStdOutDevice();
 	}
 
+#if !USE_NEW_ASYNC_IO
 	FIOSystem::Get(); // force it to be created if it isn't already
+#endif
 
 	// allow the platform to start up any features it may need
 	IPlatformFeaturesModule::Get();
@@ -2022,11 +2031,14 @@ int32 FEngineLoop::PreInit( const TCHAR* CmdLine )
 }
 
 
-void FEngineLoop::LoadCoreModules()
+bool FEngineLoop::LoadCoreModules()
 {
 	// Always attempt to load CoreUObject. It requires additional pre-init which is called from its module's StartupModule method.
 #if WITH_COREUOBJECT
-	FModuleManager::Get().LoadModule(TEXT("CoreUObject"));
+	bool bResult = FModuleManager::Get().LoadModule(TEXT("CoreUObject")).IsValid();
+	return bResult;
+#else
+	return true;
 #endif
 }
 
@@ -2509,7 +2521,9 @@ void FEngineLoop::Exit()
 
 	FTaskGraphInterface::Shutdown();
 	IStreamingManager::Shutdown();
+#if !USE_NEW_ASYNC_IO
 	FIOSystem::Shutdown();
+#endif
 }
 
 
@@ -2738,6 +2752,7 @@ void FEngineLoop::Tick()
 			GRHICommandList.LatchBypass();
 			GFrameNumberRenderThread++;
 			RHICmdList.PushEvent(*FString::Printf(TEXT("Frame%d"),GFrameNumberRenderThread), FColor(0, 255, 0, 255));
+			GPU_STATS_BEGINFRAME(RHICmdList);
 			RHICmdList.BeginFrame();
 		});
 
@@ -2814,11 +2829,12 @@ void FEngineLoop::Tick()
 		// input is polled for motion controller devices each frame.
 #if WITH_ENGINE
 		extern ENGINE_API float GNewWorldToMetersScale;
-		if( GNewWorldToMetersScale != 0.0f && GWorld != nullptr )
+		UWorld* HackGWorld = GWorld;
+		if( GNewWorldToMetersScale != 0.0f && HackGWorld != nullptr )
 		{
-			if( GNewWorldToMetersScale != GWorld->GetWorldSettings()->WorldToMeters )
+			if( GNewWorldToMetersScale != HackGWorld->GetWorldSettings()->WorldToMeters )
 			{
-				GWorld->GetWorldSettings()->WorldToMeters = GNewWorldToMetersScale;
+				HackGWorld->GetWorldSettings()->WorldToMeters = GNewWorldToMetersScale;
 			}
 		}
 #endif	// WITH_ENGINE
@@ -2953,6 +2969,7 @@ void FEngineLoop::Tick()
 			EndFrame,
 		{
 			RHICmdList.EndFrame();
+			GPU_STATS_ENDFRAME(RHICmdList);
 			RHICmdList.PopEvent();
 		});
 
@@ -3155,7 +3172,7 @@ bool FEngineLoop::AppInit( )
 	CheckForPrintTimesOverride();
 
 	// Check whether the project or any of its plugins are missing or are out of date
-#if UE_EDITOR
+#if UE_EDITOR && !IS_MONOLITHIC
 	if(!GIsBuildMachine && FPaths::IsProjectFilePathSet() && IPluginManager::Get().AreRequiredPluginsAvailable())
 	{
 		const FProjectDescriptor* CurrentProject = IProjectManager::Get().GetCurrentProject();

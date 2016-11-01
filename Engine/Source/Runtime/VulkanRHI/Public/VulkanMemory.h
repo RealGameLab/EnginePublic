@@ -303,6 +303,11 @@ namespace VulkanRHI
 			return RequestedSize;
 		}
 
+		inline uint32 GetAllocationSize()
+		{
+			return AllocationSize;
+		}
+
 		inline uint32 GetOffset() const
 		{
 			return AlignedOffset;
@@ -699,6 +704,10 @@ namespace VulkanRHI
 			uint32 TypeIndex = 0;
 			VERIFYVULKANRESULT(DeviceMemoryManager->GetMemoryTypeFromProperties(MemoryReqs.memoryTypeBits, MemoryPropertyFlags, &TypeIndex));
 			bool bMapped = (MemoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+			if (!ResourceTypeHeaps[TypeIndex])
+			{
+				UE_LOG(LogVulkanRHI, Fatal, TEXT("Missing memory type index %d, MemSize %d, MemPropTypeBits %u, MemPropertyFlags %u, %s(%d)"), TypeIndex, (uint32)MemoryReqs.size, (uint32)MemoryReqs.memoryTypeBits, (uint32)MemoryPropertyFlags, ANSI_TO_TCHAR(File), Line);
+			}
 			FOldResourceAllocation* Allocation = ResourceTypeHeaps[TypeIndex]->AllocateResource(MemoryReqs.size, MemoryReqs.alignment, true, bMapped, File, Line);
 			if (!Allocation)
 			{
@@ -787,6 +796,11 @@ namespace VulkanRHI
 		inline uint32 GetOffset() const
 		{
 			return ResourceAllocation->GetOffset();
+		}
+
+		inline uint32 GetDeviceMemoryAllocationSize() const
+		{
+			return ResourceAllocation->GetAllocationSize();
 		}
 
 		inline VkDeviceMemory GetDeviceMemoryHandle() const
@@ -962,7 +976,8 @@ namespace VulkanRHI
 		template <typename T>
 		inline void EnqueueResource(EType Type, T Handle)
 		{
-			EnqueueGenericResource(Type, (void*)Handle);
+			static_assert(sizeof(T) <= sizeof(uint64), "Vulkan resource handle type size too large.");
+			EnqueueGenericResource(Type, (uint64)Handle);
 		}
 
 		void ReleaseResources(bool bDeleteImmediately = false);
@@ -986,13 +1001,13 @@ namespace VulkanRHI
 	private:
 		//TQueue<FAsyncTask<FVulkanAsyncDeletionWorker>*> DeleteTasks;
 
-		void EnqueueGenericResource(EType Type, void* Handle);
+		void EnqueueGenericResource(EType Type, uint64 Handle);
 
 		struct FEntry
 		{
 			uint64 FenceCounter;
 			FVulkanCmdBuffer* CmdBuffer;
-			void* Handle;
+			uint64 Handle;
 			EType StructureType;
 
 			//FRefCount* Resource;

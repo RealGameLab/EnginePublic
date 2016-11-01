@@ -54,6 +54,8 @@ void FWindowsWindow::Initialize( FWindowsApplication* const Application, const T
 	const float WidthInitial = Definition->WidthDesiredOnScreen;
 	const float HeightInitial = Definition->HeightDesiredOnScreen;
 
+	DPIScaleFactor = FPlatformMisc::GetDPIScaleFactorAtPoint(XInitialRect, YInitialRect);
+
 	int32 ClientX = FMath::TruncToInt( XInitialRect );
 	int32 ClientY = FMath::TruncToInt( YInitialRect );
 	int32 ClientWidth = FMath::TruncToInt( WidthInitial );
@@ -166,6 +168,14 @@ void FWindowsWindow::Initialize( FWindowsApplication* const Application, const T
 		( InParent.IsValid() ) ? static_cast<HWND>( InParent->HWnd ) : NULL,
 		NULL, InHInstance, NULL);
 
+#if WINVER >= 0x0601
+	if ( RegisterTouchWindow( HWnd, 0 ) == false )
+	{
+		uint32 Error = GetLastError();
+		UE_LOG(LogWindows, Warning, TEXT("Register touch input failed!"));
+	}
+#endif
+
 	VirtualWidth = ClientWidth;
 	VirtualHeight = ClientHeight;
 
@@ -257,6 +267,7 @@ FWindowsWindow::FWindowsWindow()
 	, OLEReferenceCount(0)
 	, AspectRatio(1.0f)
 	, bIsVisible( false )
+	, DPIScaleFactor(1.0f)
 {
 	FMemory::Memzero(PreFullscreenWindowPlacement);
 	PreFullscreenWindowPlacement.length = sizeof(WINDOWPLACEMENT);

@@ -21,13 +21,13 @@ struct FApexClothCollisionVolumeData;
 DECLARE_MULTICAST_DELEGATE(FOnSkelMeshPhysicsCreatedMultiCast);
 typedef FOnSkelMeshPhysicsCreatedMultiCast::FDelegate FOnSkelMeshPhysicsCreated;
 
-namespace physx
+namespace nvidia
 { 
 	namespace apex 
 	{
-		class NxClothingAsset;
-		class NxClothingActor;
-		class NxClothingCollision;
+		class ClothingAsset;
+		class ClothingActor;
+		class ClothingCollision;
 	}
 }
 
@@ -60,9 +60,9 @@ public:
 	 * to check whether this actor is valid or not 
 	 * because clothing asset can be changed by editing 
 	 */
-	physx::apex::NxClothingAsset*	ParentClothingAsset;
+	nvidia::apex::ClothingAsset*	ParentClothingAsset;
 	/** APEX clothing actor is created from APEX clothing asset for cloth simulation */
-	physx::apex::NxClothingActor*		ApexClothingActor;
+	nvidia::apex::ClothingActor*		ApexClothingActor;
 
 	/** The corresponding clothing asset index */
 	int32 ParentClothingAssetIndex;
@@ -215,7 +215,7 @@ struct FApexClothCollisionInfo
 	/** To verify validation of collision info. */
 	uint32 Revision;
 	/** ClothingCollisions will be all released when clothing doesn't intersect with this component anymore. */
-	TArray<physx::apex::NxClothingCollision*> ClothingCollisions;			
+	TArray<nvidia::apex::ClothingCollision*> ClothingCollisions;
 };
 #endif // #if WITH_CLOTH_COLLISION_DETECTION
 
@@ -601,7 +601,6 @@ public:
 	FVector LineCheckBoundsScale;
 
 	/** Threshold for physics asset bodies above which we use an aggregate for broadphase collisions */
-	UPROPERTY()
 	int32 RagdollAggregateThreshold;
 
 	/** Notification when constraint is broken. */
@@ -904,9 +903,9 @@ public:
 	/** increase every tick to update clothing collision  */
 	uint32 ClothingCollisionRevision;
 
-	TArray<physx::apex::NxClothingCollision*>	ParentCollisions;
-	TArray<physx::apex::NxClothingCollision*>	EnvironmentCollisions;
-	TArray<physx::apex::NxClothingCollision*>	ChildrenCollisions;
+	TArray<nvidia::apex::ClothingCollision*>	ParentCollisions;
+	TArray<nvidia::apex::ClothingCollision*>	EnvironmentCollisions;
+	TArray<nvidia::apex::ClothingCollision*>	ChildrenCollisions;
 
 	TMap<TWeakObjectPtr<UPrimitiveComponent>, FApexClothCollisionInfo> ClothOverlappedComponentsMap;
 	#endif // WITH_CLOTH_COLLISION_DETECTION
@@ -1025,7 +1024,7 @@ public:
 	virtual void LoadedFromAnotherClass(const FName& OldClassName) override;
 	virtual void UpdateCollisionProfile() override;
 #endif // WITH_EDITOR
-	virtual SIZE_T GetResourceSize(EResourceSizeMode::Type Mode) override;
+	virtual void GetResourceSizeEx(FResourceSizeEx& CumulativeResourceSize) override;
 	//~ End UObject Interface.
 
 	//~ Begin UActorComponent Interface.
@@ -1146,7 +1145,7 @@ public:
 	bool K2_GetClosestPointOnPhysicsAsset(const FVector& WorldPosition, FVector& ClosestWorldPosition, FVector& Normal, FName& BoneName, float& Distance) const;
 
 	virtual bool LineTraceComponent( FHitResult& OutHit, const FVector Start, const FVector End, const FCollisionQueryParams& Params ) override;
-	virtual bool SweepComponent( FHitResult& OutHit, const FVector Start, const FVector End, const FCollisionShape& CollisionShape, bool bTraceComplex=false) override;
+    virtual bool SweepComponent( FHitResult& OutHit, const FVector Start, const FVector End, const FQuat& ShapRotation, const FCollisionShape& CollisionShape, bool bTraceComplex=false) override;
 	virtual bool OverlapComponent(const FVector& Pos, const FQuat& Rot, const FCollisionShape& CollisionShape) override;
 	virtual void SetSimulatePhysics(bool bEnabled) override;
 	virtual void AddRadialImpulse(FVector Origin, float Radius, float Strength, ERadialImpulseFalloff Falloff, bool bVelChange=false) override;
@@ -1463,7 +1462,7 @@ public:
 	* create only if became invalid
 	* BlendedData : added for cloth morph target but not used commonly
 	*/
-	bool CreateClothingActor(int32 AssetIndex, physx::apex::NxClothingAsset* ClothingAsset, TArray<FVector>* BlendedDelta = NULL);
+	bool CreateClothingActor(int32 AssetIndex, nvidia::apex::ClothingAsset* ClothingAsset, TArray<FVector>* BlendedDelta = NULL);
 	/** should call this method if occurred any changes in clothing assets */
 	void RecreateClothingActors();
 	/** add bounding box for cloth */
@@ -1507,7 +1506,7 @@ public:
 	void DrawDebugClothCollisions();
 	/** draws a convex from planes for debug info */
 	void DrawDebugConvexFromPlanes(FClothCollisionPrimitive& CollisionPrimitive, FColor& Color, bool bDrawWithPlanes=true);
-	void ReleaseClothingCollision(physx::apex::NxClothingCollision* Collision);
+	void ReleaseClothingCollision(nvidia::apex::ClothingCollision* Collision);
 	/** create new collisions when newly added  */
 	FApexClothCollisionInfo* CreateNewClothingCollsions(UPrimitiveComponent* PrimitiveComponent);
 
@@ -1532,7 +1531,7 @@ public:
 	/** find if this component has collisions for clothing and return the results calculated by bone transforms */
 	void FindClothCollisions(TArray<FApexClothCollisionVolumeData>& OutCollisions);
 	/** create Apex clothing collisions from input collision info and add them to clothing actors */
-	void CreateInternalClothCollisions(TArray<FApexClothCollisionVolumeData>& InCollisions, TArray<physx::apex::NxClothingCollision*>& OutCollisions);
+	void CreateInternalClothCollisions(TArray<FApexClothCollisionVolumeData>& InCollisions, TArray<nvidia::apex::ClothingCollision*>& OutCollisions);
 
 #endif // WITH_CLOTH_COLLISION_DETECTION
 
@@ -1575,7 +1574,7 @@ private:
 
 #if WITH_APEX_CLOTHING
 	void GetWindForCloth_GameThread(FVector& WindVector, float& WindAdaption) const;
-	static void ApplyWindForCloth_Concurrent(physx::apex::NxClothingActor& ClothingActor, const FVector& WindVector, float WindAdaption);
+	static void ApplyWindForCloth_Concurrent(nvidia::apex::ClothingActor& ClothingActor, const FVector& WindVector, float WindAdaption);
 #endif
 	
 	//Data for parallel evaluation of animation

@@ -80,6 +80,7 @@ FAnimationViewportClient::FAnimationViewportClient(const TSharedRef<ISkeletonTre
 
 	Widget->SetUsesEditorModeTools(ModeTools);
 	((FAssetEditorModeManager*)ModeTools)->SetPreviewScene(&InPreviewScene.Get());
+	((FAssetEditorModeManager*)ModeTools)->SetDefaultMode(FPersonaEditModes::SkeletonSelection);
 
 	// load config
 	ConfigOption = UPersonaOptions::StaticClass()->GetDefaultObject<UPersonaOptions>();
@@ -142,6 +143,11 @@ FAnimationViewportClient::~FAnimationViewportClient()
 	{
 		GetPreviewScene()->UnregisterOnPreviewMeshChanged(this);
 		GetPreviewScene()->UnregisterOnInvalidateViews(this);
+	}
+
+	if (AssetEditorToolkitPtr.IsValid())
+	{
+		AssetEditorToolkitPtr.Pin()->SetAssetEditorModeManager(nullptr);
 	}
 
 	((FAssetEditorModeManager*)ModeTools)->SetPreviewScene(nullptr);
@@ -274,15 +280,14 @@ bool FAnimationViewportClient::IsSetCameraFollowChecked() const
 
 void FAnimationViewportClient::HandleSkeletalMeshChanged(USkeletalMesh* InSkeletalMesh)
 {
+	GetSkeletonTree()->DeselectAll();
+
 	FocusViewportOnPreviewMesh();
-
-	UDebugSkelMeshComponent* PreviewMeshComponent = GetAnimPreviewScene()->GetPreviewMeshComponent();
-
-	PreviewMeshComponent->BonesOfInterest.Empty();
 
 	UpdateCameraSetup();
 
 	// Setup physics data from physics assets if available, clearing any physics setup on the component
+	UDebugSkelMeshComponent* PreviewMeshComponent = GetAnimPreviewScene()->GetPreviewMeshComponent();
 	UPhysicsAsset* PhysAsset = PreviewMeshComponent->GetPhysicsAsset();
 	if(PhysAsset)
 	{
@@ -550,9 +555,10 @@ bool FAnimationViewportClient::ShouldDisplayAdditiveScaleErrorMessage()
 	{
 		if (AnimSequence->IsValidAdditive() && AnimSequence->RefPoseSeq)
 		{
-			if (RefPoseGuid != AnimSequence->RefPoseSeq->RawDataGuid)
+			FGuid AnimSeqGuid = AnimSequence->RefPoseSeq->GetRawDataGuid();
+			if (RefPoseGuid != AnimSeqGuid)
 			{
-				RefPoseGuid = AnimSequence->RefPoseSeq->RawDataGuid;
+				RefPoseGuid = AnimSeqGuid;
 				bDoesAdditiveRefPoseHaveZeroScale = AnimSequence->DoesSequenceContainZeroScale();
 			}
 			return bDoesAdditiveRefPoseHaveZeroScale;
@@ -712,7 +718,7 @@ void FAnimationViewportClient::DisplayInfo(FCanvas* Canvas, FSceneView* View, bo
 			const int32 HalfX = Viewport->GetSizeXY().X / 2;
 			const int32 HalfY = Viewport->GetSizeXY().Y / 2;
 
-			const float ScreenRadius = FMath::Max((float)HalfX * View->ViewMatrices.ProjMatrix.M[0][0], (float)HalfY * View->ViewMatrices.ProjMatrix.M[1][1]) * SkelBounds.SphereRadius / FMath::Max(ScreenPosition.W, 1.0f);
+			const float ScreenRadius = FMath::Max((float)HalfX * View->ViewMatrices.GetProjectionMatrix().M[0][0], (float)HalfY * View->ViewMatrices.GetProjectionMatrix().M[1][1]) * SkelBounds.SphereRadius / FMath::Max(ScreenPosition.W, 1.0f);
 			const float LODFactor = ScreenRadius / 320.0f;
 
 			int32 NumBonesInUse;
@@ -836,7 +842,7 @@ void FAnimationViewportClient::DisplayInfo(FCanvas* Canvas, FSceneView* View, bo
 
 			const int32 HalfX = Viewport->GetSizeXY().X / 2;
 			const int32 HalfY = Viewport->GetSizeXY().Y / 2;
-			const float ScreenRadius = FMath::Max((float)HalfX * View->ViewMatrices.ProjMatrix.M[0][0], (float)HalfY * View->ViewMatrices.ProjMatrix.M[1][1]) * SkelBounds.SphereRadius / FMath::Max(ScreenPosition.W, 1.0f);
+			const float ScreenRadius = FMath::Max((float)HalfX * View->ViewMatrices.GetProjectionMatrix().M[0][0], (float)HalfY * View->ViewMatrices.GetProjectionMatrix().M[1][1]) * SkelBounds.SphereRadius / FMath::Max(ScreenPosition.W, 1.0f);
 			const float LODFactor = ScreenRadius / 320.0f;
 
 			float ScreenSize = ComputeBoundsScreenSize(ScreenPosition, SkelBounds.SphereRadius, *View);
@@ -1452,10 +1458,10 @@ void FAnimationViewportClient::UpdateCameraSetup()
 		// Move the floor to the bottom of the bounding box of the mesh, rather than on the origin
 		FVector Bottom = PreviewMeshComponent->Bounds.GetBoxExtrema(0);
 
-		FVector FloorPos(0.f, 0.f, 0.f);
+		FVector FloorPos(0.f, 0.f, GetFloorOffset());
 		if (bAutoAlignFloor)
 		{
-			FloorPos.Z = GetFloorOffset() + Bottom.Z;
+			FloorPos.Z += Bottom.Z;
 		}
 		GetAnimPreviewScene()->SetFloorLocation(FloorPos);
 	}
@@ -1488,8 +1494,7 @@ void FAnimationViewportClient::FocusViewportOnPreviewMesh(bool bInstant /*= true
 	else
 	{
 		// dont auto-focus if there is nothing to focus on
-		UPersonaPreviewSceneDescription* PreviewSceneDescription = GetAnimPreviewScene()->GetPreviewSceneDescription();
-		if (!(!PreviewSceneDescription->PreviewMesh.IsValid() && (!PreviewSceneDescription->AdditionalMeshes.IsValid() || PreviewSceneDescription->AdditionalMeshes.LoadSynchronous()->SkeletalMeshes.Num() == 0)))
+		if (GetAnimPreviewScene()->GetPreviewMeshComponent()->SkeletalMesh)
 		{
 			FSphere Sphere = GetCameraTarget();
 			FocusViewportOnSphere(Sphere);
@@ -1695,6 +1700,11 @@ IPersonaEditorModeManager& FAnimationViewportClient::GetPersonaModeManager() con
 void FAnimationViewportClient::HandleInvalidateViews()
 {
 	Invalidate();
+}
+
+bool FAnimationViewportClient::CanCycleWidgetMode() const
+{
+	return ModeTools ? ModeTools->CanCycleWidgetMode() : false;
 }
 
 #undef LOCTEXT_NAMESPACE

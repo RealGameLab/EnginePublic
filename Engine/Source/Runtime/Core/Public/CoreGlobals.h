@@ -27,6 +27,7 @@ CORE_API DECLARE_LOG_CATEGORY_EXTERN(LogAndroid, Log, All);
 CORE_API DECLARE_LOG_CATEGORY_EXTERN(LogPS4, Log, All);
 CORE_API DECLARE_LOG_CATEGORY_EXTERN(LogXboxOne, Log, All);
 CORE_API DECLARE_LOG_CATEGORY_EXTERN(LogWindows, Log, All);
+CORE_API DECLARE_LOG_CATEGORY_EXTERN(LogWolf, Log, All);
 CORE_API DECLARE_LOG_CATEGORY_EXTERN(LogSerialization, Log, All);
 CORE_API DECLARE_LOG_CATEGORY_EXTERN(LogUnrealMath, Log, All);
 CORE_API DECLARE_LOG_CATEGORY_EXTERN(LogUnrealMatrix, Log, All);
@@ -268,6 +269,9 @@ extern CORE_API bool(*IsAsyncLoadingMultithreaded)();
 /** Whether the editor is currently loading a package or not */
 extern CORE_API bool GIsEditorLoadingPackage;
 
+/** Whether the cooker is currently loading a package or not */
+extern CORE_API bool GIsCookerLoadingPackage;
+
 /** Whether GWorld points to the play in editor world */
 extern CORE_API bool GIsPlayInEditorWorld;
 
@@ -321,9 +325,6 @@ extern CORE_API float GHitchThresholdMS;
 
 /** Size to break up data into when saving compressed data */
 extern CORE_API int32 GSavingCompressionChunkSize;
-
-/** Whether we are using the seek-free/ cooked loading code path. */
-extern CORE_API bool GUseSeekFreeLoading;
 
 /** Thread ID of the main/game thread */
 extern CORE_API uint32 GGameThreadId;

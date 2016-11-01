@@ -11,15 +11,16 @@ namespace UnrealBuildTool
 {
 	public class HTML5SDKInfo
 	{
-		static string SDKVersion = "1.35.0";
+		static string SDKVersion = "tag-1.36.11";
 		static string NODE_VER = "4.1.1_64bit";
-		static string LLVM_VER = "e1.35.0_64bit";
+		static string LLVM_VER = "tag-1.36.11";
 		static string PYTHON_VER = "2.7.5.3_64bit";
 
 		// --------------------------------------------------
 		// --------------------------------------------------
 		static string SDKBase { get { return Path.GetFullPath(Path.Combine(BuildConfiguration.RelativeEnginePath, "Extras", "ThirdPartyNotUE", "emsdk")); } }
 		static public string EMSCRIPTEN_ROOT { get { return Path.Combine(SDKBase, "emscripten", SDKVersion); } }
+		static public string EmscriptenCMakeToolChainFile { get { return Path.Combine(EMSCRIPTEN_ROOT,  "cmake", "Modules", "Platform", "Emscripten.cmake"); } }
 		// --------------------------------------------------
 		// --------------------------------------------------
 		static string CURRENT_PLATFORM
@@ -192,7 +193,13 @@ namespace UnrealBuildTool
 			// restore a few things
 			Environment.SetEnvironmentVariable(PLATFORM_USER_HOME, HOME_SAVE);
 			Environment.SetEnvironmentVariable("PATH", PATH_SAVE);
+
 			// --------------------------------------------------
+			// the following are needed when CMake is used
+			Environment.SetEnvironmentVariable("EMSCRIPTEN", EMSCRIPTEN_ROOT);
+			Environment.SetEnvironmentVariable("NODEPATH", Path.GetDirectoryName(NODE_JS));
+			Environment.SetEnvironmentVariable("NODE", NODE_JS);
+			Environment.SetEnvironmentVariable("LLVM", LLVM_ROOT);
 
 			return DOT_EMSCRIPTEN;
 		}
@@ -226,5 +233,6 @@ namespace UnrealBuildTool
 		// HTML5ToolChain.cs
 		// UEBuildHTML5.cs
 		// HTML5Platform.[PakFiles.]Automation.cs
+		// BuildPhysX.Automation.cs
 	}
 }

@@ -1354,11 +1354,13 @@ public:
 	UPROPERTY(globalconfig)
 	uint32 bEnableVisualLogRecordingOnStart;
 
-private:
+protected:
 
 	/** Whether the engine should be playing sounds.  If false at initialization time the AudioDevice will not be created */
 	uint32 bUseSound:1;
 
+private:
+	
 	/** Semaphore to control screen saver inhibitor thread access. */
 	UPROPERTY(transient)
 	int32 ScreenSaverInhibitorSemaphore;
@@ -1379,6 +1381,10 @@ public:
 	/** Used to alter the intensity level of the selection highlight on selected objects */
 	UPROPERTY(transient)
 	float SelectionHighlightIntensity;
+
+	/** Used to alter the intensity level of the selection highlight on selected mesh sections in mesh editors */
+	UPROPERTY(transient)
+	float SelectionMeshSectionHighlightIntensity;
 
 	/** Used to alter the intensity level of the selection highlight on selected BSP surfaces */
 	UPROPERTY(transient)
@@ -1683,7 +1689,12 @@ public:
 	bool HandleViewnamesCommand( const TCHAR* Cmd, FOutputDevice& Ar );
 	bool HandleFreezeStreamingCommand( const TCHAR* Cmd, FOutputDevice& Ar, UWorld* InWorld );		// Smedis
 	bool HandleFreezeAllCommand( const TCHAR* Cmd, FOutputDevice& Ar, UWorld* InWorld );			// Smedis
+
+#if !USE_NEW_ASYNC_IO
 	bool HandleFlushIOManagerCommand( const TCHAR* Cmd, FOutputDevice& Ar );						// Smedis
+	bool HandleListPreCacheMapPackagesCommand(const TCHAR* Cmd, FOutputDevice& Ar);
+#endif
+
 	bool HandleToggleRenderingThreadCommand( const TCHAR* Cmd, FOutputDevice& Ar );	
 	bool HandleToggleAsyncComputeCommand( const TCHAR* Cmd, FOutputDevice& Ar );
 	bool HandleRecompileShadersCommand( const TCHAR* Cmd, FOutputDevice& Ar );
@@ -1708,7 +1719,6 @@ public:
 	bool HandleMemReportDeferredCommand( const TCHAR* Cmd, FOutputDevice& Ar, UWorld* InWorld );
 	bool HandleParticleMeshUsageCommand( const TCHAR* Cmd, FOutputDevice& Ar );
 	bool HandleDumpParticleCountsCommand( const TCHAR* Cmd, FOutputDevice& Ar );
-	bool HandleListPreCacheMapPackagesCommand( const TCHAR* Cmd, FOutputDevice& Ar );
 	bool HandleListLoadedPackagesCommand( const TCHAR* Cmd, FOutputDevice& Ar );
 	bool HandleMemCommand( const TCHAR* Cmd, FOutputDevice& Ar );
 	bool HandleDebugCommand( const TCHAR* Cmd, FOutputDevice& Ar );
@@ -2255,6 +2265,12 @@ public:
 	// This should only ever be called for a EditorEngine
 	virtual UWorld* CreatePIEWorldByDuplication(FWorldContext &Context, UWorld* InWorld, FString &PlayWorldMapName) { check(false); return nullptr; }
 
+	/** 
+	 *	If this function returns true, the DynamicSourceLevels collection will be duplicated for the given map.
+	 *	This is necessary to do outside of the editor when we don't have the original editor world, and it's 
+	 *	not safe to copy the dynamic levels once they've been fully initialized, so we pre-duplicate them when the original levels are first created.
+	 */
+	virtual bool Experimental_ShouldPreDuplicateMap(const FName MapName) const { return false; }
 
 protected:
 
@@ -2452,7 +2468,7 @@ public:
 	void DestroyNamedNetDriver(UWorld *InWorld, FName NetDriverName);
 	void DestroyNamedNetDriver(UPendingNetGame *PendingNetGame, FName NetDriverName);
 
-	virtual bool NetworkRemapPath( UWorld *InWorld, FString &Str, bool reading=true) { return false; }
+	virtual bool NetworkRemapPath( UNetDriver* Driver, FString &Str, bool reading=true) { return false; }
 	virtual bool NetworkRemapPath( UPendingNetGame *PendingNetGame, FString &Str, bool reading=true) { return false; }
 
 	virtual bool HandleOpenCommand( const TCHAR* Cmd, FOutputDevice& Ar, UWorld * InWorld );
@@ -2595,7 +2611,25 @@ public:
 	virtual void VerifyLoadMapWorldCleanup();
 
 	FWorldContext& CreateNewWorldContext(EWorldType::Type WorldType);
+
 	virtual void DestroyWorldContext(UWorld * InWorld);
+
+#if WITH_EDITOR
+	/** Triggered when a world context is destroyed. */
+	DECLARE_EVENT_OneParam(UEngine, FWorldContextDestroyedEvent, FWorldContext&);
+
+	/** Return the world context destroyed event. */
+	FWorldContextDestroyedEvent&	OnWorldContextDestroyed() { return WorldContextDestroyedEvent; }
+#endif // #if WITH_EDITOR
+
+private:
+
+#if WITH_EDITOR
+	/** Delegate broadcast when a world context is destroyed */
+	FWorldContextDestroyedEvent WorldContextDestroyedEvent;
+#endif // #if WITH_EDITOR
+
+public:
 
 	bool ShouldAbsorbAuthorityOnlyEvent();
 	bool ShouldAbsorbCosmeticOnlyEvent();
@@ -2614,6 +2648,16 @@ public:
 	
 	/** @return true if the engine is autosaving a package */
 	virtual bool IsAutosaving() const { return false; }
+
+	/** @return true if this is a "vanilla" product running only Epic-built binaries, no third-party plugins, no game modules, etc. */
+	bool IsVanillaProduct() const { return bIsVanillaProduct; }
+
+protected:
+	void SetIsVanillaProduct(bool bInIsVanillaProduct);
+
+private:
+	bool bIsVanillaProduct;
+
 protected:
 
 	TIndirectArray<FWorldContext>	WorldList;
@@ -2644,6 +2688,12 @@ protected:
 	 * @param Error the error string result from the LoadMap call that attempted to load the default map.
 	 */
 	virtual void HandleBrowseToDefaultMapFailure(FWorldContext& Context, const FString& TextURL, const FString& Error);
+
+	/**
+	 * Helper function that returns true if InWorld is the outer of a level in a collection of type DynamicDuplicatedLevels.
+	 * For internal engine use.
+	 */
+	bool IsWorldDuplicate(const UWorld* const InWorld);
 
 protected:
 
