@@ -15,7 +15,7 @@ UOnlineEngineInterface* UOnlineEngineInterface::Get()
 	if (!Singleton)
 	{
 		// Proper interface class hard coded here to emphasize the fact that this is not expected to change much, any need to do so should go through the OGS team first
-		UClass* OnlineEngineInterfaceClass = StaticLoadClass(UOnlineEngineInterface::StaticClass(), NULL, TEXT("/Script/OnlineSubsystemUtils.OnlineEngineInterfaceImpl"), NULL, LOAD_Quiet, NULL);
+		UClass* OnlineEngineInterfaceClass = StaticLoadClass(UOnlineEngineInterface::StaticClass(), NULL, TEXT("/Script/OnlineSubsystemUtils.OnlineEngineInterfaceImpl"), NULL, LOAD_NoWarn, NULL);
 		if (!OnlineEngineInterfaceClass)
 		{
 			// Default to the no op class if necessary
