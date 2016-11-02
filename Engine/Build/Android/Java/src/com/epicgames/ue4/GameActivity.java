@@ -331,6 +331,11 @@ public class GameActivity extends NativeActivity implements SurfaceHolder.Callba
 					// try to get the splash theme (can't use R.style.UE4SplashTheme since we don't know the package name until runtime)
 					int SplashThemeId = getResources().getIdentifier("UE4SplashTheme", "style", getPackageName());
 					mSplashDialog = new Dialog(this, SplashThemeId);
+					
+					int splashscreen_landscape_id = getResources().getIdentifier("splash_layout", "layout", getPackageName());	
+					mSplashDialog.getWindow().setContentView(splashscreen_landscape_id);
+
+					
 					mSplashDialog.setCancelable(false);
 					if (ShouldHideUI)
 					{
