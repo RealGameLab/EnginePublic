@@ -1,3 +1,6 @@
 [submodule "Engine/Plugins/Kingsoft/FrameCapturer"]
 	path = Engine/Plugins/Kingsoft/FrameCapturer
 	url = https://github.com/RealGameLab/FrameCapturer.git
+[submodule "Engine/Plugins/Kingsoft/BuglyCrashReport"]
+	path = Engine/Plugins/Kingsoft/BuglyCrashReport
+	url = https://github.com/RealGameLab/BuglyCrashReport.git
