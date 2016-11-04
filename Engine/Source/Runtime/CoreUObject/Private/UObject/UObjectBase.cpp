@@ -168,7 +168,11 @@ void UObjectBase::DeferredRegister(UClass *UClassStaticClass,const TCHAR* Packag
 	AddObject(FName(InName), EInternalObjectFlags::None);
 
 	// Make sure that objects disregarded for GC are part of root set.
+#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+	check(!GUObjectArray.IsDisregardForGC(this) || GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->IsRootSet());
+#else
 	check(!GUObjectArray.IsDisregardForGC(this) || GUObjectArray.IndexToObject(InternalIndex)->IsRootSet());
+#endif
 }
 
 /**
@@ -198,7 +202,11 @@ void UObjectBase::AddObject(FName InName, EInternalObjectFlags InSetInternalFlag
 	check(InName != NAME_None && InternalIndex >= 0);
 	if (InternalFlagsToSet != EInternalObjectFlags::None)
 	{
+#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+		GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->SetFlags(InternalFlagsToSet);
+#else
 		GUObjectArray.IndexToObject(InternalIndex)->SetFlags(InternalFlagsToSet);
+#endif
 	
 	}	
 	HashObject(this);

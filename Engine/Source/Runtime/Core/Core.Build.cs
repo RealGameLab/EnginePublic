@@ -206,5 +206,7 @@ public class Core : ModuleRules
         {
             Definitions.Add("WITH_DIRECTXMATH=0");
         }
+
+        bEnableBufferSecurityChecks = false;
     }
 }
