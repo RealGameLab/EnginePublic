@@ -26,7 +26,7 @@ bool FBoneReference::Initialize(const FBoneContainer& RequiredBones)
 {
 	// http://coconutlizard.co.uk/blog/ue4/patch-content-early/
 	//BoneName = *BoneName.ToString().Trim().TrimTrailing();
-	check(!FString(BoneName.Contains(" ")));
+	check(!BoneName.ToString().Contains(" "));
 	BoneIndex = RequiredBones.GetPoseBoneIndexForBoneName(BoneName);
 
 	// If bone name is not found, look into the master skeleton to see if it's found there.
