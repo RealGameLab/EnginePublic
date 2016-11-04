@@ -1,0 +1,3 @@
+[submodule "Engine/Plugins/Kingsoft/FrameCapturer"]
+	path = Engine/Plugins/Kingsoft/FrameCapturer
+	url = https://github.com/RealGameLab/FrameCapturer.git
