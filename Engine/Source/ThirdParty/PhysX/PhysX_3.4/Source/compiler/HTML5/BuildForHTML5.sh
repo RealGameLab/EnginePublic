@@ -23,8 +23,6 @@ cd "$GW_DEPS_ROOT"
 
 export CMAKE_MODULE_PATH="$GW_DEPS_ROOT/Externals/CMakeModules"
 
-PHX_FLAGS="-msse2 -Wno-double-promotion -Wno-comma -Wno-expansion-to-defined -Wno-undefined-func-template -Wno-disabled-macro-expansion -Wno-missing-noreturn"
-
 build_via_cmake()
 {
 	SUFFIX=_O$OLEVEL
@@ -34,7 +32,8 @@ build_via_cmake()
 	mkdir BUILD$SUFFIX
 	cd BUILD$SUFFIX
 	# ----------------------------------------
-	TYPE=${type^^}
+#	TYPE=${type^^} # OSX-bash doesn't like this
+	TYPE=`echo $type | tr "[:lower:]" "[:upper:]"`
 	if [ $TYPE == "DEBUG" ]; then
 		DBGFLAG=_DEBUG
 	else
@@ -55,9 +54,13 @@ build_via_cmake()
 		-DNVTOOLSEXT_INCLUDE_DIRS=$GW_DEPS_ROOT/PhysX_3.4/externals/nvToolsExt/include \
 		-DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=ON \
 		-DCMAKE_BUILD_TYPE=$type \
-		-DCMAKE_C_FLAGS_$TYPE="$OPTIMIZATION -D$DBGFLAG $PHX_FLAGS" \
-		-DCMAKE_CXX_FLAGS_$TYPE="$OPTIMIZATION -D$DBGFLAG $PHX_FLAGS" \
-		$GW_DEPS_ROOT/APEX_1.4/compiler/cmake/HTML5
+		-DCMAKE_C_FLAGS_$TYPE="$OPTIMIZATION -D$DBGFLAG" \
+		-DCMAKE_CXX_FLAGS_$TYPE="$OPTIMIZATION -D$DBGFLAG" \
+		$GW_DEPS_ROOT/PhysX_3.4/Source/compiler/cmake/html5
+
+# disabling APEX build for HTML5
+#		$GW_DEPS_ROOT/APEX_1.4/compiler/cmake/HTML5
+
 	cmake --build . -- -j VERBOSE=1
 	# ----------------------------------------
 	if [ $OLEVEL == "z" ]; then
