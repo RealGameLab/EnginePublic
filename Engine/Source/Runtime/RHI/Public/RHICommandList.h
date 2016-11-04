@@ -3047,6 +3047,11 @@ public:
 	{
 		return RHIGetViewportBackBuffer(Viewport);
 	}
+
+	FORCEINLINE FTexture2DRHIRef GetViewportBackBufferEGL(FViewportRHIParamRef Viewport)
+	{
+		return RHIGetViewportBackBufferAndroidEGL(Viewport);
+	}
 	
 	FORCEINLINE void AdvanceFrameForGetViewportBackBuffer()
 	{
