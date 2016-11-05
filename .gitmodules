@@ -4,3 +4,6 @@
 [submodule "Engine/Plugins/Kingsoft/BuglyCrashReport"]
 	path = Engine/Plugins/Kingsoft/BuglyCrashReport
 	url = https://github.com/RealGameLab/BuglyCrashReport.git
+[submodule "Engine/Plugins/Kingsoft/LogManager"]
+	path = Engine/Plugins/Kingsoft/LogManager
+	url = ../../jashking/LogManager.git
