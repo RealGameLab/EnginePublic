@@ -7,3 +7,6 @@
 [submodule "Engine/Plugins/Kingsoft/LogManager"]
 	path = Engine/Plugins/Kingsoft/LogManager
 	url = ../../jashking/LogManager.git
+[submodule "Engine/Extras/UnusedAssetsCollection"]
+	path = Engine/Extras/UnusedAssetsCollection
+	url = ../UnusedAssetsCollection.git
