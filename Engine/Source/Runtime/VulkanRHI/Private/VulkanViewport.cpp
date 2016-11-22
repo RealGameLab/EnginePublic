@@ -659,6 +659,23 @@ FTexture2DRHIRef FVulkanDynamicRHI::RHIGetViewportBackBuffer(FViewportRHIParamRe
 	return Viewport->GetBackBuffer(FRHICommandListExecutor::GetImmediateCommandList());
 }
 
+FTexture2DRHIRef FVulkanDynamicRHI::RHIGetViewportBackBufferAndroidEGL(FViewportRHIParamRef ViewportRHI)
+{
+	check(IsInRenderingThread());
+	check(ViewportRHI);
+	FVulkanViewport* Viewport = ResourceCast(ViewportRHI);
+	return Viewport->GetBackBuffer(FRHICommandListExecutor::GetImmediateCommandList());
+}
+
+bool FVulkanDynamicRHI::RHIIsRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI)
+{
+	return false;
+}
+
+void FVulkanDynamicRHI::RHISetPendingRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI, bool InRequestAndroidBackBuffer)
+{
+}
+
 void FVulkanDynamicRHI::RHIAdvanceFrameForGetViewportBackBuffer()
 {
 	for (FVulkanViewport* Viewport : Viewports)

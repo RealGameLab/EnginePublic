@@ -202,6 +202,24 @@ FTexture2DRHIRef FOpenGLDynamicRHI::RHIGetViewportBackBuffer(FViewportRHIParamRe
 	return Viewport->GetBackBuffer();
 }
 
+FTexture2DRHIRef FOpenGLDynamicRHI::RHIGetViewportBackBufferAndroidEGL(FViewportRHIParamRef ViewportRHI)
+{
+	FOpenGLViewport* Viewport = ResourceCast(ViewportRHI);
+	return Viewport->GetBackBufferAndroidEGL();
+}
+
+bool FOpenGLDynamicRHI::RHIIsRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI)
+{
+	FOpenGLViewport* Viewport = ResourceCast(ViewportRHI);
+	return Viewport->IsRequestAndroidBackBuffer();
+}
+
+void FOpenGLDynamicRHI::RHISetPendingRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI, bool InRequestAndroidBackBuffer)
+{
+	FOpenGLViewport* Viewport = ResourceCast(ViewportRHI);
+	Viewport->SetRequestAndroidBackBuffer(InRequestAndroidBackBuffer);
+}
+
 void FOpenGLDynamicRHI::RHIAdvanceFrameForGetViewportBackBuffer()
 {
 }
@@ -216,6 +234,9 @@ FOpenGLViewport::FOpenGLViewport(FOpenGLDynamicRHI* InOpenGLRHI,void* InWindowHa
 	, PixelFormat(PreferredPixelFormat)
 	, bIsValid(true)
 	, FrameSyncEvent(InOpenGLRHI)
+	, RequestAndroidBackBuffer(false)
+	, PendingRequestAndroidBackBuffer(false)
+	, CurrentFrameRequestAndroidBackBuffer(false)
 {
 	check(OpenGLRHI);
     //@to-do spurious check for HTML5, will need to go away. 
@@ -248,6 +269,9 @@ FOpenGLViewport::~FOpenGLViewport()
 	BackBuffer.SafeRelease();
 	check(!IsValidRef(BackBuffer));
 
+	BackBufferAndroidTemp.SafeRelease();
+	check(!IsValidRef(BackBufferAndroidTemp));
+
 	PlatformDestroyOpenGLContext(OpenGLRHI->PlatformDevice,OpenGLContext);
 	OpenGLContext = NULL;
 	OpenGLRHI->Viewports.Remove(this);
@@ -268,6 +292,7 @@ void FOpenGLViewport::Resize(uint32 InSizeX,uint32 InSizeY,bool bInIsFullscreen)
 	}
 
 	BackBuffer.SafeRelease();	// when the rest of the engine releases it, its framebuffers will be released too (those the engine knows about)
+	BackBufferAndroidTemp.SafeRelease();
 
 	BackBuffer = (FOpenGLTexture2D*)PlatformCreateBuiltinBackBuffer(OpenGLRHI, InSizeX, InSizeY);
 	if (!BackBuffer)
@@ -287,3 +312,20 @@ void* FOpenGLViewport::GetNativeWindow(void** AddParam) const
 	return PlatformGetWindow(OpenGLContext, AddParam);
 }
 
+
+FOpenGLTexture2D* FOpenGLViewport::GetBackBuffer()
+{
+#if PLATFORM_ANDROID
+	if ((GMaxRHIFeatureLevel == ERHIFeatureLevel::Type::ES2 || GMaxRHIFeatureLevel == ERHIFeatureLevel::Type::ES3_1)
+		&& RequestAndroidBackBuffer)
+	{
+		if (!BackBufferAndroidTemp.IsValid())
+		{
+			BackBufferAndroidTemp = (FOpenGLTexture2D*)(OpenGLRHI->CreateOpenGLTexture(SizeX, SizeY, false, false, PF_B8G8R8A8, 1, 1, 1, TexCreate_RenderTargetable, FClearValueBinding::Transparent));
+		}
+		return BackBufferAndroidTemp;
+	}
+#endif
+
+	return BackBuffer;
+}
