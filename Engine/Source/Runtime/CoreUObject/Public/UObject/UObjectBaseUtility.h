@@ -125,7 +125,11 @@ public:
 	 */
 	FORCEINLINE bool IsPendingKill() const
 	{
+#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+		return GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->IsPendingKill();
+#else
 		return GUObjectArray.IndexToObject(InternalIndex)->IsPendingKill();
+#endif
 	}
 
 	/**
@@ -134,7 +138,11 @@ public:
 	FORCEINLINE void MarkPendingKill()
 	{
 		check(!IsRooted());
-		GUObjectArray.IndexToObject(InternalIndex)->SetPendingKill();
+#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+		return GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->SetPendingKill();
+#else
+		return GUObjectArray.IndexToObject(InternalIndex)->SetPendingKill();
+#endif
 	}
 
 	/**
@@ -142,7 +150,11 @@ public:
 	*/
 	FORCEINLINE void ClearPendingKill()
 	{
+#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+		GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->ClearPendingKill();
+#else
 		GUObjectArray.IndexToObject(InternalIndex)->ClearPendingKill();
+#endif
 	}
 
 	//
@@ -151,7 +163,11 @@ public:
 	//
 	FORCEINLINE void AddToRoot()
 	{
+#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+		GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->SetRootSet();
+#else
 		GUObjectArray.IndexToObject(InternalIndex)->SetRootSet();
+#endif
 	}
 
 	//
@@ -159,7 +175,11 @@ public:
 	//
 	FORCEINLINE void RemoveFromRoot()
 	{
+#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+		GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->ClearRootSet();
+#else
 		GUObjectArray.IndexToObject(InternalIndex)->ClearRootSet();
+#endif
 	}
 
 	/**
@@ -169,7 +189,11 @@ public:
 	 */
 	FORCEINLINE bool IsRooted()
 	{
+#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+		return GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->IsRootSet();
+#else
 		return GUObjectArray.IndexToObject(InternalIndex)->IsRootSet();
+#endif
 	}
 
 	/**
@@ -179,7 +203,11 @@ public:
 	**/
 	FORCEINLINE bool ThisThreadAtomicallyClearedRFUnreachable()
 	{
+#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+		return GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->ThisThreadAtomicallyClearedRFUnreachable();
+#else
 		return GUObjectArray.IndexToObject(InternalIndex)->ThisThreadAtomicallyClearedRFUnreachable();
+#endif
 	}
 
 	/**
@@ -187,7 +215,11 @@ public:
 	**/
 	FORCEINLINE bool IsUnreachable() const
 	{
+#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+		return GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->IsUnreachable();
+#else
 		return GUObjectArray.IndexToObject(InternalIndex)->IsUnreachable();
+#endif
 	}
 
 	/**
@@ -203,7 +235,11 @@ public:
 	**/
 	FORCEINLINE bool IsNative() const
 	{
+#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+		return GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->HasAnyFlags(EInternalObjectFlags::Native);
+#else
 		return GUObjectArray.IndexToObject(InternalIndex)->HasAnyFlags(EInternalObjectFlags::Native);
+#endif
 	}
 
 	/**
@@ -214,7 +250,11 @@ public:
 	 */
 	FORCEINLINE void SetInternalFlags(EInternalObjectFlags FlagsToSet) const
 	{
+#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+		GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->SetFlags(FlagsToSet);
+#else
 		GUObjectArray.IndexToObject(InternalIndex)->SetFlags(FlagsToSet);
+#endif
 	}
 
 	/**
@@ -236,7 +276,11 @@ public:
 	 */
 	FORCEINLINE bool HasAnyInternalFlags(EInternalObjectFlags FlagsToCheck) const
 	{
+#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+		return GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->HasAnyFlags(FlagsToCheck);
+#else
 		return GUObjectArray.IndexToObject(InternalIndex)->HasAnyFlags(FlagsToCheck);
+#endif
 	}
 
 	/**
@@ -247,7 +291,11 @@ public:
 	 */
 	FORCEINLINE void ClearInternalFlags(EInternalObjectFlags FlagsToClear) const
 	{
+#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+		GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->ClearFlags(FlagsToClear);
+#else
 		GUObjectArray.IndexToObject(InternalIndex)->ClearFlags(FlagsToClear);
+#endif
 	}
 
 	/**
@@ -258,7 +306,11 @@ public:
 	*/
 	FORCEINLINE bool AtomicallyClearInternalFlags(EInternalObjectFlags FlagsToClear) const
 	{
+#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+		return GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->ThisThreadAtomicallyClearedFlag(FlagsToClear);
+#else
 		return GUObjectArray.IndexToObject(InternalIndex)->ThisThreadAtomicallyClearedFlag(FlagsToClear);
+#endif
 	}
 
 	/***********************/

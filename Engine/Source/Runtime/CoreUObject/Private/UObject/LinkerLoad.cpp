@@ -329,7 +329,9 @@ static FTexture2DResourceMem* CreateResourceMem(int32 SizeX, int32 SizeY, int32 
 
 static inline int32 HashNames(FName Object, FName Class, FName Package)
 {
-	return Object.GetComparisonIndex() + 7 * Class.GetComparisonIndex() + 31 * FPackageName::GetShortFName(Package).GetComparisonIndex();
+	// http://coconutlizard.co.uk/blog/ue4/the-case-of-the-exporthash-string-monster/
+	//return Object.GetComparisonIndex() + 7 * Class.GetComparisonIndex() + 31 * FPackageName::GetShortFName(Package).GetComparisonIndex();
+	return Object.GetComparisonIndex() + 7 * Class.GetComparisonIndex() + 31 * Package.GetComparisonIndex();
 }
 
 static FORCEINLINE bool IsCoreUObjectPackage(const FName& PackageName)
@@ -809,13 +811,15 @@ FLinkerLoad::~FLinkerLoad()
  */
 bool FLinkerLoad::IsTimeLimitExceeded( const TCHAR* CurrentTask, int32 Granularity )
 {
-	IsTimeLimitExceededCallCount++;
-	if( !bTimeLimitExceeded 
-	&&	bUseTimeLimit 
-	&&  (IsTimeLimitExceededCallCount % Granularity) == 0 )
+	// http://coconutlizard.co.uk/blog/ue4/time-limit/
+	if ((!bTimeLimitExceeded)
+		&& (bUseTimeLimit)
+		&& ((Granularity <= 1) || ((++IsTimeLimitExceededCallCount % Granularity) == 0))
+		) 
 	{
 		double CurrentTime = FPlatformTime::Seconds();
 		bTimeLimitExceeded = CurrentTime - TickStartTime > TimeLimit;
+#if !(UE_BUILD_TEST||UE_BUILD_SHIPPING)
 		if (!FPlatformProperties::HasEditorOnlyData())
 		{
 			// Log single operations that take longer than timelimit.
@@ -826,6 +830,7 @@ bool FLinkerLoad::IsTimeLimitExceeded( const TCHAR* CurrentTask, int32 Granulari
 					(CurrentTime - TickStartTime) * 1000);
 			}
 		}
+#endif
 	}
 	return bTimeLimitExceeded;
 }
@@ -1895,6 +1900,7 @@ FLinkerLoad::ELinkerStatus FLinkerLoad::SerializeThumbnails( bool bForceEnableIn
 /** 
  * Creates the export hash. This relies on the import and export maps having already been serialized.
  */
+ // http://coconutlizard.co.uk/blog/ue4/the-case-of-the-exporthash-string-monster/
 FLinkerLoad::ELinkerStatus FLinkerLoad::CreateExportHash()
 {
 	DECLARE_SCOPE_CYCLE_COUNTER( TEXT( "FLinkerLoad::CreateExportHash" ), STAT_LinkerLoad_CreateExportHash, STATGROUP_LinkerLoad );
@@ -1902,14 +1908,16 @@ FLinkerLoad::ELinkerStatus FLinkerLoad::CreateExportHash()
 	// Zero initialize hash on first iteration.
 	if( ExportHashIndex == 0 )
 	{
-		for( int32 i=0; i<ARRAY_COUNT(ExportHash); i++ )
-		{
-			ExportHash[i] = INDEX_NONE;
-		}
+		//for( int32 i=0; i<ARRAY_COUNT(ExportHash); i++ )
+		//{
+		//	ExportHash[i] = INDEX_NONE;
+		//}
+		ExportHash[0] = INDEX_NONE;
 	}
 
 	// Set up export hash, potentially spread across several frames.
-	while( ExportHashIndex < ExportMap.Num() && !IsTimeLimitExceeded(TEXT("creating export hash"),100) )
+	//while( ExportHashIndex < ExportMap.Num() && !IsTimeLimitExceeded(TEXT("creating export hash"),100) )
+	while (ExportHashIndex < ExportMap.Num())
 	{
 		FObjectExport& Export = ExportMap[ExportHashIndex];
 
@@ -1921,7 +1929,8 @@ FLinkerLoad::ELinkerStatus FLinkerLoad::CreateExportHash()
 	}
 
 	// Return whether we finished this step and it's safe to start with the next.
-	return ((ExportHashIndex == ExportMap.Num()) && !IsTimeLimitExceeded( TEXT("creating export hash") )) ? LINKER_Loaded : LINKER_TimedOut;
+	//return ((ExportHashIndex == ExportMap.Num()) && !IsTimeLimitExceeded(TEXT("creating export hash"))) ? LINKER_Loaded : LINKER_TimedOut;
+	return LINKER_Loaded;
 }
 
 /**

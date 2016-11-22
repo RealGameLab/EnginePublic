@@ -2932,7 +2932,10 @@ bool USkeletalMeshComponent::GetClothCollisionDataFromStaticMesh(UPrimitiveCompo
 
 FName GetConvertedBoneName(apex::ClothingAsset* ApexClothingAsset, int32 BoneIndex)
 {
-	return FName(*FString(ApexClothingAsset->getBoneName(BoneIndex)).Replace(TEXT(" "), TEXT("-")));
+	// http://coconutlizard.co.uk/blog/ue4/patch-content-early/
+	check(!FString(ApexClothingAsset->getBoneName(BoneIndex)).Contains(" "));
+	return ApexClothingAsset->getBoneName(BoneIndex);
+	//return FName(*FString(ApexClothingAsset->getBoneName(BoneIndex)).Replace(TEXT(" "), TEXT("-")));
 }
 
 void USkeletalMeshComponent::FindClothCollisions(TArray<FApexClothCollisionVolumeData>& OutCollisions)

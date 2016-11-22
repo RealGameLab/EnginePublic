@@ -536,4 +536,9 @@ private:
 		static FCriticalSection Lock;
 		return &Lock; 
 	}
+
+private:
+#if WITH_EDITOR
+	static FString RootPrefix;
+#endif // WITH_EDITOR
 };
