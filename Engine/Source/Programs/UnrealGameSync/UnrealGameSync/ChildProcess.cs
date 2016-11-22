@@ -319,7 +319,7 @@ namespace UnrealGameSync
 					{
 						if(Buffer[Idx] != '\n' || LastCharacter != '\r')
 						{
-							OutputLines.Add(Encoding.UTF8.GetString(Buffer, LastStartIdx, Idx - LastStartIdx));
+							OutputLines.Add(Encoding.Default.GetString(Buffer, LastStartIdx, Idx - LastStartIdx));
 						}
 						LastStartIdx = Idx + 1;
 					}

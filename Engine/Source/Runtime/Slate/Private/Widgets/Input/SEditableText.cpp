@@ -507,3 +507,10 @@ float SEditableText::UpdateAndClampVerticalScrollBar(const float InViewOffset, c
 {
 	return 0.0f;
 }
+
+// @wutongfei
+const bool SEditableText::IsWidgetValid() const
+{
+	return this->HasBeenAlreadyMadeSharable();
+}
+//

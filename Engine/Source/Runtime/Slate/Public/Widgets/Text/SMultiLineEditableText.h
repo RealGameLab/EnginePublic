@@ -387,6 +387,11 @@ protected:
 
 	/** Callback delegate to have first chance handling of the OnKeyDown event */
 	FOnKeyDown OnKeyDownHandler;
+
+// @wutongfei
+public:
+	virtual const bool IsWidgetValid() const override;
+// 
 };
 
 #endif //WITH_FANCY_TEXT

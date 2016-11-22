@@ -633,4 +633,11 @@ bool SMultiLineEditableText::IsRightClickScrolling() const
 	return AmountScrolledWhileRightMouseDown >= FSlateApplication::Get().GetDragTriggerDistance() && VScrollBar.IsValid() && VScrollBar->IsNeeded();
 }
 
+// @wutongfei
+const bool SMultiLineEditableText::IsWidgetValid() const
+{
+	return this->HasBeenAlreadyMadeSharable();
+}
+//
+
 #endif //WITH_FANCY_TEXT

@@ -413,7 +413,10 @@ namespace UnrealBuildTool
 				{
 					XGEStartInfo.RedirectStandardError = true;
 					XGEStartInfo.RedirectStandardOutput = true;
-					XGEProcess.EnableRaisingEvents = true;
+                    XGEStartInfo.StandardOutputEncoding = System.Text.Encoding.Default;
+                    XGEStartInfo.StandardErrorEncoding = System.Text.Encoding.Default;
+
+                    XGEProcess.EnableRaisingEvents = true;
 					XGEProcess.OutputDataReceived += OutputEventHandler;
 					XGEProcess.ErrorDataReceived += OutputEventHandler;
 				}

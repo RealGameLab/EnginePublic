@@ -2272,6 +2272,13 @@ void FSlateEditableTextLayout::ScrollTo(const FTextLocation& NewLocation)
 
 void FSlateEditableTextLayout::UpdateCursorHighlight()
 {
+	// @wutongfei
+	if (!OwnerWidget->IsWidgetValid())
+	{
+		return;
+	}
+	//
+
 	PositionToScrollIntoView = SlateEditableTextTypes::FScrollInfo(CursorInfo.GetCursorInteractionLocation(), CursorInfo.GetCursorAlignment());
 	OwnerWidget->EnsureActiveTick();
 
@@ -3371,8 +3378,17 @@ void FSlateEditableTextLayout::FTextInputMethodContext::GetSelectionRange(uint32
 
 void FSlateEditableTextLayout::FTextInputMethodContext::SetSelectionRange(const uint32 BeginIndex, const uint32 Length, const ECaretPosition InCaretPosition)
 {
-	const uint32 MinIndex = BeginIndex;
-	const uint32 MaxIndex = MinIndex + Length;
+	// wutongfei
+	uint32 TextLength = GetTextLength();
+
+	uint32 MinIndex = BeginIndex;
+	MinIndex = MinIndex > TextLength ? TextLength : MinIndex;
+	uint32 MaxIndex = MinIndex + Length;
+	MaxIndex = MaxIndex > TextLength ? TextLength : MaxIndex;
+	//
+
+	//const uint32 MinIndex = BeginIndex;
+	//const uint32 MaxIndex = MinIndex + Length;
 
 	FTextLayout::FTextOffsetLocations OffsetLocations;
 	OwnerLayout->TextLayout->GetTextOffsetLocations(OffsetLocations);
