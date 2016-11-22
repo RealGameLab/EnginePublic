@@ -1,0 +1,21 @@
+[submodule "Engine/Extras/UnusedAssetsCollection"]
+	path = Engine/Extras/UnusedAssetsCollection
+	url = ../UnusedAssetsCollection.git
+[submodule "Engine/Plugins/RealGameLab/BitmapFont"]
+	path = Engine/Plugins/RealGameLab/BitmapFont
+	url = ../BitmapFont.git
+[submodule "Engine/Plugins/RealGameLab/BuglyCrashReport"]
+	path = Engine/Plugins/RealGameLab/BuglyCrashReport
+	url = ../BuglyCrashReport.git
+[submodule "Engine/Plugins/RealGameLab/FrameCapturer"]
+	path = Engine/Plugins/RealGameLab/FrameCapturer
+	url = ../../nswutong/ScreenCapture.git
+[submodule "Engine/Plugins/RealGameLab/ObjectBrowser"]
+	path = Engine/Plugins/RealGameLab/ObjectBrowser
+	url = ../ObjectBrowser.git
+[submodule "Engine/Plugins/RealGameLab/RenderDocPlugin"]
+	path = Engine/Plugins/RealGameLab/RenderDocPlugin
+	url = ../UE4RenderDocPlugin.git
+[submodule "Engine/Plugins/RealGameLab/LogManager"]
+	path = Engine/Plugins/RealGameLab/LogManager
+	url = https://github.com/RealGameLab/LogManager.git
