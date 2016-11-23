@@ -19,3 +19,6 @@
 [submodule "Engine/Plugins/RealGameLab/LogManager"]
 	path = Engine/Plugins/RealGameLab/LogManager
 	url = https://github.com/RealGameLab/LogManager.git
+[submodule "Engine/Plugins/RealGameLab/UnrealLua"]
+	path = Engine/Plugins/RealGameLab/UnrealLua
+	url = https://github.com/RealGameLab/Unreal.lua.git
