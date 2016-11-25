@@ -1,17 +1,19 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
-#include "UMGEditorPrivatePCH.h"
-
-#include "Animation/AnimNodeBase.h"
 #include "WidgetBlueprintCompiler.h"
-#include "Kismet2NameValidators.h"
-#include "KismetReinstanceUtilities.h"
-#include "MovieScene.h"
+#include "Components/SlateWrapperTypes.h"
+#include "Blueprint/UserWidget.h"
+
 #include "K2Node_FunctionEntry.h"
+#include "K2Node_FunctionResult.h"
+#include "K2Node_VariableGet.h"
 #include "Blueprint/WidgetTree.h"
-#include "WidgetBlueprint.h"
+#include "Animation/WidgetAnimation.h"
+
+#include "Kismet2/Kismet2NameValidators.h"
+#include "Kismet2/KismetReinstanceUtilities.h"
 #include "Kismet2/BlueprintEditorUtils.h"
-#include "NamedSlot.h"
+#include "Components/NamedSlot.h"
 #include "WidgetBlueprintEditorUtils.h"
 
 #define LOCTEXT_NAMESPACE "UMG"
@@ -272,7 +274,8 @@ void FWidgetBlueprintCompiler::FinishCompilingClass(UClass* Class)
 		{
 			FBlueprintEditorUtils::ForceLoadMembers(WidgetBP->WidgetTree);
 		}
-		BPGClass->WidgetTree = DuplicateObject<UWidgetTree>(WidgetBP->WidgetTree, BPGClass);
+
+		BPGClass->WidgetTree = Cast<UWidgetTree>(StaticDuplicateObject(WidgetBP->WidgetTree, BPGClass, NAME_None, RF_AllFlags & ~RF_DefaultSubObject));
 
 		for ( const UWidgetAnimation* Animation : WidgetBP->Animations )
 		{

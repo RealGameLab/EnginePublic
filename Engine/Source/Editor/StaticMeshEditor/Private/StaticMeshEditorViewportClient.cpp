@@ -1,20 +1,24 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
-#include "StaticMeshEditorModule.h"
-#include "StaticMeshEditorActions.h"
-
-#include "MouseDeltaTracker.h"
-#include "ISocketManager.h"
 #include "StaticMeshEditorViewportClient.h"
-#include "Runtime/Engine/Public/Slate/SceneViewport.h"
+#include "EngineGlobals.h"
+#include "RawIndexBuffer.h"
+#include "Settings/LevelEditorViewportSettings.h"
+#include "Engine/StaticMesh.h"
+#include "Editor.h"
+#include "CanvasItem.h"
+#include "CanvasTypes.h"
+#include "Engine/Canvas.h"
+#include "ThumbnailRendering/SceneThumbnailInfo.h"
+#include "Engine/StaticMeshSocket.h"
+#include "Utils.h"
+#include "IStaticMeshEditor.h"
+
 #include "StaticMeshResources.h"
 #include "RawMesh.h"
 #include "DistanceFieldAtlas.h"
-#include "StaticMeshEditor.h"
-#include "BusyCursor.h"
-#include "MeshBuild.h"
-#include "PreviewScene.h"
-#include "ObjectTools.h"
+#include "SEditorViewport.h"
+#include "AdvancedPreviewScene.h"
 #include "SStaticMeshEditorViewport.h"
 
 #include "Runtime/Analytics/Analytics/Public/Interfaces/IAnalyticsProvider.h"
@@ -22,15 +26,7 @@
 #include "AI/Navigation/NavCollision.h"
 #include "PhysicsEngine/BodySetup.h"
 
-#if WITH_PHYSX
-#include "Editor/UnrealEd/Private/EditorPhysXSupport.h"
-#endif
-#include "CanvasTypes.h"
 #include "Engine/AssetUserData.h"
-#include "Engine/StaticMeshSocket.h"
-#include "CanvasItem.h"
-#include "Engine/Canvas.h"
-#include "Engine/TextureCube.h"
 
 #include "AssetViewerSettings.h"
 
@@ -744,7 +740,7 @@ void FStaticMeshEditorViewportClient::DrawCanvas( FViewport& InViewport, FSceneV
 	int32 CurrentLODLevel = StaticMeshEditor->GetCurrentLODLevel();
 	if (CurrentLODLevel == 0)
 	{
-		CurrentLODLevel = ComputeStaticMeshLOD(StaticMesh->RenderData, StaticMeshComponent->Bounds.Origin, StaticMeshComponent->Bounds.SphereRadius, View, StaticMesh->MinLOD);
+		CurrentLODLevel = ComputeStaticMeshLOD(StaticMesh->RenderData.Get(), StaticMeshComponent->Bounds.Origin, StaticMeshComponent->Bounds.SphereRadius, View, StaticMesh->MinLOD);
 	}
 	else
 	{
@@ -833,7 +829,7 @@ void FStaticMeshEditorViewportClient::DrawUVsForMesh(FViewport* InViewport, FCan
 
 	int32 UVChannel = StaticMeshEditorPtr.Pin()->GetCurrentUVChannel();
 
-	DrawUVs(InViewport, InCanvas, InTextYPos, LODLevel, UVChannel, SelectedEdgeTexCoords[UVChannel], StaticMeshComponent->GetStaticMesh()->RenderData, NULL);
+	DrawUVs(InViewport, InCanvas, InTextYPos, LODLevel, UVChannel, SelectedEdgeTexCoords[UVChannel], StaticMeshComponent->GetStaticMesh()->RenderData.Get(), NULL);
 }
 
 void FStaticMeshEditorViewportClient::MouseMove(FViewport* InViewport,int32 x, int32 y)

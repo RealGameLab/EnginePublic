@@ -5,35 +5,42 @@
 =============================================================================*/
 
 #pragma once
+
+#include "CoreMinimal.h"
+#include "Containers/IndirectArray.h"
+#include "Misc/Guid.h"
+#include "Engine/EngineTypes.h"
+#include "Templates/RefCounting.h"
+#include "Templates/ScopedPointer.h"
 #include "Misc/SecureHash.h"
-#include "RefCounting.h"
+#include "RHI.h"
 #include "RenderResource.h"
+#include "RenderingThread.h"
 #include "UniformBuffer.h"
-#include "SceneTypes.h"
-#include "StaticParameterSet.h"
 #include "Shader.h"
 #include "VertexFactory.h"
+#include "SceneTypes.h"
+#include "StaticParameterSet.h"
+#include "Optional.h"
 
-class FMaterialShaderMap;
-class FMaterialShaderType;
 class FMaterial;
+class FMaterialCompiler;
 class FMaterialRenderProxy;
-class FMeshMaterialShaderMap;
+class FMaterialShaderType;
+class FMaterialUniformExpression;
 class FMeshMaterialShaderType;
+class FSceneView;
 class FShaderCommonCompileJob;
-class FShaderCompileJob;
-class FShaderType;
-class FShaderTypeDependency;
-class FShaderPipelineTypeDependency;
-class FVertexFactoryType;
-class FVertexFactoryTypeDependency;
 class UMaterial;
-class UMaterialInstance;
 class UMaterialExpression;
+class UMaterialExpressionMaterialFunctionCall;
+class UMaterialInstance;
 class UMaterialInterface;
+class USubsurfaceProfile;
 class UTexture;
 struct FExpressionInput;
-struct FShaderCompilerEnvironment;
+
+template <class ElementType> class TLinkedList;
 
 #define ME_CAPTION_HEIGHT		18
 #define ME_STD_VPADDING			16
@@ -241,7 +248,7 @@ protected:
 class FUniformExpressionSet : public FRefCountedObject
 {
 public:
-	FUniformExpressionSet(): UniformBufferStruct(NULL) {}
+	FUniformExpressionSet() {}
 
 	ENGINE_API void Serialize(FArchive& Ar);
 	bool IsEmpty() const;
@@ -283,7 +290,7 @@ protected:
 	TArray<FGuid> ParameterCollections;
 
 	/** The structure of a uniform buffer containing values for these uniform expressions. */
-	TScopedPointer<FUniformBufferStruct> UniformBufferStruct;
+	TOptional<FUniformBufferStruct> UniformBufferStruct;
 
 	friend class FMaterial;
 	friend class FHLSLMaterialTranslator;
@@ -1199,9 +1206,9 @@ public:
 	static void UpdateEditorLoadedMaterialResources(EShaderPlatform InShaderPlatform);
 
 	/** Backs up any FShaders in editor loaded materials to memory through serialization and clears FShader references. */
-	static void BackupEditorLoadedMaterialShadersToMemory(TMap<FMaterialShaderMap*, TScopedPointer<TArray<uint8> > >& ShaderMapToSerializedShaderData);
+	static void BackupEditorLoadedMaterialShadersToMemory(TMap<FMaterialShaderMap*, TUniquePtr<TArray<uint8> > >& ShaderMapToSerializedShaderData);
 	/** Recreates FShaders in editor loaded materials from the passed in memory, handling shader key changes. */
-	static void RestoreEditorLoadedMaterialShadersFromMemory(const TMap<FMaterialShaderMap*, TScopedPointer<TArray<uint8> > >& ShaderMapToSerializedShaderData);
+	static void RestoreEditorLoadedMaterialShadersFromMemory(const TMap<FMaterialShaderMap*, TUniquePtr<TArray<uint8> > >& ShaderMapToSerializedShaderData);
 
 protected:
 	
@@ -1734,9 +1741,9 @@ class FMaterialUpdateContext
 	/** Materials updated within this context. */
 	TSet<UMaterialInterface*> UpdatedMaterialInterfaces;
 	/** Active global component reregister context, if any. */
-	TScopedPointer<class FGlobalComponentReregisterContext> ComponentReregisterContext;
+	TUniquePtr<class FGlobalComponentReregisterContext> ComponentReregisterContext;
 	/** Active global component render state recreation context, if any. */
-	TScopedPointer<class FGlobalComponentRecreateRenderStateContext> ComponentRecreateRenderStateContext;
+	TUniquePtr<class FGlobalComponentRecreateRenderStateContext> ComponentRecreateRenderStateContext;
 	/** The shader platform that was being processed - can control if we need to update components */
 	EShaderPlatform ShaderPlatform;
 	/** True if the SyncWithRenderingThread option was specified. */

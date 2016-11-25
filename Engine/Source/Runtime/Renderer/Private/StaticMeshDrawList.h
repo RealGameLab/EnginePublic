@@ -6,6 +6,15 @@
 
 #pragma once
 
+#include "CoreMinimal.h"
+#include "RHI.h"
+#include "RenderResource.h"
+#include "EngineDefines.h"
+#include "RendererInterface.h"
+#include "ScenePrivateBase.h"
+#include "SceneCore.h"
+#include "SceneRendering.h"
+
 extern ENGINE_API bool GDrawListsLocked;
 /** View state for instanced stereo rendering. */
 struct StereoPair
@@ -147,7 +156,7 @@ private:
 			return DrawList == StaticMeshDrawList;
 		}
 		// FAbstractDrawListElementLink interface.
-		virtual void Remove();
+		virtual void Remove(const bool bUnlinkMesh = true );
 
 	private:
 		TStaticMeshDrawList* StaticMeshDrawList;

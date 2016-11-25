@@ -6,10 +6,23 @@
 
 #pragma once
 
-#include "ObjectMacros.h"
-#include "PropertyPortFlags.h"
-#include "PropertyTag.h"
-#include "Templates/IsTriviallyDestructible.h"
+#include "CoreMinimal.h"
+#include "UObject/ObjectMacros.h"
+#include "UObject/UObjectGlobals.h"
+#include "UObject/Object.h"
+#include "UObject/Class.h"
+#include "UObject/WeakObjectPtr.h"
+#include "UObject/CoreNetTypes.h"
+#include "UObject/ScriptInterface.h"
+#include "Templates/Casts.h"
+#include "Templates/IsFloatingPoint.h"
+#include "Templates/IsIntegral.h"
+#include "Templates/IsSigned.h"
+#include "Templates/Greater.h"
+#include "Containers/List.h"
+#include "UObject/LazyObjectPtr.h"
+#include "UObject/AssetPtr.h"
+#include "UObject/PropertyTag.h"
 #include "Serialization/SerializedPropertyScope.h"
 
 COREUOBJECT_API DECLARE_LOG_CATEGORY_EXTERN(LogType, Log, All);
@@ -1119,6 +1132,23 @@ class COREUOBJECT_API UNumericProperty : public UProperty
 	/** Return true if this property is for a integral or enum type **/
 	virtual bool IsInteger() const;
 
+	template <typename T>
+	bool CanHoldValue(T Value) const
+	{
+		if (!TIsFloatingPoint<T>::Value)
+		{
+			return CanHoldDoubleValueInternal(Value);
+		}
+		else if (TIsSigned<T>::Value)
+		{
+			return CanHoldSignedValueInternal(Value);
+		}
+		else
+		{
+			return CanHoldUnsignedValueInternal(Value);
+		}
+	}
+
 	/** Return true if this property is a UByteProperty with a non-null Enum **/
 	FORCEINLINE bool IsEnum() const
 	{
@@ -1188,6 +1218,11 @@ class COREUOBJECT_API UNumericProperty : public UProperty
 	// End of UNumericProperty interface
 
 	static uint8 ReadEnumAsUint8(FArchive& Ar, UStruct* DefaultsStruct, const FPropertyTag& Tag);
+
+private:
+	virtual bool CanHoldDoubleValueInternal  (double Value) const PURE_VIRTUAL(UNumericProperty::CanHoldDoubleValueInternal,   return false;);
+	virtual bool CanHoldSignedValueInternal  (int64  Value) const PURE_VIRTUAL(UNumericProperty::CanHoldSignedValueInternal,   return false;);
+	virtual bool CanHoldUnsignedValueInternal(uint64 Value) const PURE_VIRTUAL(UNumericProperty::CanHoldUnsignedValueInternal, return false;);
 };
 
 template<typename InTCppType>
@@ -1287,6 +1322,12 @@ public:
 			}
 			return true;
 		}
+		else if (Tag.Type == NAME_EnumProperty)
+		{
+			uint8 PreviousValue = this->ReadEnumAsUint8(Ar, DefaultsStruct, Tag);
+			this->SetPropertyValue_InContainer(Data, PreviousValue, Tag.ArrayIndex);
+			return true;
+		}
 		else if (Tag.Type == NAME_UInt16Property)
 		{
 			ConvertFromInt<uint16>(Ar, Data, Tag);
@@ -1355,6 +1396,22 @@ public:
 		return TTypeFundamentals::GetPropertyValue(Data);
 	}
 	// End of UNumericProperty interface
+
+private:
+	virtual bool CanHoldDoubleValueInternal(double Value) const
+	{
+		return (double)(InTCppType)Value == Value;
+	}
+
+	virtual bool CanHoldSignedValueInternal(int64 Value) const
+	{
+		return (int64)(InTCppType)Value == Value;
+	}
+
+	virtual bool CanHoldUnsignedValueInternal(uint64 Value) const
+	{
+		return (uint64)(InTCppType)Value == Value;
+	}
 };
 
 /*-----------------------------------------------------------------------------

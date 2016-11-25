@@ -5,6 +5,9 @@
 =============================================================================*/
 
 #include "D3D11RHIPrivate.h"
+#include "Misc/CommandLine.h"
+#include "Misc/ConfigCacheIni.h"
+#include "Modules/ModuleManager.h"
 #include "AllowWindowsPlatformTypes.h"
 	#include <delayimp.h>
 #include "HideWindowsPlatformTypes.h"
@@ -188,6 +191,7 @@ FD3D11DynamicRHI::FD3D11DynamicRHI(IDXGIFactory1* InDXGIFactory1,D3D_FEATURE_LEV
 	GMaxShadowDepthBufferSizeX = 4096;
 	GMaxShadowDepthBufferSizeY = 4096;
 	GSupportsTimestampRenderQueries = true;
+	GRHISupportsResolveCubemapFaces = true;
 
 	// Initialize the constant buffers.
 	InitConstantBuffers();

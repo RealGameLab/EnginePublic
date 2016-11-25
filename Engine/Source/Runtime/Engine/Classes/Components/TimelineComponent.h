@@ -2,7 +2,14 @@
 
 #pragma once
 
+#include "CoreMinimal.h"
+#include "UObject/ObjectMacros.h"
+#include "Components/ActorComponent.h"
 #include "TimelineComponent.generated.h"
+
+class UCurveFloat;
+class UCurveLinearColor;
+class UCurveVector;
 
 /** Signature of function to handle a timeline 'event' */
 DECLARE_DYNAMIC_DELEGATE( FOnTimelineEvent );
@@ -249,7 +256,7 @@ private:
 
 	/** Cached property pointer for setting timeline direction */
 	UPROPERTY(Transient, NotReplicated)
-	UByteProperty* DirectionProperty;
+	UProperty* DirectionProperty;
 
 public:
 	FTimeline()

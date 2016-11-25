@@ -6,7 +6,19 @@
 
 #pragma once
 
+#include "CoreMinimal.h"
+#include "Templates/RefCounting.h"
+#include "Templates/ScopedPointer.h"
+#include "HAL/PlatformProcess.h"
 #include "ShaderCore.h"
+#include "Shader.h"
+#include "HAL/RunnableThread.h"
+#include "HAL/Runnable.h"
+#include "UniquePtr.h"
+
+class FShaderCompileJob;
+class FShaderPipelineCompileJob;
+class FVertexFactoryType;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogShaderCompilers, Log, All);
 
@@ -340,7 +352,7 @@ private:
 	TMap<int32, FShaderMapFinalizeResults> PendingFinalizeShaderMaps;
 
 	/** The threads spawned for shader compiling. */
-	TScopedPointer<FShaderCompileThreadRunnableBase> Thread;
+	TUniquePtr<FShaderCompileThreadRunnableBase> Thread;
 
 	//////////////////////////////////////////////////////
 	// Configuration properties - these are set only on initialization and can be read from either thread

@@ -2,19 +2,33 @@
 
 #pragma once
 
-#include "SceneTypes.h"
+#include "CoreMinimal.h"
+#include "UObject/ObjectMacros.h"
+#include "UObject/Object.h"
+#include "Misc/Guid.h"
+#include "UObject/Class.h"
+#include "Engine/EngineTypes.h"
+#include "Templates/ScopedPointer.h"
+#include "Engine/TextureStreamingTypes.h"
 #include "Components/MeshComponent.h"
-#include "Runtime/RenderCore/Public/PackedNormal.h"
+#include "PackedNormal.h"
 #include "RawIndexBuffer.h"
+#include "UniquePtr.h"
 #include "StaticMeshComponent.generated.h"
 
 class FColorVertexBuffer;
-class UStaticMesh;
+class FLightingBuildOptions;
+class FMeshMapBuildData;
+class FPrimitiveSceneProxy;
 class FStaticMeshStaticLightingMesh;
 class ULightComponent;
-struct FEngineShowFlags;
+class UStaticMesh;
+class UStaticMeshComponent;
 struct FConvexVolume;
-struct FStreamingTextureBuildInfo;
+struct FEngineShowFlags;
+struct FNavigableGeometryExport;
+struct FNavigationRelevantData;
+struct FStaticLightingPrimitiveInfo;
 
 /** Cached vertex information at the time the mesh was painted. */
 USTRUCT()
@@ -68,7 +82,7 @@ struct FStaticMeshComponentLODInfo
 	FMeshMapBuildData* LegacyMapBuildData;
 
 	/** Transient override lightmap data, used by landscape grass. */
-	TScopedPointer<FMeshMapBuildData> OverrideMapBuildData;
+	TUniquePtr<FMeshMapBuildData> OverrideMapBuildData;
 
 	/** Vertex data cached at the time this LOD was painted, if any */
 	UPROPERTY()

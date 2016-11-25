@@ -1,44 +1,57 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
-#include "MeshPaintPrivatePCH.h"
+#include "MeshPaintEdMode.h"
+#include "SceneView.h"
+#include "Engine/Texture2D.h"
+#include "BatchedElements.h"
+#include "EditorViewportClient.h"
+#include "Components/MeshComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Modules/ModuleManager.h"
+#include "EditorReimportHandler.h"
+#include "CanvasItem.h"
+#include "CanvasTypes.h"
+#include "Editor/UnrealEdEngine.h"
+#include "Factories/MaterialInstanceConstantFactoryNew.h"
+#include "Factories/Texture2dFactoryNew.h"
+#include "Materials/MaterialInstanceConstant.h"
+#include "Engine/Selection.h"
+#include "Engine/TextureRenderTarget2D.h"
+#include "Misc/ConfigCacheIni.h"
+#include "Misc/FeedbackContext.h"
+#include "EngineUtils.h"
+#include "EditorModeManager.h"
+#include "Utils.h"
+#include "Dialogs/Dialogs.h"
+#include "UnrealEdGlobals.h"
 
 #include "StaticMeshResources.h"
-#include "MeshPaintEdMode.h"
-#include "Factories.h"
+#include "VREditorMode.h"
+#include "IVREditorModule.h"
 #include "ScopedTransaction.h"
 #include "MeshPaintRendering.h"
-#include "ImageUtils.h"
-#include "Editor/UnrealEd/Public/Toolkits/ToolkitManager.h"
+#include "Toolkits/ToolkitManager.h"
 #include "RawMesh.h"
-#include "Editor/UnrealEd/Public/ObjectTools.h"
+#include "ObjectTools.h"
+#include "IAssetTools.h"
 #include "AssetToolsModule.h"
 #include "AssetRegistryModule.h"
 #include "EditorSupportDelegates.h"
-#include "EditorReimportHandler.h"
 
 //Slate dependencies
-#include "Editor/LevelEditor/Public/LevelEditor.h"
-#include "Editor/LevelEditor/Public/SLevelViewport.h"
-#include "MessageLog.h"
+#include "LevelEditor.h"
+#include "ILevelViewport.h"
+#include "Logging/MessageLog.h"
 
-#include "Runtime/Engine/Classes/PhysicsEngine/BodySetup.h"
 #include "SMeshPaint.h"
 #include "ComponentReregisterContext.h"
-#include "CanvasTypes.h"
-#include "Engine/Selection.h"
-#include "Engine/TextureRenderTarget2D.h"
-#include "EngineUtils.h"
-#include "Engine/StaticMeshActor.h"
-#include "Materials/MaterialInstanceConstant.h"
 #include "MeshPaintAdapterFactory.h"
-#include "Components/SplineMeshComponent.h"
 
-#include "VREditorMode.h"
 #include "ViewportWorldInteraction.h"
 #include "ViewportInteractableInterface.h"
 #include "VREditorInteractor.h"
-#include "VIBaseTransformGizmo.h"
 #include "EditorWorldManager.h"
+#include "UniquePtr.h"
 
 #define LOCTEXT_NAMESPACE "MeshPaint_Mode"
 
@@ -1486,8 +1499,8 @@ void FEdModeMeshPaint::PaintMeshVertices(
 	// Paint the mesh
 	uint32 NumVerticesInfluencedByBrush = 0;
 	{
-		TScopedPointer< FStaticMeshComponentRecreateRenderStateContext > RecreateRenderStateContext;
-		TScopedPointer< FComponentReregisterContext > ComponentReregisterContext;
+		TUniquePtr< FStaticMeshComponentRecreateRenderStateContext > RecreateRenderStateContext;
+		TUniquePtr< FComponentReregisterContext > ComponentReregisterContext;
 
 
 		FStaticMeshComponentLODInfo* InstanceMeshLODInfo = NULL;
@@ -1497,7 +1510,7 @@ void FEdModeMeshPaint::PaintMeshVertices(
 			{
 				// We're only changing instanced vertices on this specific mesh component, so we
 				// only need to detach our mesh component
-				ComponentReregisterContext.Reset( new FComponentReregisterContext( StaticMeshComponent ) );
+				ComponentReregisterContext = MakeUnique<FComponentReregisterContext>( StaticMeshComponent );
 
 				// Mark the mesh component as modified
 				StaticMeshComponent->SetFlags(RF_Transactional);
@@ -1563,7 +1576,7 @@ void FEdModeMeshPaint::PaintMeshVertices(
 			{
 				// We're changing the mesh itself, so ALL static mesh components in the scene will need
 				// to be unregistered for this (and reregistered afterwards.)
-				RecreateRenderStateContext.Reset( new FStaticMeshComponentRecreateRenderStateContext( StaticMesh ) );
+				RecreateRenderStateContext = MakeUnique<FStaticMeshComponentRecreateRenderStateContext>( StaticMesh );
 
 				// Dirty the mesh
 				StaticMesh->SetFlags(RF_Transactional);
@@ -3760,7 +3773,7 @@ void FEdModeMeshPaint::PasteInstanceVertexColors()
 
 	USelection& SelectedActors = *Owner->GetSelectedActors();
 
-	TScopedPointer< FComponentReregisterContext > ComponentReregisterContext;
+	TUniquePtr< FComponentReregisterContext > ComponentReregisterContext;
 
 	for( int32 ActorIndex = 0; ActorIndex < SelectedActors.Num(); ActorIndex++ )
 	{
@@ -3795,7 +3808,7 @@ void FEdModeMeshPaint::PasteInstanceVertexColors()
 
 					if(FoundColors != NULL)
 					{
-						ComponentReregisterContext.Reset( new FComponentReregisterContext( StaticMeshComponent ) );
+						ComponentReregisterContext = MakeUnique<FComponentReregisterContext>( StaticMeshComponent );
 						StaticMeshComponent->SetFlags(RF_Transactional);
 						StaticMeshComponent->Modify();
 						StaticMeshComponent->SetLODDataCount( NumLods, NumLods );
@@ -4340,8 +4353,8 @@ void FImportVertexTextureHelper::ImportVertexColors(FEditorModeTools* ModeTools,
 
 		FStaticMeshLODResources& LODModel = StaticMesh->RenderData->LODResources[ ImportLOD ];
 
-		TScopedPointer< FStaticMeshComponentRecreateRenderStateContext > RecreateRenderStateContext;
-		TScopedPointer< FComponentReregisterContext > ComponentReregisterContext;
+		TUniquePtr< FStaticMeshComponentRecreateRenderStateContext > RecreateRenderStateContext;
+		TUniquePtr< FComponentReregisterContext > ComponentReregisterContext;
 
 		FStaticMeshComponentLODInfo* InstanceMeshLODInfo = NULL;
 
@@ -4352,7 +4365,7 @@ void FImportVertexTextureHelper::ImportVertexColors(FEditorModeTools* ModeTools,
 
 		if (bComponent)
 		{
-			ComponentReregisterContext.Reset( new FComponentReregisterContext( StaticMeshComponent ) );
+			ComponentReregisterContext = MakeUnique<FComponentReregisterContext>( StaticMeshComponent );
 			StaticMeshComponent->Modify();
 
 			// Ensure LODData has enough entries in it, free not required.
@@ -4400,7 +4413,7 @@ void FImportVertexTextureHelper::ImportVertexColors(FEditorModeTools* ModeTools,
 			}
 			// We're changing the mesh itself, so ALL static mesh components in the scene will need
 			// to be detached for this (and reattached afterwards.)
-			RecreateRenderStateContext.Reset( new FStaticMeshComponentRecreateRenderStateContext( StaticMesh ) );
+			RecreateRenderStateContext = MakeUnique<FStaticMeshComponentRecreateRenderStateContext>( StaticMesh );
 
 			// Dirty the mesh
 			StaticMesh->Modify();

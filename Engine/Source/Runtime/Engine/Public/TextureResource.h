@@ -6,9 +6,22 @@
 	Texture.h: Unreal texture related classes.
 =============================================================================*/
 
+#include "CoreMinimal.h"
+#include "HAL/ThreadSafeCounter.h"
+#include "Containers/IndirectArray.h"
+#include "Stats/Stats.h"
+#include "Containers/List.h"
+#include "Templates/ScopedPointer.h"
+#include "Async/AsyncWork.h"
+#include "Async/AsyncFileHandle.h"
+#include "RHI.h"
+#include "RenderResource.h"
+#include "Serialization/BulkData.h"
 #include "Engine/TextureDefines.h"
 #include "UnrealClient.h"
+#include "UniquePtr.h"
 
+class FTexture2DResourceMem;
 class UTexture2D;
 
 /** Maximum number of slices in texture source art. */
@@ -311,7 +324,7 @@ private:
 	int32 CurrentFirstMip;
 
 	/** Pending async create texture task, if any.															*/
-	TScopedPointer<FAsyncCreateTextureTask> AsyncCreateTextureTask;
+	TUniquePtr<FAsyncCreateTextureTask> AsyncCreateTextureTask;
 	
 	/** Local copy/ cache of mip data between creation and first call to InitRHI.							*/
 	void*				MipData[MAX_TEXTURE_MIP_COUNT];
@@ -859,5 +872,4 @@ private:
 	ECubeFace CurrentTargetFace;
 };
 
-
-#define TEXTURERESOURCE_H_INCLUDED 1 // needed by TargetPlatform, so TTargetPlatformBase template knows if it can use UTexture in GetDefaultTextureFormatName, or rather just declare it
+ENGINE_API FName GetDefaultTextureFormatName( const class ITargetPlatform* TargetPlatform, const class UTexture* Texture, const class FConfigFile& EngineSettings, bool bSupportDX11TextureFormats );

@@ -4,13 +4,38 @@
 	ShadowDepthRendering.cpp: Shadow depth rendering implementation
 =============================================================================*/
 
-#include "RendererPrivate.h"
-#include "ScenePrivate.h"
-#include "TextureLayout.h"
-#include "LightPropagationVolume.h"
+#include "CoreMinimal.h"
+#include "Stats/Stats.h"
+#include "Misc/MemStack.h"
+#include "RHIDefinitions.h"
+#include "HAL/IConsoleManager.h"
+#include "Async/TaskGraphInterfaces.h"
+#include "RHI.h"
+#include "HitProxies.h"
+#include "ShaderParameters.h"
+#include "RenderResource.h"
+#include "RendererInterface.h"
+#include "PrimitiveViewRelevance.h"
+#include "UniformBuffer.h"
+#include "Shader.h"
+#include "StaticBoundShaderState.h"
 #include "SceneUtils.h"
-#include "SceneFilterRendering.h"
+#include "Materials/Material.h"
+#include "RHIStaticStates.h"
+#include "PostProcess/SceneRenderTargets.h"
+#include "GlobalShader.h"
+#include "MaterialShaderType.h"
+#include "MaterialShader.h"
+#include "DrawingPolicy.h"
+#include "MeshMaterialShader.h"
+#include "ShaderBaseClasses.h"
+#include "ShadowRendering.h"
+#include "SceneRendering.h"
+#include "LightPropagationVolume.h"
+#include "ScenePrivate.h"
+#include "PostProcess/SceneFilterRendering.h"
 #include "ScreenRendering.h"
+#include "ClearQuad.h"
 
 DECLARE_FLOAT_COUNTER_STAT(TEXT("Shadow Depths"), Stat_GPU_ShadowDepths, STATGROUP_GPU);
 
@@ -1879,7 +1904,7 @@ void FProjectedShadowInfo::ModifyViewForShadow(FRHICommandList& RHICmdList, FVie
 	FoundView->ViewMatrices.HackRemoveTemporalAAProjectionJitter();
 
 	FSceneRenderTargets& SceneContext = FSceneRenderTargets::Get(RHICmdList);
-	FoundView->CachedViewUniformShaderParameters = new FViewUniformShaderParameters();
+	FoundView->CachedViewUniformShaderParameters = MakeUnique<FViewUniformShaderParameters>();
 
 	// Override the view matrix so that billboarding primitives will be aligned to the light
 	FoundView->ViewMatrices.HackOverrideViewMatrixForShadows(ShadowViewMatrix);

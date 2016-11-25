@@ -6,11 +6,17 @@
 
 #pragma once
 
-#include "Core.h"
+#include "CoreMinimal.h"
+#include "Stats/Stats.h"
 #include "RHIDefinitions.h"
-#include "StaticArray.h"
+#include "Containers/StaticArray.h"
 
 #define INVALID_FENCE_ID (0xffffffffffffffffull)
+
+class FRenderTarget;
+class FResourceArrayInterface;
+class FResourceBulkDataInterface;
+struct Rect;
 
 inline const bool IsValidFenceID( const uint64 FenceID )
 {
@@ -255,6 +261,9 @@ extern RHI_API bool GRHISupportsBaseVertexIndex;
 
 /** True if the RHI supports hardware instancing */
 extern RHI_API bool GRHISupportsInstancing;
+
+/** True if the RHI supports copying cubemap faces using CopyToResolveTarget */
+extern RHI_API bool GRHISupportsResolveCubemapFaces;
 
 /** Whether or not the RHI can handle a non-zero FirstInstance - extra SetStreamSource calls will be needed if this is false */
 extern RHI_API bool GRHISupportsFirstInstance;

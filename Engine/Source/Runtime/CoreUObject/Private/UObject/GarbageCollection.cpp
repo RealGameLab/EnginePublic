@@ -4,10 +4,20 @@
 	UnObjGC.cpp: Unreal object garbage collection code.
 =============================================================================*/
 
-#include "CoreUObjectPrivate.h"
-#include "TaskGraphInterfaces.h"
-#include "IConsoleManager.h"
-#include "LinkerPlaceholderClass.h"
+#include "UObject/GarbageCollection.h"
+#include "HAL/ThreadSafeBool.h"
+#include "Misc/TimeGuard.h"
+#include "HAL/IConsoleManager.h"
+#include "Misc/App.h"
+#include "UObject/ScriptInterface.h"
+#include "UObject/UObjectAllocator.h"
+#include "UObject/UObjectBase.h"
+#include "UObject/Object.h"
+#include "UObject/Class.h"
+#include "UObject/UObjectIterator.h"
+#include "UObject/UnrealType.h"
+#include "UObject/LinkerLoad.h"
+#include "UObject/GCObject.h"
 #include "UObject/GCScopeLock.h"
 #include "HAL/ExceptionHandling.h"
 
@@ -1824,6 +1834,12 @@ void UClass::EmitFixedArrayEnd()
 
 void UClass::AssembleReferenceTokenStream(bool bForce)
 {
+	const bool bNotNative = !(ClassFlags & CLASS_Native);
+	if (bNotNative)
+	{
+		ReferenceTokenStreamCritical.Lock();
+	}
+
 	if (!HasAnyClassFlags(CLASS_TokenStreamAssembled) || bForce)
 	{
 		if (bForce)
@@ -1881,6 +1897,10 @@ void UClass::AssembleReferenceTokenStream(bool bForce)
 
 		check(!HasAnyClassFlags(CLASS_TokenStreamAssembled)); // recursion here is probably bad
 		ClassFlags |= CLASS_TokenStreamAssembled;
+	}
+	if (bNotNative)
+	{
+		ReferenceTokenStreamCritical.Unlock();
 	}
 }
 

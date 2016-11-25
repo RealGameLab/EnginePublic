@@ -4,28 +4,31 @@
 	MaterialShared.cpp: Shared material implementation.
 =============================================================================*/
 
-#include "EnginePrivate.h"
-#include "Materials/MaterialExpressionBreakMaterialAttributes.h"
+#include "MaterialShared.h"
+#include "Stats/StatsMisc.h"
+#include "UObject/CoreObjectVersion.h"
+#include "Misc/App.h"
+#include "UObject/UObjectHash.h"
+#include "LocalVertexFactory.h"
+#include "Materials/MaterialInterface.h"
+#include "MaterialExpressionIO.h"
+#include "Materials/Material.h"
 #include "Materials/MaterialInstanceBasePropertyOverrides.h"
-#include "PixelFormat.h"
+#include "Materials/MaterialInstance.h"
+#include "UObject/UObjectIterator.h"
+#include "ComponentReregisterContext.h"
+#include "Materials/MaterialExpressionBreakMaterialAttributes.h"
 #include "ShaderCompiler.h"
 #include "MaterialCompiler.h"
-#include "MaterialShaderType.h"
 #include "MeshMaterialShaderType.h"
-#include "HLSLMaterialTranslator.h"
-#include "MaterialUniformExpressions.h"
-#include "Developer/TargetPlatform/Public/TargetPlatform.h"
-#include "ComponentReregisterContext.h"
+#include "RendererInterface.h"
+#include "Materials/HLSLMaterialTranslator.h"
 #include "ComponentRecreateRenderStateContext.h"
 #include "EngineModule.h"
-#include "Engine/Font.h"
+#include "Engine/Texture.h"
 
-#include "LocalVertexFactory.h"
-
-#include "VertexFactory.h"
-#include "RendererInterface.h"
+#include "ShaderPlatformQualitySettings.h"
 #include "MaterialShaderQualitySettings.h"
-#include "UObject/CoreObjectVersion.h"
 #include "DecalRenderingCommon.h"
 
 DEFINE_LOG_CATEGORY(LogMaterial);
@@ -2317,7 +2320,7 @@ void FMaterial::UpdateEditorLoadedMaterialResources(EShaderPlatform InShaderPlat
 	}
 }
 
-void FMaterial::BackupEditorLoadedMaterialShadersToMemory(TMap<FMaterialShaderMap*, TScopedPointer<TArray<uint8> > >& ShaderMapToSerializedShaderData)
+void FMaterial::BackupEditorLoadedMaterialShadersToMemory(TMap<FMaterialShaderMap*, TUniquePtr<TArray<uint8> > >& ShaderMapToSerializedShaderData)
 {
 	for (TSet<FMaterial*>::TIterator It(EditorLoadedMaterialResources); It; ++It)
 	{
@@ -2332,7 +2335,7 @@ void FMaterial::BackupEditorLoadedMaterialShadersToMemory(TMap<FMaterialShaderMa
 	}
 }
 
-void FMaterial::RestoreEditorLoadedMaterialShadersFromMemory(const TMap<FMaterialShaderMap*, TScopedPointer<TArray<uint8> > >& ShaderMapToSerializedShaderData)
+void FMaterial::RestoreEditorLoadedMaterialShadersFromMemory(const TMap<FMaterialShaderMap*, TUniquePtr<TArray<uint8> > >& ShaderMapToSerializedShaderData)
 {
 	for (TSet<FMaterial*>::TIterator It(EditorLoadedMaterialResources); It; ++It)
 	{
@@ -2341,7 +2344,7 @@ void FMaterial::RestoreEditorLoadedMaterialShadersFromMemory(const TMap<FMateria
 
 		if (ShaderMap)
 		{
-			const TScopedPointer<TArray<uint8> >* ShaderData = ShaderMapToSerializedShaderData.Find(ShaderMap);
+			const TUniquePtr<TArray<uint8> >* ShaderData = ShaderMapToSerializedShaderData.Find(ShaderMap);
 
 			if (ShaderData)
 			{
@@ -2359,11 +2362,11 @@ FMaterialUpdateContext::FMaterialUpdateContext(uint32 Options, EShaderPlatform I
 	bSyncWithRenderingThread = (Options & EOptions::SyncWithRenderingThread) != 0;
 	if (bReregisterComponents)
 	{
-		ComponentReregisterContext = new FGlobalComponentReregisterContext();
+		ComponentReregisterContext = MakeUnique<FGlobalComponentReregisterContext>();
 	}
 	else if (bRecreateRenderStates)
 	{
-		ComponentRecreateRenderStateContext = new FGlobalComponentRecreateRenderStateContext();
+		ComponentRecreateRenderStateContext = MakeUnique<FGlobalComponentRecreateRenderStateContext>();
 	}
 	if (bSyncWithRenderingThread)
 	{
@@ -2421,7 +2424,7 @@ FMaterialUpdateContext::~FMaterialUpdateContext()
 	TArray<const FMaterial*> MaterialResourcesToUpdate;
 	TArray<UMaterialInstance*> InstancesToUpdate;
 
-	bool bUpdateStaticDrawLists = !ComponentReregisterContext.IsValid() && !ComponentRecreateRenderStateContext.IsValid();
+	bool bUpdateStaticDrawLists = !ComponentReregisterContext && !ComponentRecreateRenderStateContext;
 
 	// If static draw lists must be updated, gather material resources from all updated materials.
 	if (bUpdateStaticDrawLists)
@@ -2510,11 +2513,11 @@ FMaterialUpdateContext::~FMaterialUpdateContext()
 		// safe, e.g. while a component is being registered.
 		GetRendererModule().UpdateStaticDrawListsForMaterials(MaterialResourcesToUpdate);
 	}
-	else if (ComponentReregisterContext.IsValid())
+	else if (ComponentReregisterContext)
 	{
 		ComponentReregisterContext.Reset();
 	}
-	else if (ComponentRecreateRenderStateContext.IsValid())
+	else if (ComponentRecreateRenderStateContext)
 	{
 		ComponentRecreateRenderStateContext.Reset();
 	}
@@ -2726,8 +2729,7 @@ bool FMaterialShaderMapId::ContainsVertexFactoryType(const FVertexFactoryType* V
 	}
 
 	return false;
-}
-//////////////////////////////////////////////////////////////////////////
+}//////////////////////////////////////////////////////////////////////////
 
 FMaterialAttributeDefintion::FMaterialAttributeDefintion(
 		const FGuid& InAttributeID, const FString& InDisplayName, EMaterialProperty InProperty,

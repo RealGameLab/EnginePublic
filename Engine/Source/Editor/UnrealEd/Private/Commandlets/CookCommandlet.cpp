@@ -4,37 +4,55 @@
 	CookCommandlet.cpp: Commandlet for cooking content
 =============================================================================*/
 
-#include "UnrealEd.h"
+#include "Commandlets/CookCommandlet.h"
+#include "HAL/PlatformFilemanager.h"
+#include "Misc/MessageDialog.h"
+#include "HAL/FileManager.h"
+#include "Misc/CommandLine.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
+#include "Stats/StatsMisc.h"
+#include "Misc/ConfigCacheIni.h"
+#include "Misc/LocalTimestampDirectoryVisitor.h"
+#include "Misc/App.h"
+#include "Modules/ModuleManager.h"
+#include "UObject/Class.h"
+#include "UObject/UObjectIterator.h"
+#include "UObject/Package.h"
+#include "UObject/MetaData.h"
+#include "Async/TaskGraphInterfaces.h"
+#include "Misc/RedirectCollector.h"
+#include "IPlatformFileSandboxWrapper.h"
+#include "CookOnTheSide/CookOnTheFlyServer.h"
+#include "Settings/ProjectPackagingSettings.h"
+#include "EngineGlobals.h"
+#include "Editor.h"
+#include "Serialization/ArrayWriter.h"
 
-#include "Blueprint/BlueprintSupport.h"
 #include "BlueprintNativeCodeGenModule.h"
 #include "Engine/WorldComposition.h"
 #include "PackageHelperFunctions.h"
 #include "DerivedDataCacheInterface.h"
-#include "ISourceControlModule.h"
 #include "GlobalShader.h"
-#include "TargetPlatform.h"
-#include "IConsoleManager.h"
+#include "Interfaces/ITargetPlatform.h"
+#include "Interfaces/ITargetPlatformManagerModule.h"
 #include "Developer/PackageDependencyInfo/Public/PackageDependencyInfo.h"
-#include "IPlatformFileSandboxWrapper.h"
-#include "Messaging.h"
-#include "NetworkFileSystem.h"
+#include "Interfaces/INetworkFileSystemModule.h"
 #include "AssetRegistryModule.h"
-#include "UnrealEdMessages.h"
 #include "GameDelegates.h"
-#include "ChunkManifestGenerator.h"
+#include "Commandlets/ChunkManifestGenerator.h"
 #include "CookerSettings.h"
 #include "ShaderCompiler.h"
-#include "MemoryMisc.h"
-#include "CookStats.h"
-#include "DerivedDataCacheUsageStats.h"
+#include "HAL/MemoryMisc.h"
+#include "ProfilingDebugging/CookStats.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogCookCommandlet, Log, All);
 
 #if ENABLE_COOK_STATS
-#include "ScopedTimers.h"
-#include "AnalyticsET.h"
+#include "ProfilingDebugging/ScopedTimers.h"
+#include "AnalyticsEventAttribute.h"
 #include "IAnalyticsProviderET.h"
+#include "AnalyticsET.h"
 
 namespace DetailedCookStats
 {
@@ -1752,7 +1770,7 @@ bool UCookCommandlet::Cook(const TArray<ITargetPlatform*>& Platforms, TArray<FSt
 	// but will not be used to actually write/read files so we can safely
 	// use [Platform] token in the sandbox directory name and then replace it
 	// with the actual platform name.
-	SandboxFile = new FSandboxPlatformFile(false);
+	SandboxFile = MakeUnique<FSandboxPlatformFile>(false);
 
 	// Output directory override.	
 	FString OutputDirectory = GetOutputDirectoryOverride();
@@ -1983,7 +2001,7 @@ bool UCookCommandlet::Cook(const TArray<ITargetPlatform*>& Platforms, TArray<FSt
 
 	{
 		// Always try to save the manifests, this is required to make the asset registry work, but doesn't necessarily write a file
-		ManifestGenerator.SaveManifests(SandboxFile.GetOwnedPointer());
+		ManifestGenerator.SaveManifests(SandboxFile.Get());
 
 		// Save modified asset registry with all streaming chunk info generated during cook
 		FString RegistryFilename = FPaths::GameDir() / TEXT("AssetRegistry.bin");

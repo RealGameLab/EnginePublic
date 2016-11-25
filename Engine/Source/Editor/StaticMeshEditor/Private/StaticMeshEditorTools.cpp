@@ -1,21 +1,36 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
-#include "StaticMeshEditorModule.h"
 #include "StaticMeshEditorTools.h"
+#include "Framework/Commands/UIAction.h"
+#include "Textures/SlateIcon.h"
+#include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "EngineDefines.h"
+#include "EditorStyleSet.h"
+#include "PropertyHandle.h"
+#include "IDetailChildrenBuilder.h"
+#include "Misc/MessageDialog.h"
+#include "Misc/FeedbackContext.h"
+#include "Modules/ModuleManager.h"
+#include "SlateOptMacros.h"
+#include "Widgets/Layout/SBox.h"
+#include "Widgets/Input/SButton.h"
+#include "Widgets/Input/SCheckBox.h"
+#include "Materials/Material.h"
+#include "DetailLayoutBuilder.h"
+#include "DetailCategoryBuilder.h"
 #include "RawMesh.h"
 #include "MeshUtilities.h"
-#include "TargetPlatform.h"
 #include "StaticMeshResources.h"
 #include "StaticMeshEditor.h"
 #include "PropertyCustomizationHelpers.h"
 #include "PhysicsEngine/BodySetup.h"
 #include "FbxMeshUtils.h"
-#include "SVectorInputBox.h"
+#include "Widgets/Input/SVectorInputBox.h"
+
 #include "Runtime/Analytics/Analytics/Public/Interfaces/IAnalyticsProvider.h"
 #include "EngineAnalytics.h"
-#include "STextComboBox.h"
+#include "Widgets/Input/STextComboBox.h"
 #include "ScopedTransaction.h"
-#include "SNumericEntryBox.h"
 
 const float MaxHullAccuracy = 1.f;
 const float MinHullAccuracy = 0.f;
@@ -1362,7 +1377,7 @@ void FMeshSectionSettingsLayout::OnGetSectionsForView(ISectionListBuilder& OutSe
 {
 	check(LODIndex == ForLODIndex);
 	UStaticMesh& StaticMesh = GetStaticMesh();
-	FStaticMeshRenderData* RenderData = StaticMesh.RenderData;
+	FStaticMeshRenderData* RenderData = StaticMesh.RenderData.Get();
 	if (RenderData && RenderData->LODResources.IsValidIndex(LODIndex))
 	{
 		FStaticMeshLODResources& LOD = RenderData->LODResources[LODIndex];
@@ -1413,7 +1428,7 @@ void FMeshSectionSettingsLayout::OnSectionChanged(int32 ForLODIndex, int32 Secti
 	}
 	check(NewStaticMaterialIndex != INDEX_NONE);
 	check(StaticMesh.RenderData);
-	FStaticMeshRenderData* RenderData = StaticMesh.RenderData;
+	FStaticMeshRenderData* RenderData = StaticMesh.RenderData.Get();
 	if (RenderData && RenderData->LODResources.IsValidIndex(LODIndex))
 	{
 		FStaticMeshLODResources& LOD = RenderData->LODResources[LODIndex];
@@ -2286,7 +2301,7 @@ void FLevelOfDetailSettingsLayout::AddLODLevelCategories( IDetailLayoutBuilder& 
 	if( StaticMesh )
 	{
 		const int32 StaticMeshLODCount = StaticMesh->GetNumLODs();
-		FStaticMeshRenderData* RenderData = StaticMesh->RenderData;
+		FStaticMeshRenderData* RenderData = StaticMesh->RenderData.Get();
 
 		//Add the Materials array
 		{

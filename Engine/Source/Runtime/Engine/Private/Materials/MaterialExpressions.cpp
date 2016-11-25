@@ -4,7 +4,32 @@
 	MaterialExpressions.cpp - Material expressions implementation.
 =============================================================================*/
 
-#include "EnginePrivate.h"
+#include "CoreMinimal.h"
+#include "Misc/MessageDialog.h"
+#include "Misc/Guid.h"
+#include "UObject/RenderingObjectVersion.h"
+#include "Misc/App.h"
+#include "UObject/Object.h"
+#include "UObject/Class.h"
+#include "UObject/UnrealType.h"
+#include "UObject/UObjectAnnotation.h"
+#include "UObject/ConstructorHelpers.h"
+#include "EngineGlobals.h"
+#include "Materials/MaterialInterface.h"
+#include "Engine/Engine.h"
+#include "Engine/Font.h"
+#include "MaterialShared.h"
+#include "MaterialExpressionIO.h"
+#include "Materials/MaterialExpression.h"
+#include "Materials/MaterialExpressionMaterialFunctionCall.h"
+#include "Materials/MaterialFunction.h"
+#include "Materials/Material.h"
+#include "Engine/Texture2D.h"
+#include "Engine/TextureRenderTarget2D.h"
+#include "Engine/Texture2DDynamic.h"
+#include "Engine/TextureCube.h"
+#include "Engine/TextureRenderTargetCube.h"
+#include "Styling/CoreStyle.h"
 
 #include "Materials/MaterialExpressionAbs.h"
 #include "Materials/MaterialExpressionActorPositionWS.h"
@@ -73,7 +98,6 @@
 #include "Materials/MaterialExpressionLinearInterpolate.h"
 #include "Materials/MaterialExpressionLogarithm2.h"
 #include "Materials/MaterialExpressionMakeMaterialAttributes.h"
-#include "Materials/MaterialExpressionMaterialFunctionCall.h"
 #include "Materials/MaterialExpressionMax.h"
 #include "Materials/MaterialExpressionMaterialProxyReplace.h"
 #include "Materials/MaterialExpressionMin.h"
@@ -156,7 +180,6 @@
 #include "Materials/MaterialExpressionWorldPosition.h"
 #include "Materials/MaterialExpressionDistanceToNearestSurface.h"
 #include "Materials/MaterialExpressionDistanceFieldGradient.h"
-#include "Materials/MaterialFunction.h"
 #include "Materials/MaterialParameterCollection.h"
 #include "Materials/MaterialExpressionClearCoatNormalCustomOutput.h"
 #include "Materials/MaterialExpressionAtmosphericLightVector.h"
@@ -165,19 +188,12 @@
 #include "EditorSupportDelegates.h"
 #include "MaterialCompiler.h"
 #if WITH_EDITOR
-#include "SlateBasics.h"
-#include "UnrealEd.h"
-#include "UObjectAnnotation.h"
-#include "SNotificationList.h"
-#include "NotificationManager.h"
+#include "MaterialGraph/MaterialGraphNode_Comment.h"
+#include "MaterialGraph/MaterialGraphNode.h"
+#include "Framework/Notifications/NotificationManager.h"
+#include "Widgets/Notifications/SNotificationList.h"
 #endif //WITH_EDITOR
 
-#include "Engine/Font.h"
-#include "Engine/Texture2DDynamic.h"
-#include "Engine/TextureRenderTargetCube.h"
-#include "Engine/TextureRenderTarget2D.h"
-#include "Engine/TextureCube.h"
-#include "RenderingObjectVersion.h"
 
 #define LOCTEXT_NAMESPACE "MaterialExpression"
 
@@ -6345,8 +6361,7 @@ FString UMaterialExpressionSceneDepth::GetInputName(int32 InputIndex) const
 	if(InputIndex == 0)
 	{
 		// Display the current InputMode enum's display name.
-		UByteProperty* InputModeProperty = NULL;
-		InputModeProperty = FindField<UByteProperty>( UMaterialExpressionSceneDepth::StaticClass(), "InputMode" );
+		UByteProperty* InputModeProperty = FindField<UByteProperty>( UMaterialExpressionSceneDepth::StaticClass(), "InputMode" );
 		return InputModeProperty->Enum->GetEnumName((int32)InputMode.GetValue());
 	}
 	return TEXT("");
@@ -6610,8 +6625,7 @@ FString UMaterialExpressionSceneColor::GetInputName(int32 InputIndex) const
 	if(InputIndex == 0)
 	{
 		// Display the current InputMode enum's display name.
-		UByteProperty* InputModeProperty = NULL;
-		InputModeProperty = FindField<UByteProperty>( UMaterialExpressionSceneColor::StaticClass(), "InputMode" );
+		UByteProperty* InputModeProperty = FindField<UByteProperty>( UMaterialExpressionSceneColor::StaticClass(), "InputMode" );
 		return InputModeProperty->Enum->GetEnumName((int32)InputMode.GetValue());
 	}
 	return TEXT("");

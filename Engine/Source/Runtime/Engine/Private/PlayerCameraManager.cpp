@@ -1,15 +1,21 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
-#include "EnginePrivate.h"
-#include "ParticleDefinitions.h"
-#include "SoundDefinitions.h"
-#include "Particles/EmitterCameraLensEffectBase.h"
-#include "IHeadMountedDisplay.h"
-#include "Particles/EmitterCameraLensEffectBase.h"
+#include "Camera/PlayerCameraManager.h"
+#include "GameFramework/Pawn.h"
+#include "CollisionQueryParams.h"
+#include "WorldCollision.h"
+#include "Engine/World.h"
+#include "GameFramework/Controller.h"
 #include "Camera/CameraActor.h"
+#include "Engine/Canvas.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/WorldSettings.h"
+#include "AudioDevice.h"
+#include "Particles/EmitterCameraLensEffectBase.h"
 #include "Camera/CameraAnim.h"
 #include "Camera/CameraAnimInst.h"
 #include "Camera/CameraComponent.h"
+#include "Camera/CameraModifier.h"
 #include "Camera/CameraModifier_CameraShake.h"
 #include "Camera/CameraPhotography.h"
 #include "GameFramework/PlayerState.h"
@@ -1237,7 +1243,7 @@ void APlayerCameraManager::PlayWorldCameraShake(UWorld* InWorld, TSubclassOf<cla
 {
 	for( FConstPlayerControllerIterator Iterator = InWorld->GetPlayerControllerIterator(); Iterator; ++Iterator )
 	{
-		APlayerController* PlayerController = *Iterator;
+		APlayerController* PlayerController = Iterator->Get();
 		if (PlayerController && PlayerController->PlayerCameraManager != NULL)
 		{
 			float ShakeScale = CalcRadialShakeScale(PlayerController->PlayerCameraManager, Epicenter, InnerRadius, OuterRadius, Falloff);

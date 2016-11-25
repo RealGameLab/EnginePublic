@@ -4,47 +4,86 @@
 	CookOnTheFlyServer.cpp: handles polite cook requests via network ;)
 =============================================================================*/
 
-#include "UnrealEd.h"
-
-
+#include "CookOnTheSide/CookOnTheFlyServer.h"
+#include "HAL/PlatformFilemanager.h"
+#include "HAL/FileManager.h"
+#include "Misc/CommandLine.h"
+#include "Misc/FileHelper.h"
+#include "HAL/Runnable.h"
+#include "HAL/RunnableThread.h"
+#include "Stats/StatsMisc.h"
+#include "Misc/ConfigCacheIni.h"
+#include "HAL/IConsoleManager.h"
+#include "Misc/LocalTimestampDirectoryVisitor.h"
+#include "Serialization/CustomVersion.h"
+#include "Misc/App.h"
+#include "Misc/CoreDelegates.h"
+#include "Modules/ModuleManager.h"
+#include "Serialization/ArchiveUObject.h"
+#include "UObject/GarbageCollection.h"
+#include "UObject/Class.h"
+#include "UObject/UObjectIterator.h"
+#include "UObject/Package.h"
+#include "UObject/MetaData.h"
+#include "Misc/PackageName.h"
+#include "Misc/RedirectCollector.h"
+#include "Engine/Level.h"
+#include "Materials/MaterialInterface.h"
+#include "Materials/Material.h"
+#include "Settings/LevelEditorPlaySettings.h"
+#include "AssetData.h"
+#include "Editor/UnrealEdEngine.h"
+#include "Engine/Texture.h"
+#include "SceneUtils.h"
+#include "Settings/ProjectPackagingSettings.h"
+#include "EngineGlobals.h"
+#include "Editor.h"
+#include "UnrealEdGlobals.h"
+#include "FileServerMessages.h"
+#include "Internationalization/Culture.h"
+#include "Serialization/ArrayReader.h"
+#include "Serialization/ArrayWriter.h"
 #include "PackageHelperFunctions.h"
 #include "DerivedDataCacheInterface.h"
-#include "ISourceControlModule.h"
 #include "GlobalShader.h"
-#include "MaterialShader.h"
-#include "TargetPlatform.h"
-#include "IConsoleManager.h"
+#include "Interfaces/ITargetPlatform.h"
+#include "Interfaces/ITargetPlatformManagerModule.h"
+#include "Interfaces/IAudioFormat.h"
+#include "Interfaces/IShaderFormat.h"
+#include "Interfaces/ITextureFormat.h"
 #include "Developer/PackageDependencyInfo/Public/PackageDependencyInfo.h"
-#include "IPlatformFileSandboxWrapper.h"
-#include "Messaging.h"
-#include "NetworkFileSystem.h"
-#include "Developer/DesktopPlatform/Public/PlatformInfo.h"
+#include "IMessageContext.h"
+#include "Helpers/MessageEndpoint.h"
+#include "Helpers/MessageEndpointBuilder.h"
+#include "Interfaces/INetworkFileServer.h"
+#include "Interfaces/INetworkFileSystemModule.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
+#include "PlatformInfo.h"
 
 #include "AssetRegistryModule.h"
-#include "AssetData.h"
 #include "BlueprintNativeCodeGenModule.h"
 
-#include "UnrealEdMessages.h"
 #include "GameDelegates.h"
-#include "PhysicsPublic.h"
-#include "AutoSaveUtils.h"
+#include "IPAddress.h"
 
 // cook by the book requirements
 #include "Commandlets/ChunkManifestGenerator.h"
 #include "Engine/WorldComposition.h"
 
 // error message log
-#include "TokenizedMessage.h"
-#include "MessageLog.h"
+#include "Logging/TokenizedMessage.h"
+#include "Logging/MessageLog.h"
 
 // shader compiler processAsyncResults
 #include "ShaderCompiler.h"
 #include "ShaderCache.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/TextureLODSettings.h"
-#include "CookStats.h"
+#include "ProfilingDebugging/CookStats.h"
 
-#include "NetworkVersion.h"
+#include "Misc/NetworkVersion.h"
 
 #include "ParallelFor.h"
 
@@ -56,7 +95,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogCook, Log, All);
 #define OUTPUT_TIMING 1
 
 #if OUTPUT_TIMING
-#include "ScopedTimers.h"
+#include "ProfilingDebugging/ScopedTimers.h"
 
 #define HEIRARCHICAL_TIMER 1
 #define PERPACKAGE_TIMER 0
@@ -410,7 +449,6 @@ void OutputHierarchyTimers()
 #endif
 
 #if ENABLE_COOK_STATS
-#include "ScopedTimers.h"
 namespace DetailedCookStats
 {
 	//Externable so CookCommandlet can pick them up and merge them with it's cook stats
@@ -640,7 +678,7 @@ bool UCookOnTheFlyServer::ClearPackageFilenameCacheForPackage( const UPackage* P
 	return PackageFilenameCache.Remove( Package->GetFName() ) >= 1;
 }
 
-const FString& UCookOnTheFlyServer::GetCachedSandboxFilename( const UPackage* Package, TAutoPtr<class FSandboxPlatformFile>& InSandboxFile ) const 
+const FString& UCookOnTheFlyServer::GetCachedSandboxFilename( const UPackage* Package, TUniquePtr<class FSandboxPlatformFile>& InSandboxFile ) const 
 {
 	FName PackageFName = Package->GetFName();
 	static TMap<FName, FString> CachedSandboxFilenames;
@@ -5490,9 +5528,9 @@ void UCookOnTheFlyServer::CookByTheBookFinished()
 				LongCookedPackageNames.Add(FName(*LongPackageName));
 			}
 
-			Manifest.Value->BuildChunkManifest(LongCookedPackageNames, SandboxFile, CookByTheBookOptions->bGenerateStreamingInstallManifests);
+			Manifest.Value->BuildChunkManifest(LongCookedPackageNames, SandboxFile.Get(), CookByTheBookOptions->bGenerateStreamingInstallManifests);
 			// Always try to save the manifests, this is required to make the asset registry work, but doesn't necessarily write a file
-			Manifest.Value->SaveManifests(SandboxFile.GetOwnedPointer());
+			Manifest.Value->SaveManifests(SandboxFile.Get());
 
 			const FName& PlatformName = Manifest.Key;
 			TArray<FName> IgnorePackageFilenames;
@@ -5648,7 +5686,7 @@ void UCookOnTheFlyServer::CancelCookByTheBook()
 		CookRequests.DequeueAllRequests(CookByTheBookOptions->PreviousCookRequests);
 		CookByTheBookOptions->bRunning = false;
 
-		SandboxFile = NULL;
+		SandboxFile = nullptr;
 	}	
 }
 
@@ -5720,8 +5758,8 @@ void UCookOnTheFlyServer::CreateSandboxFile()
 	// but will not be used to actually write/read files so we can safely
 	// use [Platform] token in the sandbox directory name and then replace it
 	// with the actual platform name.
-	check( SandboxFile == NULL );
-	SandboxFile = new FSandboxPlatformFile(false);
+	check( SandboxFile == nullptr );
+	SandboxFile = MakeUnique<FSandboxPlatformFile>(false);
 
 	// Output directory override.	
 	FString OutputDirectory = GetOutputDirectoryOverride();
@@ -5732,7 +5770,7 @@ void UCookOnTheFlyServer::CreateSandboxFile()
 
 void UCookOnTheFlyServer::InitializeSandbox()
 {
-	if ( SandboxFile == NULL )
+	if ( SandboxFile == nullptr )
 	{
 		ITargetPlatformManagerModule& TPM = GetTargetPlatformManagerRef();
 		const TArray<ITargetPlatform*>& TargetPlatforms = TPM.GetCookingTargetPlatforms();
@@ -5753,7 +5791,7 @@ void UCookOnTheFlyServer::TermSandbox()
 {
 	ClearAllCookedData();
 	ClearPackageFilenameCache();
-	SandboxFile = NULL;
+	SandboxFile = nullptr;
 }
 
 void UCookOnTheFlyServer::ValidateCookByTheBookSettings() const

@@ -1,20 +1,26 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
 
-#include "PropertyEditorPrivatePCH.h"
-#include "ObjectPropertyNode.h"
-#include "CategoryPropertyNode.h"
+#include "PropertyNode.h"
+#include "Misc/ConfigCacheIni.h"
+#include "UObject/MetaData.h"
+#include "Serialization/ArchiveReplaceObjectRef.h"
+#include "Components/ActorComponent.h"
+#include "Editor/UnrealEdEngine.h"
+#include "Engine/UserDefinedStruct.h"
+#include "UnrealEdGlobals.h"
 #include "ScopedTransaction.h"
 #include "PropertyRestriction.h"
-#include "Editor/UnrealEd/Public/Kismet2/StructureEditorUtils.h"
-#include "Editor/UnrealEd/Public/Kismet2/BlueprintEditorUtils.h"
-#include "Engine/UserDefinedStruct.h"
+#include "Kismet2/StructureEditorUtils.h"
+#include "Kismet2/BlueprintEditorUtils.h"
 #include "Misc/ScopeExit.h"
+#include "Editor.h"
+#include "ObjectPropertyNode.h"
 #include "PropertyHandleImpl.h"
 #include "EditorSupportDelegates.h"
 
-#include "SNotificationList.h"
-#include "NotificationManager.h"
+#include "Framework/Notifications/NotificationManager.h"
+#include "Widgets/Notifications/SNotificationList.h"
 
 #define LOCTEXT_NAMESPACE "PropertyNode"
 
@@ -1690,10 +1696,19 @@ FString FPropertyNode::GetDefaultValueAsStringForObject( FPropertyItemValueDataT
 				{
 					InProperty->ExportTextItem( DefaultValue, ValueTracker.GetPropertyDefaultAddress(), ValueTracker.GetPropertyDefaultAddress(), InObject, PortFlags, NULL );
 
-					UByteProperty* ByteProperty = Cast<UByteProperty>(InProperty);
-					if ( ByteProperty != NULL && ByteProperty->Enum != NULL )
+					UEnum* Enum = nullptr;
+					if (UByteProperty* ByteProperty = Cast<UByteProperty>(InProperty))
 					{
-						AdjustEnumPropDisplayName(ByteProperty->Enum, DefaultValue);
+						Enum = ByteProperty->Enum;
+					}
+					else if (UEnumProperty* EnumProperty = Cast<UEnumProperty>(InProperty))
+					{
+						Enum = EnumProperty->GetEnum();
+					}
+
+					if ( Enum )
+					{
+						AdjustEnumPropDisplayName(Enum, DefaultValue);
 					}
 				}
 			}

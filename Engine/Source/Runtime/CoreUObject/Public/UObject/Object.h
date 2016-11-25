@@ -2,8 +2,19 @@
 
 #pragma once
 
-#include "UObjectBaseUtility.h"
-#include "ResourceSize.h"
+#include "CoreMinimal.h"
+#include "UObject/Script.h"
+#include "UObject/ObjectMacros.h"
+#include "UObject/UObjectBaseUtility.h"
+#include "ProfilingDebugging/ResourceSize.h"
+
+class FConfigCacheIni;
+class FEditPropertyChain;
+class ITargetPlatform;
+class ITransactionObjectAnnotation;
+struct FFrame;
+struct FObjectInstancingGraph;
+struct FPropertyChangedChainEvent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogObj, Log, All);
 
@@ -53,9 +64,8 @@ class COREUOBJECT_API UObject : public UObjectBaseUtility
 	/**
 	* Create a component or subobject only to be used with the editor.
 	* @param	TReturnType					class of return type, all overrides must be of this type
-	* @param	Outer						outer to construct the subobject in
 	* @param	SubobjectName				name of the new component
-	* @param bTransient		true if the component is being assigned to a transient property
+	* @param	bTransient					true if the component is being assigned to a transient property
 	*/
 	template<class TReturnType>
 	TReturnType* CreateEditorOnlyDefaultSubobject(FName SubobjectName, bool bTransient = false)
@@ -67,9 +77,8 @@ class COREUOBJECT_API UObject : public UObjectBaseUtility
 	/**
 	* Create a component or subobject
 	* @param	TReturnType					class of return type, all overrides must be of this type
-	* @param	Outer						outer to construct the subobject in
 	* @param	SubobjectName				name of the new component
-	* @param bTransient		true if the component is being assigned to a transient property
+	* @param	bTransient					true if the component is being assigned to a transient property
 	*/
 	template<class TReturnType>
 	TReturnType* CreateDefaultSubobject(FName SubobjectName, bool bTransient = false)
@@ -82,7 +91,6 @@ class COREUOBJECT_API UObject : public UObjectBaseUtility
 	* Create a component or subobject
 	* @param TReturnType class of return type, all overrides must be of this type
 	* @param TClassToConstructByDefault class to construct by default
-	* @param Outer outer to construct the subobject in
 	* @param SubobjectName name of the new component
 	* @param bTransient		true if the component is being assigned to a transient property
 	*/
@@ -96,9 +104,8 @@ class COREUOBJECT_API UObject : public UObjectBaseUtility
 	* Create optional component or subobject. Optional subobjects may not get created
 	* when a derived class specified DoNotCreateDefaultSubobject with the subobject's name.
 	* @param	TReturnType					class of return type, all overrides must be of this type
-	* @param	Outer						outer to construct the subobject in
 	* @param	SubobjectName				name of the new component
-	* @param bTransient		true if the component is being assigned to a transient property
+	* @param	bTransient					true if the component is being assigned to a transient property
 	*/
 	template<class TReturnType>
 	TReturnType* CreateOptionalDefaultSubobject(FName SubobjectName, bool bTransient = false)
@@ -111,9 +118,8 @@ class COREUOBJECT_API UObject : public UObjectBaseUtility
 	* Create optional component or subobject. Optional subobjects may not get created
 	* when a derived class specified DoNotCreateDefaultSubobject with the subobject's name.
 	* @param	TReturnType					class of return type, all overrides must be of this type
-	* @param	Outer						outer to construct the subobject in
 	* @param	SubobjectName				name of the new component
-	* @param bTransient		true if the component is being assigned to a transient property
+	* @param	bTransient					true if the component is being assigned to a transient property
 	*/
 	template<class TReturnType>
 	TReturnType* CreateAbstractDefaultSubobject(FName SubobjectName, bool bTransient = false)
@@ -1245,3 +1251,4 @@ FORCEINLINE bool IsValid(const UObject *Test)
 {
 	return Test && !Test->IsPendingKill();
 }
+

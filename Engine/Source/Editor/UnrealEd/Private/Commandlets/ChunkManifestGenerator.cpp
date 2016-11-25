@@ -1,19 +1,29 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
-#include "UnrealEd.h"
-#include "PackageHelperFunctions.h"
-#include "DerivedDataCacheInterface.h"
-#include "ISourceControlModule.h"
-#include "GlobalShader.h"
-#include "TargetPlatform.h"
-#include "IConsoleManager.h"
-#include "Developer/PackageDependencyInfo/Public/PackageDependencyInfo.h"
+#include "Commandlets/ChunkManifestGenerator.h"
+#include "HAL/FileManager.h"
+#include "Misc/FileHelper.h"
+#include "Serialization/ArrayReader.h"
+#include "Serialization/ArrayWriter.h"
+#include "Misc/App.h"
+#include "Serialization/JsonTypes.h"
+#include "Serialization/JsonReader.h"
+#include "Policies/PrettyJsonPrintPolicy.h"
+#include "Serialization/JsonSerializer.h"
+#include "Engine/Level.h"
+#include "Engine/World.h"
+#include "Settings/ProjectPackagingSettings.h"
+#include "CollectionManagerTypes.h"
+#include "ICollectionManager.h"
+#include "CollectionManagerModule.h"
+#include "Interfaces/ITargetPlatform.h"
 #include "AssetRegistryModule.h"
-#include "UnrealEdMessages.h"
 #include "GameDelegates.h"
-#include "ChunkManifestGenerator.h"
-#include "ChunkDependencyInfo.h"
+#include "Commandlets/ChunkDependencyInfo.h"
 #include "IPlatformFileSandboxWrapper.h"
+#include "Misc/ConfigCacheIni.h"
+#include "Stats/StatsMisc.h"
+#include "UniquePtr.h"
 
 #include "JsonWriter.h"
 #include "JsonReader.h"
@@ -150,16 +160,16 @@ bool FChunkManifestGenerator::GenerateStreamingInstallManifest(const FString& Pl
 	
 	// open a file for writing the list of pak file lists that we've generated
 	FString PakChunkListFilename = TmpPackagingDir / TEXT("pakchunklist.txt");
-	TAutoPtr<FArchive> PakChunkListFile(IFileManager::Get().CreateFileWriter(*PakChunkListFilename));
+	TUniquePtr<FArchive> PakChunkListFile(IFileManager::Get().CreateFileWriter(*PakChunkListFilename));
 
-	if (!PakChunkListFile.IsValid())
+	if (!PakChunkListFile)
 	{
 		UE_LOG(LogChunkManifestGenerator, Error, TEXT("Failed to open output pakchunklist file %s"), *PakChunkListFilename);
 		return false;
 	}
 
 	FString PakChunkLayerInfoFilename = FString::Printf(TEXT("%s/pakchunklayers.txt"), *TmpPackagingDir);
-	TAutoPtr<FArchive> ChunkLayerFile(IFileManager::Get().CreateFileWriter(*PakChunkLayerInfoFilename));
+	TUniquePtr<FArchive> ChunkLayerFile(IFileManager::Get().CreateFileWriter(*PakChunkLayerInfoFilename));
 
 	// generate per-chunk pak list files
 	for (int32 Index = 0; Index < FinalChunkManifests.Num(); ++Index)
@@ -170,9 +180,9 @@ bool FChunkManifestGenerator::GenerateStreamingInstallManifest(const FString& Pl
 			continue;
 		}
 		FString PakListFilename = FString::Printf(TEXT("%s/pakchunk%d.txt"), *TmpPackagingDir, Index);
-		TAutoPtr<FArchive> PakListFile(IFileManager::Get().CreateFileWriter(*PakListFilename));
+		TUniquePtr<FArchive> PakListFile(IFileManager::Get().CreateFileWriter(*PakListFilename));
 
-		if (!PakListFile.IsValid())
+		if (!PakListFile)
 		{
 			UE_LOG(LogChunkManifestGenerator, Error, TEXT("Failed to open output paklist file %s"), *PakListFilename);
 			return false;

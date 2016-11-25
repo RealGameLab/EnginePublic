@@ -1,22 +1,37 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
-#include "EnginePrivate.h"
-#include "Engine/GameEngine.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "Engine/Console.h"
+#include "HAL/IConsoleManager.h"
+#include "GenericPlatform/GenericApplication.h"
+#include "Misc/CommandLine.h"
+#include "Misc/App.h"
+#include "Misc/EngineVersion.h"
+#include "UObject/GCObject.h"
+#include "EngineGlobals.h"
+#include "Components/ActorComponent.h"
+#include "TimerManager.h"
+#include "GameFramework/Actor.h"
+#include "CollisionQueryParams.h"
+#include "WorldCollision.h"
+#include "Components/PrimitiveComponent.h"
+#include "Engine/CollisionProfile.h"
+#include "Kismet/GameplayStatics.h"
 #include "LatentActions.h"
+#include "Engine/LocalPlayer.h"
+#include "DrawDebugHelpers.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Engine/GameEngine.h"
+#include "Engine/Console.h"
 #include "DelayAction.h"
 #include "InterpolateComponentToAction.h"
+#include "Interfaces/IAdvertisingProvider.h"
 #include "Advertising.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
-#include "Kismet/GameplayStatics.h"
-#include "SlateCore.h"
 #include "Engine/StreamableManager.h"
 #include "Net/OnlineEngineInterface.h"
 #include "UserActivityTracking.h"
 #include "PhysicsEngine/PhysicsSettings.h"
-#include "CommandLine.h"
 
 //////////////////////////////////////////////////////////////////////////
 // UKismetSystemLibrary
@@ -743,11 +758,16 @@ void UKismetSystemLibrary::SetBytePropertyByName(UObject* Object, FName Property
 {
 	if(Object != NULL)
 	{
-		UByteProperty* ByteProp = FindField<UByteProperty>(Object->GetClass(), PropertyName);
-		if(ByteProp != NULL)
+		if(UByteProperty* ByteProp = FindField<UByteProperty>(Object->GetClass(), PropertyName))
 		{
 			ByteProp->SetPropertyValue_InContainer(Object, Value);
-		}		
+		}
+		else if(UEnumProperty* EnumProp = FindField<UEnumProperty>(Object->GetClass(), PropertyName))
+		{
+			void* PropAddr = EnumProp->ContainerPtrToValuePtr<void>(Object);
+			UNumericProperty* UnderlyingProp = EnumProp->GetUnderlyingProperty();
+			UnderlyingProp->SetIntPropertyValue(PropAddr, (int64)Value);
+		}
 	}
 }
 

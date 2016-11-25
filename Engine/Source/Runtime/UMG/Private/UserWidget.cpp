@@ -1,13 +1,21 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
-#include "UMGPrivatePCH.h"
+#include "Blueprint/UserWidget.h"
+#include "Rendering/DrawElements.h"
+#include "Sound/SoundBase.h"
+#include "Sound/SlateSound.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Widgets/Layout/SSpacer.h"
+#include "Widgets/Layout/SConstraintCanvas.h"
+#include "Components/NamedSlot.h"
+#include "Slate/SObjectWidget.h"
+#include "Blueprint/WidgetTree.h"
+#include "Blueprint/WidgetBlueprintGeneratedClass.h"
+#include "Animation/UMGSequencePlayer.h"
 
-#include "UMGSequencePlayer.h"
-#include "SceneViewport.h"
-#include "WidgetAnimation.h"
 
-#include "WidgetBlueprintLibrary.h"
-#include "WidgetLayoutLibrary.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
 
 #define LOCTEXT_NAMESPACE "UMG"
 
@@ -84,7 +92,7 @@ bool UUserWidget::Initialize()
 
 		if ( WidgetTree == nullptr )
 		{
-			WidgetTree = NewObject<UWidgetTree>(this, TEXT("WidgetTree"));
+			WidgetTree = NewObject<UWidgetTree>(this, TEXT("WidgetTree"), RF_Transient);
 		}
 
 		// Map the named slot bindings to the available slots.
@@ -264,7 +272,7 @@ UUMGSequencePlayer* UUserWidget::GetOrAddPlayer(UWidgetAnimation* InAnimation)
 
 		if (!FoundPlayer)
 		{
-			UUMGSequencePlayer* NewPlayer = NewObject<UUMGSequencePlayer>(this);
+			UUMGSequencePlayer* NewPlayer = NewObject<UUMGSequencePlayer>(this, NAME_None, RF_Transient);
 			ActiveSequencePlayers.Add(NewPlayer);
 
 			NewPlayer->OnSequenceFinishedPlaying().AddUObject(this, &UUserWidget::OnAnimationFinishedPlaying);

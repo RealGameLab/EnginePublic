@@ -2,6 +2,22 @@
 
 #pragma once
 
+#include "CoreTypes.h"
+#include "Misc/AssertionMacros.h"
+#include "HAL/UnrealMemory.h"
+#include "Templates/UnrealTemplate.h"
+#include "Math/UnrealMathUtility.h"
+#include "Serialization/Archive.h"
+#include "Containers/UnrealString.h"
+#include "Misc/Parse.h"
+#include "Logging/LogMacros.h"
+#include "Misc/DateTime.h"
+#include "GenericPlatform/GenericPlatformFile.h"
+#include "HAL/IPlatformFileLogWrapper.h"
+#include "UniquePtr.h"
+
+class IAsyncReadFileHandle;
+
 class CORE_API FCachedFileHandle : public IFileHandle
 {
 public:
@@ -195,7 +211,7 @@ private:
 		}
 	}
 
-	TAutoPtr<IFileHandle>	FileHandle;
+	TUniquePtr<IFileHandle>	FileHandle;
 	int64					FilePos; /* Desired position in the file stream, this can be different to FilePos due to the cache */
 	int64					TellPos; /* Actual position in the file,  this can be different to FilePos */
 	int64					FileSize;

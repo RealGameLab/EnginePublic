@@ -4,8 +4,19 @@
 	UObjectBase.cpp: Unreal UObject base class
 =============================================================================*/
 
-#include "CoreUObjectPrivate.h"
-#include "GCObject.h"
+#include "UObject/UObjectBase.h"
+#include "Misc/MessageDialog.h"
+#include "Misc/ConfigCacheIni.h"
+#include "HAL/IConsoleManager.h"
+#include "Misc/FeedbackContext.h"
+#include "Modules/ModuleManager.h"
+#include "UObject/UObjectAllocator.h"
+#include "UObject/UObjectHash.h"
+#include "UObject/Class.h"
+#include "UObject/UObjectIterator.h"
+#include "UObject/Package.h"
+#include "Templates/Casts.h"
+#include "UObject/GCObject.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogUObjectBase, Log, All);
 DEFINE_STAT(STAT_UObjectsStatGroupTester);
@@ -329,8 +340,10 @@ void UObjectBase::EmitBaseReferences(UClass *RootClass)
 /** Enqueue the registration for this object. */
 void UObjectBase::Register(const TCHAR* PackageName,const TCHAR* InName)
 {
+	TMap<UObjectBase*, FPendingRegistrantInfo>& PendingRegistrants = FPendingRegistrantInfo::GetMap();
+
 	FPendingRegistrant* PendingRegistration = new FPendingRegistrant(this);
-	FPendingRegistrantInfo::GetMap().Add(this, FPendingRegistrantInfo(InName, PackageName));
+	PendingRegistrants.Add(this, FPendingRegistrantInfo(InName, PackageName));
 	if(GLastPendingRegistrant)
 	{
 		GLastPendingRegistrant->NextAutoRegister = PendingRegistration;
@@ -389,12 +402,14 @@ static void UObjectProcessRegistrants()
 
 void UObjectForceRegistration(UObjectBase* Object)
 {
-	FPendingRegistrantInfo* Info = FPendingRegistrantInfo::GetMap().Find(Object);
+	TMap<UObjectBase*, FPendingRegistrantInfo>& PendingRegistrants = FPendingRegistrantInfo::GetMap();
+
+	FPendingRegistrantInfo* Info = PendingRegistrants.Find(Object);
 	if (Info)
 	{
 		const TCHAR* PackageName = Info->PackageName;
 		const TCHAR* Name = Info->Name;
-		FPendingRegistrantInfo::GetMap().Remove(Object);  // delete this first so that it doesn't try to do it twice
+		PendingRegistrants.Remove(Object);  // delete this first so that it doesn't try to do it twice
 		Object->DeferredRegister(UClass::StaticClass(),PackageName,Name);
 	}
 }

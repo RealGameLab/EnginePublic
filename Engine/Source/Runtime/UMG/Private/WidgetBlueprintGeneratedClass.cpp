@@ -1,10 +1,11 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
-#include "UMGPrivatePCH.h"
+#include "Blueprint/WidgetBlueprintGeneratedClass.h"
+#include "Blueprint/WidgetNavigation.h"
+#include "Blueprint/WidgetTree.h"
 #include "MovieScene.h"
-#include "WidgetAnimation.h"
-#include "Engine/InputDelegateBinding.h"
-#include "TextReferenceCollector.h"
+#include "Animation/WidgetAnimation.h"
+#include "Serialization/TextReferenceCollector.h"
 
 #define LOCTEXT_NAMESPACE "UMG"
 
@@ -52,9 +53,14 @@ void UWidgetBlueprintGeneratedClass::InitializeWidgetStatic(UUserWidget* UserWid
 	// similar to how we use to use the DesignerWidgetTree.
 	if ( ClonedTree == nullptr )
 	{
-		ClonedTree = DuplicateObject<UWidgetTree>(InWidgetTree, UserWidget);
-	}
+		FObjectDuplicationParameters Parameters(InWidgetTree, UserWidget);
 
+		// Set to be transient and strip public flags
+		Parameters.ApplyFlags = RF_Transient;
+		Parameters.FlagMask = Parameters.FlagMask & ~(RF_Public | RF_DefaultSubObject);
+
+		ClonedTree = Cast<UWidgetTree>(StaticDuplicateObjectEx(Parameters));
+	}
 	UserWidget->WidgetGeneratedByClass = InClass;
 
 #if WITH_EDITOR
@@ -171,6 +177,12 @@ void UWidgetBlueprintGeneratedClass::InitializeWidget(UUserWidget* UserWidget) c
 void UWidgetBlueprintGeneratedClass::PostLoad()
 {
 	Super::PostLoad();
+
+	// Clear CDO flag on tree
+	if (WidgetTree)
+	{
+		WidgetTree->ClearFlags(RF_DefaultSubObject);
+	}
 
 	if ( GetLinkerUE4Version() < VER_UE4_RENAME_WIDGET_VISIBILITY )
 	{

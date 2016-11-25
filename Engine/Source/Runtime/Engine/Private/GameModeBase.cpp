@@ -1,19 +1,31 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
-#include "EnginePrivate.h"
+#include "GameFramework/GameModeBase.h"
 #include "GameFramework/GameNetworkManager.h"
 #include "Matinee/MatineeActor.h"
 #include "Engine/LevelScriptActor.h"
+#include "Engine/World.h"
+#include "Misc/CommandLine.h"
+#include "UObject/Package.h"
+#include "Misc/PackageName.h"
 #include "Net/OnlineEngineInterface.h"
 #include "GameFramework/GameStateBase.h"
+#include "PhysicsEngine/BodyInstance.h"
 #include "GameFramework/DefaultPawn.h"
 #include "GameFramework/SpectatorPawn.h"
 #include "GameFramework/HUD.h"
 #include "GameFramework/PlayerState.h"
 #include "GameFramework/GameSession.h"
-#include "GameFramework/GameModeBase.h"
+#include "GameFramework/PlayerStart.h"
+#include "GameFramework/WorldSettings.h"
+#include "Engine/NetConnection.h"
 #include "Engine/ChildConnection.h"
 #include "Engine/PlayerStartPIE.h"
+#include "Engine/LocalPlayer.h"
+#include "Engine/Engine.h"
+#include "EngineUtils.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/LevelStreaming.h"
 
 #if WITH_EDITOR
 	#include "IMovieSceneCapture.h"
@@ -120,7 +132,7 @@ int32 AGameModeBase::GetNumPlayers()
 	int32 PlayerCount = 0;
 	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
 	{
-		APlayerController* PlayerActor = *Iterator;
+		APlayerController* PlayerActor = Iterator->Get();
 		if (PlayerActor->PlayerState && !MustSpectate(PlayerActor))
 		{
 			PlayerCount++;
@@ -134,7 +146,7 @@ int32 AGameModeBase::GetNumSpectators()
 	int32 PlayerCount = 0;
 	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
 	{
-		APlayerController* PlayerActor = *Iterator;
+		APlayerController* PlayerActor = Iterator->Get();
 		if (PlayerActor->PlayerState && MustSpectate(PlayerActor))
 		{
 			PlayerCount++;
@@ -238,7 +250,7 @@ void AGameModeBase::ForceClearUnpauseDelegates(AActor* PauseActor)
 			// Try to find another player to be the worldsettings's Pauser
 			for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
 			{
-				APlayerController* Player = *Iterator;
+				APlayerController* Player = Iterator->Get();
 				if (Player->PlayerState != nullptr
 					&&	Player->PlayerState != PC->PlayerState
 					&& !Player->IsPendingKillPending() && !Player->PlayerState->IsPendingKillPending())
@@ -280,7 +292,7 @@ void AGameModeBase::ResetLevel()
 	// Reset ALL controllers first
 	for (FConstControllerIterator Iterator = GetWorld()->GetControllerIterator(); Iterator; ++Iterator)
 	{
-		AController* Controller = *Iterator;
+		AController* Controller = Iterator->Get();
 		APlayerController* PlayerController = Cast<APlayerController>(Controller);
 		if (PlayerController)
 		{
@@ -324,7 +336,7 @@ APlayerController* AGameModeBase::ProcessClientTravel(FString& FURL, FGuid NextM
 	APlayerController* LocalPlayerController = nullptr;
 	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
 	{
-		APlayerController* PlayerController = *Iterator;
+		APlayerController* PlayerController = Iterator->Get();
 		if (Cast<UNetConnection>(PlayerController->Player) != nullptr)
 		{
 			// Remote player
@@ -541,16 +553,15 @@ void AGameModeBase::PostSeamlessTravel()
 
 	// We have to make a copy of the controller list, since the code after this will destroy
 	// and create new controllers in the world's list
-	TArray<TAutoWeakObjectPtr<AController> >	OldControllerList;
+	TArray<AController*> OldControllerList;
 	for (auto It = GetWorld()->GetControllerIterator(); It; ++It)
 	{
-		OldControllerList.Add(*It);
+		OldControllerList.Add(It->Get());
 	}
 
 	// Handle players that are already loaded
-	for (FConstControllerIterator Iterator = OldControllerList.CreateConstIterator(); Iterator; ++Iterator)
+	for (AController* Controller : OldControllerList)
 	{
-		AController* Controller = *Iterator;
 		if (Controller->PlayerState)
 		{
 			APlayerController* PlayerController = Cast<APlayerController>(Controller);
@@ -1291,7 +1302,7 @@ bool AGameModeBase::SpawnPlayerFromSimulate(const FVector& NewLocation, const FR
 			// Use the "auto-possess" pawn in the world, if there is one.
 			for (FConstPawnIterator Iterator = GetWorld()->GetPawnIterator(); Iterator; ++Iterator)
 			{
-				APawn* Pawn = *Iterator;
+				APawn* Pawn = Iterator->Get();
 				if (Pawn && Pawn->AutoPossessPlayer == EAutoReceiveInput::Player0)
 				{
 					if (Pawn->Controller == nullptr)

@@ -2,8 +2,22 @@
 
 #pragma once
 
-#include "SCompoundWidget.h"
+#include "CoreMinimal.h"
+#include "Misc/Attribute.h"
+#include "Styling/SlateColor.h"
+#include "Layout/SlateRect.h"
+#include "Layout/Geometry.h"
+#include "Input/CursorReply.h"
+#include "Input/Reply.h"
+#include "Animation/CurveSequence.h"
+#include "Widgets/DeclarativeSyntaxSupport.h"
+#include "Widgets/SCompoundWidget.h"
+#include "Templates/ScopedPointer.h"
 #include "SNodePanel.h"
+#include "UniquePtr.h"
+
+class FActiveTimerHandle;
+class FSlateWindowElementList;
 
 class SDesignSurface : public SCompoundWidget
 {
@@ -92,7 +106,7 @@ protected:
 	FCurveSequence ZoomLevelFade;
 
 	// The interface for mapping ZoomLevel values to actual node scaling values
-	TScopedPointer<FZoomLevelsContainer> ZoomLevels;
+	TUniquePtr<FZoomLevelsContainer> ZoomLevels;
 
 	bool bAllowContinousZoomInterpolation;
 

@@ -4,24 +4,33 @@
 	SceneRendering.cpp: Scene rendering.
 =============================================================================*/
 
-#include "RendererPrivate.h"
-#include "Engine.h"
+#include "SceneRendering.h"
+#include "ProfilingDebugging/ProfilingHelpers.h"
+#include "UObject/UObjectHash.h"
+#include "UObject/UObjectIterator.h"
+#include "EngineGlobals.h"
+#include "CanvasItem.h"
+#include "CanvasTypes.h"
+#include "Components/ReflectionCaptureComponent.h"
+#include "Components/SceneCaptureComponent2D.h"
+#include "Components/SceneCaptureComponentCube.h"
+#include "StaticMeshDrawList.h"
+#include "DeferredShadingRenderer.h"
+#include "DynamicPrimitiveDrawing.h"
+#include "RenderTargetTemp.h"
+#include "RendererModule.h"
 #include "ScenePrivate.h"
-#include "ScreenRendering.h"
-#include "SceneFilterRendering.h"
-#include "VisualizeTexture.h"
-#include "PostProcessEyeAdaptation.h"
-#include "CompositionLighting.h"
-#include "FXSystem.h"
+#include "PostProcess/SceneFilterRendering.h"
+#include "PostProcess/RenderingCompositionGraph.h"
+#include "PostProcess/PostProcessEyeAdaptation.h"
+#include "CompositionLighting/CompositionLighting.h"
 #include "SceneViewExtension.h"
-#include "PostProcessBusyWait.h"
-#include "PostProcessCircleDOF.h"
-#include "SceneUtils.h"
+#include "PostProcess/PostProcessBusyWait.h"
+#include "PostProcess/PostProcessCircleDOF.h"
 #include "AtmosphereRendering.h"
-#include "Components/PlanarReflectionComponent.h"
 #include "Matinee/MatineeActor.h"
 #include "ComponentRecreateRenderStateContext.h"
-#include "PostProcessSubsurface.h"
+#include "PostProcess/PostProcessSubsurface.h"
 
 /*-----------------------------------------------------------------------------
 	Globals
@@ -375,7 +384,7 @@ FViewInfo::FViewInfo(const FSceneView* InView)
 
 void FViewInfo::Init()
 {
-	CachedViewUniformShaderParameters = NULL;
+	CachedViewUniformShaderParameters = nullptr;
 	bHasTranslucentViewMeshElements = 0;
 	bPrevTransformsReset = false;
 	bIgnoreExistingQueries = false;
@@ -824,7 +833,7 @@ void FViewInfo::InitRHIResources()
 
 	check(IsInRenderingThread());
 
-	CachedViewUniformShaderParameters = new FViewUniformShaderParameters();
+	CachedViewUniformShaderParameters = MakeUnique<FViewUniformShaderParameters>();
 
 	FSceneRenderTargets& SceneContext = FSceneRenderTargets::Get(FRHICommandListExecutor::GetImmediateCommandList());
 
@@ -879,7 +888,7 @@ FViewInfo* FViewInfo::CreateSnapshot() const
 	for (size_t i = 0; i < ARRAY_COUNT(Result->MobileDirectionalLightUniformBuffers); i++)
 		FMemory::Memcpy(Result->MobileDirectionalLightUniformBuffers[i], NullMobileDirectionalLightUniformBuffer);
 
-	TScopedPointer<FViewUniformShaderParameters> NullViewParameters;
+	TUniquePtr<FViewUniformShaderParameters> NullViewParameters;
 	FMemory::Memcpy(Result->CachedViewUniformShaderParameters, NullViewParameters); 
 	Result->bIsSnapshot = true;
 	ViewInfoSnapshots.Add(Result);

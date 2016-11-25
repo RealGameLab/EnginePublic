@@ -4,13 +4,15 @@
 	GameSession.cpp: GameSession code.
 =============================================================================*/
 
-#include "EnginePrivate.h"
-#include "Net/UnrealNetwork.h"
-#include "Net/OnlineEngineInterface.h"
-#include "Kismet/GameplayStatics.h"
-#include "GameFramework/PlayerState.h"
 #include "GameFramework/GameSession.h"
+#include "Misc/CommandLine.h"
+#include "EngineGlobals.h"
+#include "Engine/Engine.h"
+#include "Kismet/GameplayStatics.h"
 #include "GameFramework/GameModeBase.h"
+#include "Engine/NetConnection.h"
+#include "Net/OnlineEngineInterface.h"
+#include "GameFramework/PlayerState.h"
 
 DEFINE_LOG_CATEGORY(LogGameSession);
 
@@ -28,7 +30,7 @@ APlayerController* GetPlayerControllerFromNetId(UWorld* World, const FUniqueNetI
 		// Iterate through the controller list looking for the net id
 		for (FConstPlayerControllerIterator Iterator = World->GetPlayerControllerIterator(); Iterator; ++Iterator)
 		{
-			APlayerController* PlayerController = *Iterator;
+			APlayerController* PlayerController = Iterator->Get();
 			// Determine if this is a player with replication
 			if (PlayerController->PlayerState != NULL && PlayerController->PlayerState->UniqueId.IsValid())
 			{
@@ -61,7 +63,7 @@ void AGameSession::HandleMatchHasStarted()
 	{
 		for (FConstPlayerControllerIterator Iterator = World->GetPlayerControllerIterator(); Iterator; ++Iterator)
 		{
-			APlayerController* PlayerController = *Iterator;
+			APlayerController* PlayerController = Iterator->Get();
 			if (!PlayerController->IsLocalController())
 			{
 				PlayerController->ClientStartOnlineSession();
@@ -103,7 +105,7 @@ void AGameSession::HandleMatchHasEnded()
 	{
 		for (FConstPlayerControllerIterator Iterator = World->GetPlayerControllerIterator(); Iterator; ++Iterator)
 		{
-			APlayerController* PlayerController = *Iterator;
+			APlayerController* PlayerController = Iterator->Get();
 			if (!PlayerController->IsLocalController())
 			{
 				PlayerController->ClientEndOnlineSession();
@@ -339,7 +341,7 @@ void AGameSession::ReturnToMainMenuHost()
 	FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator();
 	for(; Iterator; ++Iterator)
 	{
-		Controller = *Iterator;
+		Controller = Iterator->Get();
 		if (Controller && !Controller->IsLocalPlayerController() && Controller->IsPrimaryPlayer())
 		{
 			// Clients
@@ -350,7 +352,7 @@ void AGameSession::ReturnToMainMenuHost()
 	Iterator.Reset();
 	for(; Iterator; ++Iterator)
 	{
-		Controller = *Iterator;
+		Controller = Iterator->Get();
 		if (Controller && Controller->IsLocalPlayerController() && Controller->IsPrimaryPlayer())
 		{
 			Controller->ClientReturnToMainMenu(LocalReturnReason);

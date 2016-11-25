@@ -4,9 +4,20 @@
 	SceneCore.cpp: Core scene implementation.
 =============================================================================*/
 
-#include "RendererPrivate.h"
+#include "SceneCore.h"
+#include "SceneInterface.h"
+#include "SceneManagement.h"
+#include "Misc/ConfigCacheIni.h"
+#include "Components/ExponentialHeightFogComponent.h"
+#include "DepthRendering.h"
+#include "SceneHitProxyRendering.h"
+#include "ShadowRendering.h"
+#include "VelocityRendering.h"
+#include "BasePassRendering.h"
+#include "MobileBasePassRendering.h"
+#include "RendererModule.h"
 #include "ScenePrivate.h"
-#include "AllocatorFixedSizeFreeList.h"
+#include "Containers/AllocatorFixedSizeFreeList.h"
 
 /**
  * Fixed Size pool allocator for FLightPrimitiveInteractions
@@ -384,7 +395,7 @@ void FStaticMesh::RemoveFromDrawLists()
 		FStaticMesh::FDrawListElementLink* Link = DrawListLinks[0];
 		const int32 OriginalNumLinks = DrawListLinks.Num();
 		// This will call UnlinkDrawList.
-		Link->Remove();
+		Link->Remove(true);
 		check(DrawListLinks.Num() == OriginalNumLinks - 1);
 		if(DrawListLinks.Num())
 		{
@@ -411,7 +422,12 @@ FStaticMesh::~FStaticMesh()
 	// Remove this static mesh from the scene's list.
 	PrimitiveSceneInfo->Scene->StaticMeshes.RemoveAt(Id);
 
-	RemoveFromDrawLists();
+	// This is cheaper than calling RemoveFromDrawLists, since it 
+	// doesn't unlink meshes which are about to be destroyed
+	for (int32 i = 0; i < DrawListLinks.Num(); i++)
+	{
+		DrawListLinks[i]->Remove(false);
+	}
 }
 
 /** Initialization constructor. */

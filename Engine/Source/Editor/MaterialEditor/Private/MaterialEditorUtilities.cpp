@@ -1,29 +1,34 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
-
-#include "MaterialEditorModule.h"
+#include "MaterialEditorUtilities.h"
+#include "UObject/UObjectHash.h"
+#include "EdGraph/EdGraph.h"
+#include "Materials/Material.h"
+#include "MaterialGraph/MaterialGraphSchema.h"
+#include "IMaterialEditor.h"
 
 #include "Materials/MaterialExpressionFunctionInput.h"
 #include "Materials/MaterialExpressionFunctionOutput.h"
+#include "Materials/MaterialExpressionParameter.h"
 #include "Materials/MaterialExpressionStaticBoolParameter.h"
 #include "Materials/MaterialExpressionStaticBool.h"
 #include "Materials/MaterialExpressionStaticSwitch.h"
 #include "Materials/MaterialExpressionComment.h"
-#include "Materials/MaterialExpressionParameter.h"
+#include "Materials/MaterialExpressionTextureSample.h"
 #include "Materials/MaterialExpressionTextureSampleParameter.h"
 #include "Materials/MaterialExpressionFontSampleParameter.h"
 #include "Materials/MaterialExpressionScalarParameter.h"
 #include "Materials/MaterialExpressionVectorParameter.h"
 #include "Materials/MaterialExpressionStaticSwitchParameter.h"
-#include "Materials/MaterialFunction.h"
 #include "Materials/MaterialExpressionCustomOutput.h"
 
-#include "MaterialEditorUtilities.h"
 #include "Toolkits/ToolkitManager.h"
+#include "MaterialEditor.h"
 #include "MaterialExpressionClasses.h"
 #include "Materials/MaterialInstance.h"
-#include "Engine/TextureStreamingTypes.h"
 #include "MaterialUtilities.h"
+#include "Misc/ScopedSlowTask.h"
+#include "UniquePtr.h"
 
 #define LOCTEXT_NAMESPACE "MaterialEditorUtilities"
 
@@ -202,9 +207,9 @@ void FMaterialEditorUtilities::GetVisibleMaterialParameters(const UMaterial* Mat
 {
 	VisibleExpressions.Empty();
 
-	TScopedPointer<FGetVisibleMaterialParametersFunctionState> FunctionState(new FGetVisibleMaterialParametersFunctionState(NULL));
+	TUniquePtr<FGetVisibleMaterialParametersFunctionState> FunctionState = MakeUnique<FGetVisibleMaterialParametersFunctionState>(nullptr);
 	TArray<FGetVisibleMaterialParametersFunctionState*> FunctionStack;
-	FunctionStack.Push(FunctionState.GetOwnedPointer());
+	FunctionStack.Push(FunctionState.Get());
 
 	for(uint32 i = 0; i < MP_MAX; ++i)
 	{
@@ -500,8 +505,8 @@ void FMaterialEditorUtilities::GetVisibleMaterialParametersFromExpression(
 				checkSlow(FunctionStack[FunctionCallIndex]->FunctionCall != FunctionCallExpression);
 			}
 
-			TScopedPointer<FGetVisibleMaterialParametersFunctionState> NewFunctionState(new FGetVisibleMaterialParametersFunctionState(FunctionCallExpression));
-			FunctionStack.Push(NewFunctionState.GetOwnedPointer());
+			TUniquePtr<FGetVisibleMaterialParametersFunctionState> NewFunctionState = MakeUnique<FGetVisibleMaterialParametersFunctionState>(FunctionCallExpression);
+			FunctionStack.Push(NewFunctionState.Get());
 			
 			GetVisibleMaterialParametersFromExpression(FMaterialExpressionKey(FunctionCallExpression->FunctionOutputs[MaterialExpressionKey.OutputIndex].ExpressionOutput, 0), MaterialInstance, VisibleExpressions, FunctionStack);
 		

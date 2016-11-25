@@ -6,6 +6,15 @@
 
 #pragma once
 
+#include "CoreMinimal.h"
+#include "Misc/EnumClassFlags.h"
+#include "UObject/Script.h"
+
+class FObjectInitializer;
+struct FCompiledInDefer;
+struct FFrame;
+template <typename TClass> struct TClassCompiledInDefer;
+
 /** Represents a serializable object pointer in blueprint bytecode. This is always 64-bits, even on 32-bit platforms. */
 typedef	uint64 ScriptPointerType;
 
@@ -340,6 +349,7 @@ typedef uint64 EClassCastFlags;
 #define CASTCLASS_UStaticMeshComponent			DECLARE_UINT64(0x0000200000000000)
 #define CASTCLASS_UMapProperty					DECLARE_UINT64(0x0000400000000000)
 #define CASTCLASS_USetProperty					DECLARE_UINT64(0x0000800000000000)
+#define CASTCLASS_UEnumProperty					DECLARE_UINT64(0x0001000000000000)
 
 #define CASTCLASS_AllFlags						DECLARE_UINT64(0xFFFFFFFFFFFFFFFF)
 

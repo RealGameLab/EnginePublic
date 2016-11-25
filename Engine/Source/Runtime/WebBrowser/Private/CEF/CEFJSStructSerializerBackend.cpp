@@ -1,9 +1,11 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
-#include "WebBrowserPrivatePCH.h"
+#include "CEF/CEFJSStructSerializerBackend.h"
 #if WITH_CEF3
 
-#include "CEFJSStructSerializerBackend.h"
+#include "UObject/EnumProperty.h"
+#include "UObject/TextProperty.h"
+#include "UObject/PropertyPortFlags.h"
 
 
 /* Private methods
@@ -184,6 +186,12 @@ void FCEFJSStructSerializerBackend::WriteProperty(const FStructSerializerState& 
 	}
 
 	// unsigned bytes & enumerations
+	else if (State.ValueType == UEnumProperty::StaticClass())
+	{
+		UEnumProperty* EnumProperty = Cast<UEnumProperty>(State.ValueProperty);
+
+		Add(State, EnumProperty->GetEnum()->GetEnumName(EnumProperty->GetUnderlyingProperty()->GetSignedIntPropertyValue(EnumProperty->ContainerPtrToValuePtr<void>(State.ValueData, ArrayIndex))));
+	}
 	else if (State.ValueType == UByteProperty::StaticClass())
 	{
 		UByteProperty* ByteProperty = Cast<UByteProperty>(State.ValueProperty);
@@ -194,7 +202,7 @@ void FCEFJSStructSerializerBackend::WriteProperty(const FStructSerializerState& 
 		}
 		else
 		{
-			Add(State, (double)Cast<UByteProperty>(State.ValueProperty)->GetPropertyValue_InContainer(State.ValueData, ArrayIndex));
+			Add(State, (double)ByteProperty->GetPropertyValue_InContainer(State.ValueData, ArrayIndex));
 		}
 	}
 

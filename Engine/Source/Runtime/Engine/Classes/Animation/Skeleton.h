@@ -6,14 +6,23 @@
  */
 
 #pragma once
-#include "PreviewAssetAttachComponent.h"
-#include "SmartName.h"
+
+#include "CoreMinimal.h"
+#include "UObject/ObjectMacros.h"
+#include "UObject/Object.h"
+#include "Misc/Guid.h"
 #include "ReferenceSkeleton.h"
+#include "Animation/PreviewAssetAttachComponent.h"
+#include "Animation/SmartName.h"
+
 #include "Skeleton.generated.h"
 
 class UAnimSequence;
-class USkeletalMesh;
 class UBlendProfile;
+class UPreviewMeshCollection;
+class URig;
+class USkeletalMesh;
+class USkeletalMeshSocket;
 
 /** This is a mapping table between bone in a particular skeletal mesh and bone of this skeleton set. */
 USTRUCT()
@@ -510,7 +519,7 @@ public:
 	typedef TArray<FBoneNode> FBoneTreeType;
 
 	/** Runtime built mapping table between SkeletalMeshes, and LinkupCache array indices. */
-	TMap<TAutoWeakObjectPtr<class USkeletalMesh>, int32> SkelMesh2LinkupCache;
+	TMap<TWeakObjectPtr<USkeletalMesh>, int32> SkelMesh2LinkupCache;
 
 #if WITH_EDITORONLY_DATA
 

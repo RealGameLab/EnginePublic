@@ -1,12 +1,16 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
-#include "BuildPatchServicesPrivatePCH.h"
+#include "BuildPatchGeneration.h"
+#include "Templates/ScopedPointer.h"
+#include "Misc/ConfigCacheIni.h"
+#include "Misc/SecureHash.h"
+#include "BuildPatchChunk.h"
+#include "BuildPatchManifest.h"
+#include "BuildPatchServicesModule.h"
+#include "BuildPatchHash.h"
 
-#include "Core/BlockStructure.h"
 #include "Generation/DataScanner.h"
-#include "Generation/BuildStreamer.h"
-#include "Generation/CloudEnumeration.h"
 #include "Generation/ManifestBuilder.h"
-#include "Generation/FileAttributesParser.h"
+#include "UniquePtr.h"
 
 using namespace BuildPatchServices;
 
@@ -157,7 +161,7 @@ bool FBuildDataGenerator::GenerateChunksManifestFromDirectory(const BuildPatchSe
 	auto* StatTotalTime = StatsCollector->CreateStat(TEXT("Generation: Total Time"), EStatFormat::Timer);
 
 	// List of created scanners.
-	TArray<TAutoPtr<FScannerDetails>> Scanners;
+	TArray<TUniquePtr<FScannerDetails>> Scanners;
 
 	// Tracking info per layer for rescanning.
 	TMap<int32, FChunkMatch> LayerToLastChunkMatch;

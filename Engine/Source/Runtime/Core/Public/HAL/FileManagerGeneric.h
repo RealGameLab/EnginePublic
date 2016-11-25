@@ -2,6 +2,15 @@
 
 #pragma once
 
+#include "CoreTypes.h"
+#include "Serialization/Archive.h"
+#include "Containers/UnrealString.h"
+#include "Misc/DateTime.h"
+#include "GenericPlatform/GenericPlatformFile.h"
+#include "HAL/PlatformFilemanager.h"
+#include "HAL/FileManager.h"
+#include "Templates/ScopedPointer.h"
+#include "UniquePtr.h"
 
 /**
  * Base class for file managers.
@@ -234,7 +243,7 @@ protected:
 	int64 Pos;
 	int64 BufferBase;
 	int64 BufferCount;
-	TAutoPtr<IFileHandle> Handle;
+	TUniquePtr<IFileHandle> Handle;
 	uint8 Buffer[1024];
 };
 
@@ -296,7 +305,7 @@ protected:
 	FString Filename;
 	int64 Pos;
 	int64 BufferCount;
-	TAutoPtr<IFileHandle> Handle;
+	TUniquePtr<IFileHandle> Handle;
 	uint8 Buffer[4096];
 	bool bLoggingError;
 };

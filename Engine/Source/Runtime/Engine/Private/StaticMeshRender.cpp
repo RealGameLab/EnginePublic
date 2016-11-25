@@ -4,16 +4,35 @@
 	StaticMeshRender.cpp: Static mesh rendering code.
 =============================================================================*/
 
-#include "EnginePrivate.h"
+#include "CoreMinimal.h"
+#include "Stats/Stats.h"
+#include "HAL/IConsoleManager.h"
+#include "EngineStats.h"
+#include "EngineGlobals.h"
+#include "HitProxies.h"
+#include "PrimitiveViewRelevance.h"
+#include "Materials/MaterialInterface.h"
+#include "SceneInterface.h"
+#include "PrimitiveSceneProxy.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/MapBuildDataRegistry.h"
+#include "Engine/Brush.h"
+#include "MaterialShared.h"
+#include "Materials/Material.h"
+#include "MeshBatch.h"
+#include "SceneManagement.h"
+#include "Engine/MeshMerging.h"
+#include "Engine/StaticMesh.h"
+#include "ComponentReregisterContext.h"
+#include "EngineUtils.h"
 #include "StaticMeshResources.h"
 
 
+#include "Engine/Engine.h"
+#include "Engine/LevelStreaming.h"
 #include "LevelUtils.h"
 #include "TessellationRendering.h"
-#include "LightMap.h"
-#include "ShadowMap.h"
 #include "DistanceFieldAtlas.h"
-#include "ComponentReregisterContext.h"
 #include "Components/BrushComponent.h"
 #include "AI/Navigation/NavCollision.h"
 #include "ComponentRecreateRenderStateContext.h"
@@ -90,7 +109,7 @@ FStaticMeshSceneProxy::FStaticMeshSceneProxy(UStaticMeshComponent* InComponent):
 	, Owner(InComponent->GetOwner())
 	, StaticMesh(InComponent->GetStaticMesh())
 	, BodySetup(InComponent->GetBodySetup())
-	, RenderData(InComponent->GetStaticMesh()->RenderData)
+	, RenderData(InComponent->GetStaticMesh()->RenderData.Get())
 	, ForcedLodModel(InComponent->ForcedLodModel)
 	, bCastShadow(InComponent->CastShadow)
 	, CollisionTraceFlag(ECollisionTraceFlag::CTF_UseSimpleAndComplex)
@@ -1345,7 +1364,7 @@ FStaticMeshSceneProxy::FLODInfo::FLODInfo(const UStaticMeshComponent* InComponen
 {
 	const auto FeatureLevel = InComponent->GetWorld()->FeatureLevel;
 
-	FStaticMeshRenderData* MeshRenderData = InComponent->GetStaticMesh()->RenderData;
+	FStaticMeshRenderData* MeshRenderData = InComponent->GetStaticMesh()->RenderData.Get();
 	FStaticMeshLODResources& LODModel = MeshRenderData->LODResources[LODIndex];
 	if (LODIndex < InComponent->LODData.Num())
 	{

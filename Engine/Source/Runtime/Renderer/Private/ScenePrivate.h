@@ -6,102 +6,61 @@
 
 #pragma once
 
-class SceneRenderingAllocator;
-class USceneCaptureComponent;
-class UTextureRenderTarget;
-
-class SceneRenderingBitArrayAllocator
-	: public TInlineAllocator<4,SceneRenderingAllocator>
-{
-};
-
-class SceneRenderingSparseArrayAllocator
-	: public TSparseArrayAllocator<SceneRenderingAllocator,SceneRenderingBitArrayAllocator>
-{
-};
-
-class SceneRenderingSetAllocator
-	: public TSetAllocator<SceneRenderingSparseArrayAllocator,TInlineAllocator<1,SceneRenderingAllocator> >
-{
-};
-
-typedef TBitArray<SceneRenderingBitArrayAllocator> FSceneBitArray;
-typedef TConstSetBitIterator<SceneRenderingBitArrayAllocator> FSceneSetBitIterator;
-typedef TConstDualSetBitIterator<SceneRenderingBitArrayAllocator,SceneRenderingBitArrayAllocator> FSceneDualSetBitIterator;
-
-// Forward declarations.
-class FScene;
-
-class FOcclusionQueryHelpers
-{
-public:
-
-	enum
-	{
-		MaxBufferedOcclusionFrames = 2
-	};
-
-	// get the system-wide number of frames of buffered occlusion queries.
-	static int32 GetNumBufferedFrames();
-
-	// get the index of the oldest query based on the current frame and number of buffered frames.
-	static uint32 GetQueryLookupIndex(int32 CurrentFrame, int32 NumBufferedFrames)
-	{
-		// queries are currently always requested earlier in the frame than they are issued.
-		// thus we can always overwrite the oldest query with the current one as we never need them
-		// to coexist.  This saves us a buffer entry.
-		const uint32 QueryIndex = CurrentFrame % NumBufferedFrames;
-		return QueryIndex;
-	}
-
-	// get the index of the query to overwrite for new queries.
-	static uint32 GetQueryIssueIndex(int32 CurrentFrame, int32 NumBufferedFrames)
-	{
-		// queries are currently always requested earlier in the frame than they are issued.
-		// thus we can always overwrite the oldest query with the current one as we never need them
-		// to coexist.  This saves us a buffer entry.
-		const uint32 QueryIndex = CurrentFrame % NumBufferedFrames;
-		return QueryIndex;
-	}
-};
-
-
-
 // Dependencies.
-#include "StaticBoundShaderState.h"
-#include "BatchedElements.h"
-#include "PostProcess/SceneRenderTargets.h"
-#include "GenericOctree.h"
+
+#include "CoreMinimal.h"
+#include "Misc/Guid.h"
+#include "Math/RandomStream.h"
+#include "Engine/EngineTypes.h"
+#include "RHI.h"
+#include "RenderResource.h"
+#include "RenderingThread.h"
+#include "SceneTypes.h"
+#include "UniformBuffer.h"
+#include "SceneInterface.h"
+#include "SceneView.h"
+#include "RendererInterface.h"
+#include "SceneUtils.h"
+#include "SceneManagement.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "TextureLayout3d.h"
+#include "ScenePrivateBase.h"
+#include "PostProcess/RenderTargetPool.h"
 #include "SceneCore.h"
 #include "PrimitiveSceneInfo.h"
 #include "LightSceneInfo.h"
-#include "ShaderBaseClasses.h"
-#include "DrawingPolicy.h"
 #include "DepthRendering.h"
 #include "SceneHitProxyRendering.h"
-#include "DebugViewModeRendering.h"
-#include "ShaderComplexityRendering.h"
 #include "ShadowRendering.h"
+#include "TextureLayout.h"
 #include "SceneRendering.h"
 #include "StaticMeshDrawList.h"
-#include "DeferredShadingRenderer.h"
-#include "FogRendering.h"
+#include "LightMapRendering.h"
+#include "VelocityRendering.h"
 #include "BasePassRendering.h"
 #include "MobileBasePassRendering.h"
-#include "DynamicPrimitiveDrawing.h"
-#include "TranslucentRendering.h"
-#include "VelocityRendering.h"
-#include "LightMapDensityRendering.h"
-#include "TextureLayout.h"
-#include "TextureLayout3d.h"
-#include "ScopedPointer.h"
-#include "ClearQuad.h"
-#include "AtmosphereRendering.h"
-#include "GlobalDistanceFieldParameters.h"
-#include "LightPropagationVolume.h"
 
 /** Factor by which to grow occlusion tests **/
 #define OCCLUSION_SLOP (1.0f)
+
+class AWorldSettings;
+class FAtmosphericFogSceneInfo;
+class FLightPropagationVolume;
+class FMaterialParameterCollectionInstanceResource;
+class FPrecomputedLightVolume;
+class FScene;
+class UAtmosphericFogComponent;
+class UDecalComponent;
+class UExponentialHeightFogComponent;
+class ULightComponent;
+class UPlanarReflectionComponent;
+class UPrimitiveComponent;
+class UReflectionCaptureComponent;
+class USkyLightComponent;
+class UStaticMesh;
+class UStaticMeshComponent;
+class UTextureCube;
+class UWindDirectionalSourceComponent;
 
 /** Holds information about a single primitive's occlusion. */
 class FPrimitiveOcclusionHistory
@@ -1102,6 +1061,13 @@ public:
 	 * This reallocates the resource but does not copy over the old contents. 
 	 */
 	void UpdateMaxCubemaps(uint32 InMaxCubemaps, int32 CubemapSize);
+
+	/**
+	* Updates the maximum number of cubemaps that this array is allocated for.
+	* This reallocates the resource and copies over the old contents, preserving indices
+	*/
+	void ResizeCubemapArrayGPU(uint32 InMaxCubemaps, int32 CubemapSize, const TArray<int32>& IndexRemapping);
+
 	int32 GetMaxCubemaps() const { return MaxCubemaps; }
 	int32 GetCubemapSize() const { return CubemapSize; }
 	bool IsValid() const { return IsValidRef(ReflectionEnvs); }
@@ -1153,6 +1119,9 @@ public:
 	 */
 	FReflectionEnvironmentCubemapArray CubemapArray;
 
+	/** We track the cubemaps removed since the last reallocation to allow us to remap them reallocating the array */
+	TArray<uint32> CubemapIndicesRemovedSinceLastRealloc;
+
 	/** Rendering thread map from component to scene state.  This allows storage of RT state that needs to persist through a component re-register. */
 	TMap<const UReflectionCaptureComponent*, FCaptureComponentSceneState> AllocatedReflectionCaptureState;
 
@@ -1170,6 +1139,9 @@ public:
 		CubemapArray(InFeatureLevel),
 		MaxAllocatedReflectionCubemapsGameThread(0)
 	{}
+
+
+	void ResizeCubemapArrayGPU(uint32 InMaxCubemaps, int32 InCubemapSize);
 };
 
 class FPrimitiveAndInstance

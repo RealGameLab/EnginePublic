@@ -1,7 +1,16 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
-#include "CorePrivatePCH.h"
-#include "ThreadHeartBeat.h"
-#include "ExceptionHandling.h"
+#include "HAL/ThreadHeartBeat.h"
+#include "HAL/PlatformStackWalk.h"
+#include "HAL/PlatformTime.h"
+#include "HAL/PlatformProcess.h"
+#include "Logging/LogMacros.h"
+#include "CoreGlobals.h"
+#include "HAL/RunnableThread.h"
+#include "HAL/ThreadManager.h"
+#include "Misc/ScopeLock.h"
+#include "Misc/OutputDeviceRedirector.h"
+#include "Misc/ConfigCacheIni.h"
+#include "HAL/ExceptionHandling.h"
 
 #ifndef UE_ASSERT_ON_HANG
 #define UE_ASSERT_ON_HANG 0
@@ -114,7 +123,7 @@ uint32 FThreadHeartBeat::Run()
 
 			// First verify we're not reporting the same hang over and over again
 			uint32 CallstackCRC = FCrc::StrCrc32(StackTrace);
-			if (CallstackCRC != LastHangCallstackCRC && ThreadThatHung != LastHungThreadId)
+			if (CallstackCRC != LastHangCallstackCRC || ThreadThatHung != LastHungThreadId)
 			{
 				LastHangCallstackCRC = CallstackCRC;
 				LastHungThreadId = ThreadThatHung;

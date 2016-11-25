@@ -4,9 +4,10 @@
 	MaterialShared.cpp: Shared material implementation.
 =============================================================================*/
 
-#include "EnginePrivate.h"
-#include "MaterialUniformExpressions.h"
-#include "MaterialInstanceSupport.h"
+#include "Materials/MaterialUniformExpressions.h"
+#include "SceneManagement.h"
+#include "Materials/MaterialInstance.h"
+#include "Materials/MaterialInstanceSupport.h"
 #include "Materials/MaterialParameterCollection.h"
 
 TLinkedList<FMaterialUniformExpressionType*>*& FMaterialUniformExpressionType::GetTypeList()
@@ -303,7 +304,7 @@ void FUniformExpressionSet::CreateBufferStruct()
 	NextMemberOffset += 8;
 
 	const uint32 StructSize = Align(NextMemberOffset,UNIFORM_BUFFER_STRUCT_ALIGNMENT);
-	UniformBufferStruct = new FUniformBufferStruct(
+	UniformBufferStruct.Emplace(
 		MaterialLayoutName,
 		TEXT("MaterialUniforms"),
 		TEXT("Material"),
@@ -316,8 +317,7 @@ void FUniformExpressionSet::CreateBufferStruct()
 
 const FUniformBufferStruct& FUniformExpressionSet::GetUniformBufferStruct() const
 {
-	check(UniformBufferStruct);
-	return *UniformBufferStruct;
+	return UniformBufferStruct.GetValue();
 }
 
 FUniformBufferRHIRef FUniformExpressionSet::CreateUniformBuffer(const FMaterialRenderContext& MaterialRenderContext, FRHICommandList* CommandListIfLocalMode, struct FLocalUniformBuffer* OutLocalUniformBuffer) const

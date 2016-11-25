@@ -4,34 +4,50 @@
 	StaticMesh.cpp: Static mesh class implementation.
 =============================================================================*/
 
-#include "EnginePrivate.h"
+#include "Engine/StaticMesh.h"
+#include "Serialization/MemoryWriter.h"
+#include "Misc/ConfigCacheIni.h"
+#include "Misc/ScopedSlowTask.h"
+#include "UObject/FrameworkObjectVersion.h"
+#include "Misc/App.h"
+#include "Modules/ModuleManager.h"
+#include "UObject/UObjectAnnotation.h"
+#include "RenderingThread.h"
+#include "VertexFactory.h"
+#include "LocalVertexFactory.h"
+#include "RawIndexBuffer.h"
+#include "Engine/TextureStreamingTypes.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/CollisionProfile.h"
+#include "Serialization/MemoryReader.h"
+#include "UObject/EditorObjectVersion.h"
+#include "UObject/RenderingObjectVersion.h"
+#include "UObject/Package.h"
+#include "EngineUtils.h"
 #include "Engine/AssetUserData.h"
 #include "StaticMeshResources.h"
-#include "MeshBuild.h"
-#include "GenericOctree.h"
-#include "TessellationRendering.h"
 #include "StaticMeshVertexData.h"
-#include "TargetPlatform.h"
+#include "Interfaces/ITargetPlatform.h"
 #include "SpeedTreeWind.h"
 #include "DistanceFieldAtlas.h"
-#include "UObject/DevObjectVersion.h"
 #include "PhysicsEngine/PhysicsSettings.h"
 #include "PhysicsEngine/BodySetup.h"
+#include "Interfaces/ITargetPlatformManagerModule.h"
+#include "Engine/Engine.h"
+#include "EngineGlobals.h"
 
 #if WITH_EDITOR
 #include "RawMesh.h"
 #include "MeshUtilities.h"
 #include "DerivedDataCacheInterface.h"
-#include "UObjectAnnotation.h"
 #endif // #if WITH_EDITOR
 
 #include "Engine/StaticMeshSocket.h"
 #include "EditorFramework/AssetImportData.h"
 #include "AI/Navigation/NavCollision.h"
-#include "CookStats.h"
-#include "ReleaseObjectVersion.h"
+#include "ProfilingDebugging/CookStats.h"
+#include "UObject/ReleaseObjectVersion.h"
 #include "Streaming/UVChannelDensity.h"
-#include "ScopedTimers.h"
 
 DEFINE_LOG_CATEGORY(LogStaticMesh);	
 
@@ -2176,7 +2192,7 @@ static FStaticMeshRenderData& GetPlatformStaticMeshRenderData(UStaticMesh* Mesh,
 	check(Mesh && Mesh->RenderData);
 	const FStaticMeshLODSettings& PlatformLODSettings = Platform->GetStaticMeshLODSettings();
 	FString PlatformDerivedDataKey = BuildStaticMeshDerivedDataKey(Mesh, PlatformLODSettings.GetLODGroup(Mesh->LODGroup));
-	FStaticMeshRenderData* PlatformRenderData = Mesh->RenderData;
+	FStaticMeshRenderData* PlatformRenderData = Mesh->RenderData.Get();
 
 	if (Mesh->GetOutermost()->HasAnyPackageFlags(PKG_FilterEditorOnly))
 	{
@@ -2186,7 +2202,7 @@ static FStaticMeshRenderData& GetPlatformStaticMeshRenderData(UStaticMesh* Mesh,
 
 	while (PlatformRenderData && PlatformRenderData->DerivedDataKey != PlatformDerivedDataKey)
 	{
-		PlatformRenderData = PlatformRenderData->NextCachedRenderData;
+		PlatformRenderData = PlatformRenderData->NextCachedRenderData.Get();
 	}
 	if (PlatformRenderData == NULL)
 	{
@@ -2194,8 +2210,8 @@ static FStaticMeshRenderData& GetPlatformStaticMeshRenderData(UStaticMesh* Mesh,
 		PlatformRenderData = new FStaticMeshRenderData();
 		PlatformRenderData->Cache(Mesh, PlatformLODSettings);
 		check(PlatformRenderData->DerivedDataKey == PlatformDerivedDataKey);
-		PlatformRenderData->NextCachedRenderData.Swap(Mesh->RenderData->NextCachedRenderData);
-		Mesh->RenderData->NextCachedRenderData = PlatformRenderData;
+		Swap(PlatformRenderData->NextCachedRenderData, Mesh->RenderData->NextCachedRenderData);
+		Mesh->RenderData->NextCachedRenderData = TUniquePtr<FStaticMeshRenderData>(PlatformRenderData);
 	}
 	check(PlatformRenderData);
 	return *PlatformRenderData;
@@ -2227,7 +2243,7 @@ void UStaticMesh::CacheDerivedData()
 		}
 	}
 
-	RenderData = new FStaticMeshRenderData();
+	RenderData = MakeUnique<FStaticMeshRenderData>();
 	RenderData->Cache(this, LODSettings);
 
 	// Additionally cache derived data for any other platforms we care about.
@@ -2398,7 +2414,7 @@ void UStaticMesh::Serialize(FArchive& Ar)
 	{	
 		if (Ar.IsLoading())
 		{
-			RenderData = new FStaticMeshRenderData();
+			RenderData = MakeUnique<FStaticMeshRenderData>();
 			RenderData->Serialize(Ar, this, bCooked);
 		}
 

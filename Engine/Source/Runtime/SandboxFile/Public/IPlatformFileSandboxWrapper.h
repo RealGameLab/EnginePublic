@@ -3,6 +3,14 @@
 
 #pragma once
 
+#include "CoreMinimal.h"
+#include "GenericPlatform/GenericPlatformFile.h"
+#include "Templates/ScopedPointer.h"
+#include "Misc/Paths.h"
+#include "UniquePtr.h"
+
+class IAsyncReadFileHandle;
+
 /**
  * Wrapper to log the low level file system
 **/
@@ -11,8 +19,8 @@ DECLARE_LOG_CATEGORY_EXTERN(SandboxFile, Log, All);
 
 class SANDBOXFILE_API FSandboxFileHandle : public IFileHandle
 {
-	TAutoPtr<IFileHandle>	FileHandle;
-	FString				Filename;
+	TUniquePtr<IFileHandle>	FileHandle;
+	FString					Filename;
 
 public:
 

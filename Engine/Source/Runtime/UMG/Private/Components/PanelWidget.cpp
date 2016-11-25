@@ -1,11 +1,6 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
-#include "UMGPrivatePCH.h"
-
-#if WITH_EDITOR
-#include "MessageLog.h"
-#include "UObjectToken.h"
-#endif
+#include "Components/PanelWidget.h"
 
 #define LOCTEXT_NAMESPACE "UMG"
 
@@ -114,8 +109,13 @@ UPanelSlot* UPanelWidget::AddChild(UWidget* Content)
 
 	Content->RemoveFromParent();
 
-	UPanelSlot* PanelSlot = NewObject<UPanelSlot>(this, GetSlotClass());
-	PanelSlot->SetFlags(RF_Transactional);
+	EObjectFlags NewObjectFlags = RF_Transactional;
+	if (HasAnyFlags(RF_Transient))
+	{
+		NewObjectFlags |= RF_Transient;
+	}
+
+	UPanelSlot* PanelSlot = NewObject<UPanelSlot>(this, GetSlotClass(), NAME_None, NewObjectFlags);
 	PanelSlot->Content = Content;
 	PanelSlot->Parent = this;
 

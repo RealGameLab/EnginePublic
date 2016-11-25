@@ -5,13 +5,17 @@
 =============================================================================*/
 
 #pragma once
+
+#include "CoreMinimal.h"
+#include "Templates/RefCounting.h"
+#include "HitProxies.h"
 #include "MeshBatch.h"
 
-// Forward declarations.
-class FStaticMesh;
-class FScene;
-class FPrimitiveSceneInfo;
 class FLightSceneInfo;
+class FPrimitiveSceneInfo;
+class FScene;
+class FStaticMeshDrawListBase;
+class UExponentialHeightFogComponent;
 
 /**
  * An interaction between a light and a primitive.
@@ -131,7 +135,7 @@ public:
 	{
 	public:
 		virtual bool IsInDrawList(const class FStaticMeshDrawListBase* DrawList) const = 0;
-		virtual void Remove() = 0;
+		virtual void Remove(const bool bUnlinkMesh) = 0;
 	};
 
 	/** The screen space size to draw this primitive at */

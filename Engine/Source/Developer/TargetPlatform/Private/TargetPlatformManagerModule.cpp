@@ -1,10 +1,28 @@
 // Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
-#include "TargetPlatformPrivatePCH.h"
+#include "CoreMinimal.h"
+#include "HAL/FileManager.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Paths.h"
+#include "Misc/OutputDeviceRedirector.h"
+#include "Templates/ScopedPointer.h"
+#include "Stats/Stats.h"
+#include "Misc/ScopedSlowTask.h"
+#include "Misc/MonitoredProcess.h"
+#include "Modules/ModuleManager.h"
+#include "Interfaces/ITargetPlatform.h"
+#include "Interfaces/ITargetPlatformModule.h"
+#include "Interfaces/ITargetPlatformManagerModule.h"
+#include "Interfaces/IAudioFormat.h"
+#include "Interfaces/IAudioFormatModule.h"
+#include "Interfaces/IShaderFormat.h"
+#include "Interfaces/IShaderFormatModule.h"
+#include "Interfaces/ITextureFormat.h"
+#include "Interfaces/ITextureFormatModule.h"
 #include "PlatformInfo.h"
 #include "DesktopPlatformModule.h"
-#include "IPhysXFormatModule.h"
 #include "IPhysXFormat.h"
+#include "IPhysXFormatModule.h"
 
 
 DEFINE_LOG_CATEGORY_STATIC(LogTargetPlatformManager, Log, All);
@@ -696,8 +714,8 @@ RETRY_SETUPANDVALIDATE:
 		FString SDKInstallManifestFilePath = FPaths::Combine(*TargetSDKRoot, *SDKInstallManifestFileName);
 
 		// If we are using a manual install, then it is valid for there to be no OutputEnvVars file.
-		TAutoPtr<FArchive> InstallManifestFile(IFileManager::Get().CreateFileReader(*SDKInstallManifestFilePath));
-		if (InstallManifestFile.IsValid())
+		TUniquePtr<FArchive> InstallManifestFile(IFileManager::Get().CreateFileReader(*SDKInstallManifestFilePath));
+		if (InstallManifestFile)
 		{
 			TArray<FString> FileLines;
 			int64 FileSize = InstallManifestFile->TotalSize();
@@ -737,8 +755,8 @@ RETRY_SETUPANDVALIDATE:
 		FString EnvVarFileName = FPaths::Combine(*TargetSDKRoot, *SDKEnvironmentVarsFile);		
 
 		// If we are using a manual install, then it is valid for there to be no OutputEnvVars file.
-		TAutoPtr<FArchive> EnvVarFile(IFileManager::Get().CreateFileReader(*EnvVarFileName));
-		if (EnvVarFile.IsValid())
+		TUniquePtr<FArchive> EnvVarFile(IFileManager::Get().CreateFileReader(*EnvVarFileName));
+		if (EnvVarFile)
 		{
 			TArray<FString> FileLines;
 			{
@@ -753,8 +771,8 @@ RETRY_SETUPANDVALIDATE:
 				FileAsString.ParseIntoArrayLines(FileLines);
 
 				FMemory::Free(FileMem);
-				EnvVarFile->Close();				
-			}			
+				EnvVarFile->Close();
+			}
 
 			TArray<FString> PathAdds;
 			TArray<FString> PathRemoves;

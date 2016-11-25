@@ -2,6 +2,21 @@
 
 #pragma once
 
+#include "CoreTypes.h"
+#include "HAL/PlatformMisc.h"
+#include "Containers/UnrealString.h"
+#include "Containers/Map.h"
+#include "Math/Color.h"
+#include "Logging/LogMacros.h"
+#include "Misc/DateTime.h"
+#include "GenericPlatform/GenericPlatformFile.h"
+#include "HAL/PlatformTime.h"
+#include "Templates/ScopedPointer.h"
+#include "Misc/ScopeLock.h"
+#include "UniquePtr.h"
+
+class FLoggedPlatformFile;
+class IAsyncReadFileHandle;
 
 /**
  * Wrapper to log the low level file system
@@ -22,7 +37,7 @@ class FLoggedPlatformFile;
 
 class CORE_API FLoggedFileHandle : public IFileHandle
 {
-	TAutoPtr<IFileHandle>	FileHandle;
+	TUniquePtr<IFileHandle>	FileHandle;
 	FString					Filename;
 #if !UE_BUILD_SHIPPING
 	FLoggedPlatformFile& PlatformFile;
