@@ -48,6 +48,9 @@ DECLARE_DELEGATE(FModalWindowStackEnded)
 /** Delegate for when window action occurs (ClickedNonClientArea, Maximize, Restore, WindowMenu). Return true if the OS layer should stop processing the action. */
 DECLARE_DELEGATE_RetVal_TwoParams(bool, FOnWindowAction, const TSharedRef<FGenericWindow>&, EWindowAction::Type);
 
+/** Delegate for overriding the behavior when a navigation action is taken, Not to be confused with FNavigationDelegate which allows a specific widget to override behavior for itself */
+DECLARE_DELEGATE_RetVal_OneParam(bool, FCustomNavigationHandler, TSharedPtr<SWidget>);
+
 extern SLATE_API const FName NAME_UnrealOS;
 
 
@@ -482,6 +485,9 @@ public:
 
 	/** Delegate for after slate application ticks. */
 	FSlateTickEvent& OnPostTick()  { return PostTickEvent; }
+
+	/** Set an override handler for navigation. */
+	FCustomNavigationHandler& OnNavigationOverride() { return CustomNavigationEvent; }
 
 	/** 
 	 * Removes references to FViewportRHI's.  
@@ -1430,12 +1436,32 @@ public:
 	*/
 	FDelegateHandle RegisterOnWindowActionNotification(const FOnWindowAction& Notification);
 
+
+	/** Event type for when Slate is ticking during a modal dialog loop */
+	DECLARE_EVENT_OneParam(FSlateApplication, FOnModalLoopTickEvent, float);
+
+	/**
+	 * Get the FOnModalLoopTickEvent for the Slate Application. Allows clients to register for callbacks during modal dialog loops.
+	 *
+	 * @return The application's FOnModalLoopTickEvent.
+	 */
+	FOnModalLoopTickEvent& GetOnModalLoopTickEvent() { return ModalLoopTickEvent; }
+
 	/**
 	* Unregister the notification because it is no longer desired.
 	*
 	* @param Handle                Hanlde to the delegate to unregister.
 	*/
 	void UnregisterOnWindowActionNotification(FDelegateHandle Handle);
+
+	/**
+	 * Destroys an SWindow, removing it and all its children from the Slate window list.  Notifies the native window to destroy itself and releases rendering resources
+	 *
+	 * @param InNavigationType The navigation type / direction
+	 * @param InWindow The window to do the navigation within
+	 * @param InUserIndex The user that is doing the navigation
+	 */
+	void NavigateFromWidgetUnderCursor(EUINavigation InNavigationType, TSharedRef<SWindow> InWindow, uint32 InUserIndex);
 
 	/**
 	* Given an optional widget, try and get the most suitable parent window to use with dialogs (such as file and directory pickers).
@@ -1465,7 +1491,7 @@ private:
 	 *
 	 * @return if a new widget was navigated too
 	 */
-	bool AttemptNavigation(const FNavigationEvent& NavigationEvent, const FNavigationReply& NavigationReply, const FArrangedWidget& BoundaryWidget);
+	bool AttemptNavigation(const FWidgetPath& NavigationSource, const FNavigationEvent& NavigationEvent, const FNavigationReply& NavigationReply, const FArrangedWidget& BoundaryWidget);
 
 private:
 
@@ -1951,8 +1977,14 @@ private:
 	/** Delegate for post slate Tick */
 	FSlateTickEvent PostTickEvent;
 
+	/** Delegate for slate Tick during modal dialogs */
+	FOnModalLoopTickEvent ModalLoopTickEvent;
+
 	/** Critical section to avoid multiple threads calling Slate Tick when we're synchronizing between the Slate Loading Thread and the Game Thread. */
 	FCriticalSection SlateTickCriticalSection;
+
+	/** Delegate for custom navigation behavior */
+	FCustomNavigationHandler CustomNavigationEvent;
 
 #if WITH_EDITOR
 	/**

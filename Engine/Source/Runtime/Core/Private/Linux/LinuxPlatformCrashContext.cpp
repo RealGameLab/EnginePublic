@@ -22,6 +22,7 @@
 #include "Misc/EngineVersion.h"
 #include "HAL/PlatformMallocCrash.h"
 #include "Linux/LinuxPlatformRunnableThread.h"
+#include "ExceptionHandling.h"
 
 #include "HAL/ThreadHeartBeat.h"
 
@@ -475,7 +476,7 @@ void FLinuxCrashContext::GenerateCrashInfoAndLaunchReporter(bool bReportingNonCr
 		CrashReportClientArguments += TEXT(" ");
 
 		// Suppress the user input dialog if we're running in unattended mode
-		bool bNoDialog = FApp::IsUnattended() || IsRunningDedicatedServer();
+		bool bNoDialog = FApp::IsUnattended() || (!IsInteractiveEnsureMode() && bReportingNonCrash) || IsRunningDedicatedServer();
 		if (bNoDialog)
 		{
 			CrashReportClientArguments += TEXT(" -Unattended ");
@@ -507,8 +508,12 @@ void FLinuxCrashContext::GenerateCrashInfoAndLaunchReporter(bool bReportingNonCr
 		{
 			// spin here until CrashReporter exits
 			FProcHandle RunningProc = FPlatformProcess::CreateProc(RelativePathToCrashReporter, *CrashReportClientArguments, true, false, false, NULL, 0, NULL, NULL);
+
 			// do not wait indefinitely - can be more generous about the hitch than in ensure() case
-			const double kCrashTimeOut = 3 * 60.0;
+			// NOTE: Chris.Wood - increased from 3 to 8 mins because server crashes were timing out and getting lost
+			// NOTE: Do not increase above 8.5 mins without altering watchdog scripts to match
+			const double kCrashTimeOut = 8 * 60.0;
+
 			const double kCrashSleepInterval = 1.0;
 			if (!LinuxCrashReporterTracker::WaitForProcWithTimeout(RunningProc, kCrashTimeOut, kCrashSleepInterval))
 			{
