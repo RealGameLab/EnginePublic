@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -143,7 +143,10 @@ public:
 	virtual bool IsOneOfSpawnedPawns(AActor* Actor);
 
 	// AActor interface begin
+protected:
 	virtual void BeginPlay() override;
+
+public:
 	virtual void Tick(float DeltaSeconds) override;
 	// AActor interface end
 

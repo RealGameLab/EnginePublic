@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	MeshRendering.cpp: Mesh rendering implementation.
@@ -25,10 +25,12 @@
 #include "CanvasItem.h"
 #include "CanvasTypes.h"
 #include "LocalVertexFactory.h"
+#include "SkeletalMeshTypes.h"
 
 #include "RendererInterface.h"
 #include "EngineModule.h"
 
+#define SHOW_WIREFRAME_MESH 0
 
 FColor BoxBlurSample(TArray<FColor>& InBMP, int32 X, int32 Y, int32 InImageWidth, int32 InImageHeight, bool bIsNormalMap)
 {

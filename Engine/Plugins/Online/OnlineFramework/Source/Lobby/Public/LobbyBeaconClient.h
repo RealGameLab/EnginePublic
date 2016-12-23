@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -127,6 +127,9 @@ protected:
 
 	/** Has this beacon been properly logged in */
 	bool bLoggedIn;
+
+	/** True once the server has acknowledged our join intent */
+	bool bLobbyJoinAcked;
 
 	/** Session Id of the destination host */
 	FString DestSessionId;

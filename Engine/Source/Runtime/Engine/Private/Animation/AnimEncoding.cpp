@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	AnimEncoding.cpp: Skeletal mesh animation functions.
@@ -292,7 +292,7 @@ void AnimEncodingLegacyBase::GetBoneAtom(
  * @param	MemoryReader		The MemoryReader object to read from.
  */
 //@todo.VC10: Apparent VC10 compiler bug here causes an access violation in optimized builds
-#if _MSC_VER
+#ifdef _MSC_VER
 	PRAGMA_DISABLE_OPTIMIZATION
 #endif
 void AnimEncodingLegacyBase::ByteSwapIn(
@@ -354,7 +354,7 @@ void AnimEncodingLegacyBase::ByteSwapIn(
 	}
 }
 
-#if _MSC_VER
+#ifdef _MSC_VER
 PRAGMA_ENABLE_OPTIMIZATION
 #endif
 

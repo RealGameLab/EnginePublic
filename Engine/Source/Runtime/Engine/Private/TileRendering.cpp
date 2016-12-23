@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	TileRendering.cpp: Tile rendering implementation.
@@ -342,8 +342,7 @@ bool FCanvasTileRendererItem::Render_GameThread(const FCanvas* Canvas)
 		bNeedsToSwitchVerticalAxis ? uint32(1) : uint32(0),
 		Canvas->GetAllowedModes()
 	};
-	EnqueueUniqueRenderCommand(
-		"DrawTileCommand",
+	ENQUEUE_RENDER_COMMAND(DrawTileCommand)(
 		[DrawTileParameters](FRHICommandListImmediate& RHICmdList)
 		{
 			SCOPED_DRAW_EVENTF(RHICmdList, CanvasDrawTile, *DrawTileParameters.RenderData->MaterialRenderProxy->GetMaterial(GMaxRHIFeatureLevel)->GetFriendlyName());

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	Spline.cpp
@@ -10,6 +10,7 @@
 #include "PrimitiveSceneProxy.h"
 #include "SceneManagement.h"
 
+#define SPLINE_FAST_BOUNDS_CALCULATION 0
 
 USplineComponent::USplineComponent(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

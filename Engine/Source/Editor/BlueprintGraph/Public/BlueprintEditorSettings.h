@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -80,9 +80,6 @@ public:
 	/** If set will exclude components added in a Blueprint class Construction Script from the component details view */
 	UPROPERTY(EditAnywhere, config, Category=Workflow)
 	bool bHideConstructionScriptComponentsInDetailsView;
-
-	UPROPERTY(EditAnywhere, config, Category = Experimental, AdvancedDisplay, meta = (DisplayName = "Enable (incomplete, non-functional) support for TSet and TMap"))
-	bool bEnableAdvancedContainers;
 
 // Compiler Settings
 public:

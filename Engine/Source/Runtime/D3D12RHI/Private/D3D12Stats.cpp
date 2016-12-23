@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 D3D12Stats.cpp:RHI Stats and timing implementation.
@@ -70,7 +70,7 @@ namespace D3D12RHI
 	}
 }
 
-void FD3DGPUProfiler::EndFrame()
+void FD3DGPUProfiler::EndFrame(FD3D12DynamicRHI* InRHI)
 {
 	if (GEmitDrawEvents)
 	{
@@ -88,6 +88,12 @@ void FD3DGPUProfiler::EndFrame()
 	else
 	{
 		GGPUFrameTime = 0;
+	}
+
+	double HwGpuFrameTime = 0.0;
+	if (InRHI->GetHardwareGPUFrameTime(HwGpuFrameTime))
+	{
+		GGPUFrameTime = HwGpuFrameTime;
 	}
 
 	// if we have a frame open, close it now.

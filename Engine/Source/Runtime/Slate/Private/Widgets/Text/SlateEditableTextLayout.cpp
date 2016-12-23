@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Widgets/Text/SlateEditableTextLayout.h"
 #include "Styling/CoreStyle.h"
@@ -203,6 +203,9 @@ FSlateEditableTextLayout::~FSlateEditableTextLayout()
 		TSharedRef<FTextInputMethodContext> TextInputMethodContextRef = TextInputMethodContext.ToSharedRef();
 		if (TextInputMethodSystem->IsActiveContext(TextInputMethodContextRef))
 		{
+			// Make sure that the composition is aborted to avoid any IME calls to EndComposition from trying to mutate our dying owner widget
+			TextInputMethodContextRef->AbortComposition();
+
 			// This can happen if an entire tree of widgets is culled, as Slate isn't notified of the focus loss, the widget is just deleted
 			TextInputMethodSystem->DeactivateContext(TextInputMethodContextRef);
 		}
@@ -937,7 +940,7 @@ FReply FSlateEditableTextLayout::HandleKeyDown(const FKeyEvent& InKeyEvent)
 
 FReply FSlateEditableTextLayout::HandleKeyUp(const FKeyEvent& InKeyEvent)
 {
-	if (FPlatformMisc::GetRequiresVirtualKeyboard() && InKeyEvent.GetKey() == EKeys::Gamepad_FaceButton_Bottom)
+	if (FPlatformMisc::GetRequiresVirtualKeyboard() && InKeyEvent.GetKey() == EKeys::Virtual_Accept)
 	{
 		if (!OwnerWidget->IsTextReadOnly())
 		{
@@ -1984,7 +1987,6 @@ bool FSlateEditableTextLayout::MoveCursor(const FMoveCursor& InArgs)
 		if (TextInputMethodSystem)
 		{
 			TextInputMethodSystem->DeactivateContext(TextInputMethodContext.ToSharedRef());
-			TextInputMethodContext->CacheWindow();
 			TextInputMethodSystem->ActivateContext(TextInputMethodContext.ToSharedRef());
 		}
 	}
@@ -2297,13 +2299,6 @@ void FSlateEditableTextLayout::ScrollTo(const FTextLocation& NewLocation)
 
 void FSlateEditableTextLayout::UpdateCursorHighlight()
 {
-	// @wutongfei
-	if (!OwnerWidget->IsWidgetValid())
-	{
-		return;
-	}
-	//
-
 	PositionToScrollIntoView = SlateEditableTextTypes::FScrollInfo(CursorInfo.GetCursorInteractionLocation(), CursorInfo.GetCursorAlignment());
 	OwnerWidget->EnsureActiveTick();
 
@@ -2390,19 +2385,22 @@ void FSlateEditableTextLayout::UpdateCursorHighlight()
 		const FTextLocation CursorPosition = CursorInfo.GetCursorLocation();
 
 		const TArray< FTextLayout::FLineModel >& Lines = TextLayout->GetLineModels();
-		const int32 LineTextLength = Lines[CursorPosition.GetLineIndex()].Text->Len();
+		if (Lines.IsValidIndex(CursorPosition.GetLineIndex()))
+		{
+			const int32 LineTextLength = Lines[CursorPosition.GetLineIndex()].Text->Len();
 
-		if (LineTextLength == 0)
-		{
-			ActiveLineHighlights.Add(FTextLineHighlight(CursorPosition.GetLineIndex(), FTextRange(0, 0), CursorZOrder, CursorLineHighlighter.ToSharedRef()));
-		}
-		else if (CursorPosition.GetOffset() == LineTextLength)
-		{
-			ActiveLineHighlights.Add(FTextLineHighlight(CursorPosition.GetLineIndex(), FTextRange(LineTextLength - 1, LineTextLength), CursorZOrder, CursorLineHighlighter.ToSharedRef()));
-		}
-		else
-		{
-			ActiveLineHighlights.Add(FTextLineHighlight(CursorPosition.GetLineIndex(), FTextRange(CursorPosition.GetOffset(), CursorPosition.GetOffset() + 1), CursorZOrder, CursorLineHighlighter.ToSharedRef()));
+			if (LineTextLength == 0)
+			{
+				ActiveLineHighlights.Add(FTextLineHighlight(CursorPosition.GetLineIndex(), FTextRange(0, 0), CursorZOrder, CursorLineHighlighter.ToSharedRef()));
+			}
+			else if (CursorPosition.GetOffset() == LineTextLength)
+			{
+				ActiveLineHighlights.Add(FTextLineHighlight(CursorPosition.GetLineIndex(), FTextRange(LineTextLength - 1, LineTextLength), CursorZOrder, CursorLineHighlighter.ToSharedRef()));
+			}
+			else
+			{
+				ActiveLineHighlights.Add(FTextLineHighlight(CursorPosition.GetLineIndex(), FTextRange(CursorPosition.GetOffset(), CursorPosition.GetOffset() + 1), CursorZOrder, CursorLineHighlighter.ToSharedRef()));
+			}
 		}
 	}
 
@@ -2999,8 +2997,8 @@ void FSlateEditableTextLayout::Tick(const FGeometry& AllottedGeometry, const dou
 		{
 			// Let outsiders know that the text content has been changed
 			OwnerWidget->OnTextCommitted(GetEditableText(), VirtualKeyboardTextCommitType);
-			bTextCommittedByVirtualKeyboard = false;
 		}
+		bTextCommittedByVirtualKeyboard = false;
 	}
 	else if (bTextChangedByVirtualKeyboard)
 	{
@@ -3403,17 +3401,10 @@ void FSlateEditableTextLayout::FTextInputMethodContext::GetSelectionRange(uint32
 
 void FSlateEditableTextLayout::FTextInputMethodContext::SetSelectionRange(const uint32 BeginIndex, const uint32 Length, const ECaretPosition InCaretPosition)
 {
-	// wutongfei
-	uint32 TextLength = GetTextLength();
+	const uint32 TextLength = GetTextLength();
 
-	uint32 MinIndex = BeginIndex;
-	MinIndex = MinIndex > TextLength ? TextLength : MinIndex;
-	uint32 MaxIndex = MinIndex + Length;
-	MaxIndex = MaxIndex > TextLength ? TextLength : MaxIndex;
-	//
-
-	//const uint32 MinIndex = BeginIndex;
-	//const uint32 MaxIndex = MinIndex + Length;
+	const uint32 MinIndex = FMath::Min(BeginIndex, TextLength);
+	const uint32 MaxIndex = FMath::Min(MinIndex + Length, TextLength);
 
 	FTextLayout::FTextOffsetLocations OffsetLocations;
 	OwnerLayout->TextLayout->GetTextOffsetLocations(OffsetLocations);

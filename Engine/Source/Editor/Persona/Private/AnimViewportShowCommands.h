@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #ifndef __AnimViewportShowCommands_h_
@@ -143,6 +143,9 @@ public:
 	TSharedPtr< FUICommandInfo > ShowClothPhysicalMeshWire;
 
 	TSharedPtr< FUICommandInfo > ShowClothFixedVertices;	
+
+	TSharedPtr< FUICommandInfo > PauseClothWithAnim;
+
 #endif// #if WITH_APEX_CLOTHING
 
 public:

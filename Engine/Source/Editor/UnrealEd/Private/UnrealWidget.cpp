@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "UnrealWidget.h"
 #include "Materials/Material.h"
@@ -1303,7 +1303,9 @@ void FWidget::AbsoluteTranslationConvertMouseMovementToAxisMovement(FSceneView* 
 				Params.XAxis = InView->ViewMatrices.GetViewMatrix().GetColumn(0);
 				Params.YAxis = InView->ViewMatrices.GetViewMatrix().GetColumn(1);
 				Params.ZAxis = InView->ViewMatrices.GetViewMatrix().GetColumn(2);
-				GetPlaneNormalAndMask(Params.ZAxis, Params.PlaneNormal, Params.NormalToRemove); break;
+				GetPlaneNormalAndMask(Params.ZAxis, Params.PlaneNormal, Params.NormalToRemove);
+				//do not damp the movement in this case, we also want to snap
+				Params.bMovementLockedToCamera = false;
 				break;
 			}
 

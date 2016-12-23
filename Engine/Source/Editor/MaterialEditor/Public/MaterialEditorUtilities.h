@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -78,6 +78,14 @@ public:
 	 * @param	Graph	Graph representing a material.
 	 */
 	static void DeleteSelectedNodes(const class UEdGraph* Graph);
+
+	/**
+	 * Delete the specified nodes from the graph.
+	 * @param Graph Graph representing the material.
+	 * @param NodesToDelete Array of nodes to be removed from the graph.
+	*/
+	static void DeleteNodes(const class UEdGraph* Graph, const TArray<UEdGraphNode*>& NodesToDelete);
+
 
 	/**
 	 * Gets the name of the material or material function that we are editing

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -172,11 +172,12 @@ public:
 /** A non-async resolve info for returning cached results */
 class FResolveInfoCached : public FResolveInfo
 {
+protected:
 	/** The address that was resolved */
 	TSharedPtr<FInternetAddr> Addr;
 
 	/** Hidden on purpose */
-	FResolveInfoCached();
+	FResolveInfoCached() {}
 
 public:
 	/**

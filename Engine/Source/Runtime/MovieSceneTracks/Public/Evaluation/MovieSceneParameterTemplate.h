@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -6,11 +6,12 @@
 #include "Stats/Stats.h"
 #include "UObject/ObjectMacros.h"
 #include "MovieSceneFwd.h"
-
 #include "MovieSceneExecutionToken.h"
 #include "Evaluation/MovieSceneEvalTemplate.h"
 #include "Sections/MovieSceneParameterSection.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "IMovieScenePlayer.h"
+
 #include "MovieSceneParameterTemplate.generated.h"
 
 class UMovieSceneComponentMaterialTrack;

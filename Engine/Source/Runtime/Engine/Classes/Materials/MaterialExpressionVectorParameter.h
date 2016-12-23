@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #pragma once
@@ -17,6 +17,9 @@ class UMaterialExpressionVectorParameter : public UMaterialExpressionParameter
 
 	UPROPERTY(EditAnywhere, Category=MaterialExpressionVectorParameter)
 	FLinearColor DefaultValue;
+
+	UPROPERTY(EditAnywhere, Category = MaterialExpressionVectorParameter)
+	FColor DefaultValue2;
 
 	//~ Begin UMaterialExpression Interface
 #if WITH_EDITOR

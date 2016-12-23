@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -17,7 +17,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnAnimChangedMulticaster, UAnimationAsset*)
 typedef FOnAnimChangedMulticaster::FDelegate FOnAnimChanged;
 
 // Called when the preview mesh has been changed;
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnPreviewMeshChangedMulticaster, USkeletalMesh*);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnPreviewMeshChangedMulticaster, USkeletalMesh* /*OldPreviewMesh*/, USkeletalMesh* /*NewPreviewMesh*/);
 
 // preview mesh changed 
 typedef FOnPreviewMeshChangedMulticaster::FDelegate FOnPreviewMeshChanged;

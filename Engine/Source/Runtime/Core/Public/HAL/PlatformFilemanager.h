@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -49,7 +49,26 @@ public:
 	IPlatformFile* GetPlatformFile( const TCHAR* Name );
 
 	/**
+	* Permorms additional initialization when the new async IO is enabled.
+	*/
+	void InitializeNewAsyncIO();
+
+	/**
 	 * Gets FPlatformFileManager Singleton.
 	 */
 	static FPlatformFileManager& Get( );
+
+private:
+
+	/**
+	* Removes the specified file wrapper from the platform file wrapper chain.
+	*
+	* THIS IS EXTREMELY DANGEROUS AFTER THE ENGINE HAS BEEN INITIALIZED AS WE MAY BE MODIFYING
+	* THE WRAPPER CHAIN WHILE THINGS ARE BEING LOADED
+	*
+	* @param Name of the platform file to create.
+	* @return Platform file instance of the platform file type was found, nullptr otherwise.
+	*/
+	void RemovePlatformFile(IPlatformFile* PlatformFileToRemove);
+
 };

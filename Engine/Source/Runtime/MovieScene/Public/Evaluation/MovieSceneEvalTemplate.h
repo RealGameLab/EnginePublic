@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -150,6 +150,9 @@ struct FMovieSceneEvalTemplatePtr
 	FMovieSceneEvalTemplatePtr(T&& In)
 		: TInlineValue(Forward<T>(In))
 	{
+#if WITH_EDITOR
+		checkf(T::StaticStruct() == &In.GetScriptStruct(), TEXT("%s does not correctly override GetScriptStructImpl. Template will not serialize correctly."), *T::StaticStruct()->GetName());
+#endif
 	}
 
 	/** Copy construction/assignment */

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "TextureEditorToolkit.h"
 #include "Widgets/Text/STextBlock.h"
@@ -330,6 +330,12 @@ int32 FTextureEditorToolkit::GetMipLevel( ) const
 UTexture* FTextureEditorToolkit::GetTexture( ) const
 {
 	return Texture;
+}
+
+
+bool FTextureEditorToolkit::HasValidTextureResource( ) const
+{
+	return Texture != nullptr && Texture->Resource != nullptr;
 }
 
 

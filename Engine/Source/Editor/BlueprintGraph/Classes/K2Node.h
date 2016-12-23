@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -255,9 +255,6 @@ class UK2Node : public UEdGraphNode
 	 * @return	true if node safe to ignore.
 	 */
 	virtual bool IsNodeSafeToIgnore() const { return false; }
-
-	/** Tries to get a template object from this node. Will only work for 'Add Component' nodes */
-	virtual UActorComponent* GetTemplateFromNode() const { return NULL; }
 
 	/** Called at the end of ReconstructNode, allows node specific work to be performed */
 	BLUEPRINTGRAPH_API virtual void PostReconstructNode();

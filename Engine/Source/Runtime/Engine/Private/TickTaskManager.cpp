@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	TickTaskManager.cpp: Manager for ticking tasks
@@ -262,7 +262,10 @@ public:
 				Target->ShowPrerequistes();
 			}
 		}
-		Target->ExecuteTick(Target->CalculateDeltaTime(Context), Context.TickType, CurrentThread, MyCompletionGraphEvent);
+		if (Target->IsTickFunctionEnabled())
+		{
+			Target->ExecuteTick(Target->CalculateDeltaTime(Context), Context.TickType, CurrentThread, MyCompletionGraphEvent);
+		}
 		Target->TaskPointer = nullptr;  // This is stale and a good time to clear it for safety
 	}
 };

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -355,6 +355,8 @@ protected:
 	virtual TSharedPtr<SWidget> GetNameAreaWidget() override;
 	virtual TSharedPtr<SWidget> GetFilterAreaWidget() override;
 	virtual TSharedPtr<class FUICommandList> GetHostCommandList() const override;
+	virtual TSharedPtr<FTabManager> GetHostTabManager() const override;
+	virtual void SetHostTabManager(TSharedPtr<FTabManager> InTabManager) override;
 
 	/** 
 	 * Hides or shows properties based on the passed in filter text

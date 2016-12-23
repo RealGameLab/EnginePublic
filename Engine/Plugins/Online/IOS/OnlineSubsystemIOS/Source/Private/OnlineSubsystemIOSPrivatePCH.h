@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -19,6 +19,8 @@ class FOnlineSubsystemIOS;
 #include "OnlineIdentityInterfaceIOS.h"
 #include "OnlineLeaderboardsInterfaceIOS.h"
 #include "OnlineStoreInterfaceIOS.h"
+#include "OnlineStoreIOS.h"
+#include "OnlinePurchaseIOS.h"
 #include "OnlineAchievementsInterfaceIOS.h"
 #include "OnlineExternalUIInterfaceIOS.h"
 #include "OnlineTurnBasedInterfaceIOS.h"
@@ -27,3 +29,4 @@ class FOnlineSubsystemIOS;
 
 #include "OnlineSubsystemIOS.h"
 #include "OnlineSubsystemIOSModule.h"
+

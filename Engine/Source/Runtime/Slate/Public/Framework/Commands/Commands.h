@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -51,7 +51,7 @@ public:
 				NewInstance->RegisterCommands();
 
 				// Notify that new commands have been registered
-				CommandsChanged.Broadcast();
+				CommandsChanged.Broadcast(*NewInstance);
 			}
 		}
 	}
@@ -73,12 +73,14 @@ public:
 		// The instance may not be valid if it was never used.
 		if( Instance.IsValid() )
 		{
-			FInputBindingManager::Get().RemoveContextByName(Instance.Pin()->GetContextName());
+			auto InstancePtr = Instance.Pin();
+			FInputBindingManager::Get().RemoveContextByName(InstancePtr->GetContextName());
 			
 			// Notify that new commands have been unregistered
-			CommandsChanged.Broadcast();
+			CommandsChanged.Broadcast(*InstancePtr);
 
-			check(!Instance.IsValid());
+			check(InstancePtr.IsUnique());
+			InstancePtr.Reset();
 		}
 	}
 

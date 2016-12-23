@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "CoreMinimal.h"
 #include "HAL/PlatformProcess.h"
@@ -532,8 +532,8 @@ void FHotReloadModule::StartupModule()
 
 #if WITH_ENGINE
 	// Register re-instancing delegate (Core)
-	FCoreUObjectDelegates::RegisterClassForHotReloadReinstancingDelegate.BindRaw(this, &FHotReloadModule::RegisterForReinstancing);
-	FCoreUObjectDelegates::ReinstanceHotReloadedClassesDelegate.BindRaw(this, &FHotReloadModule::ReinstanceClasses);
+	FCoreUObjectDelegates::RegisterClassForHotReloadReinstancingDelegate.AddRaw(this, &FHotReloadModule::RegisterForReinstancing);
+	FCoreUObjectDelegates::ReinstanceHotReloadedClassesDelegate.AddRaw(this, &FHotReloadModule::ReinstanceClasses);
 #endif
 
 	// Register directory watcher delegate

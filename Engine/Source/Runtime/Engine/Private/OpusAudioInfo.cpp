@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #include "OpusAudioInfo.h"
@@ -8,7 +8,9 @@
 #define WITH_OPUS (PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX)
 
 #if WITH_OPUS
+THIRD_PARTY_INCLUDES_START
 #include "opus_multistream.h"
+THIRD_PARTY_INCLUDES_END
 #endif
 
 #define USE_UE4_MEM_ALLOC 1

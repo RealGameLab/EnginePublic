@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -70,13 +70,14 @@ public:
 #endif
 
 	virtual class USceneComponent* GetDefaultAttachComponent() const override;
-
 	//~ End UObject Interface
-	
+
+protected:
 	//~ Begin AActor Interface
 	virtual void BeginPlay() override;
 	//~ End AActor Interface
 
+public:
 	/** Returns CameraComponent subobject **/
 	class UCameraComponent* GetCameraComponent() const;
 

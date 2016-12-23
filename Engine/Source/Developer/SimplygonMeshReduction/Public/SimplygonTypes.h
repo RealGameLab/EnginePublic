@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -8,6 +8,13 @@
 #include "SimplygonSDK.h"
 
 #include "SimplygonTypes.generated.h"
+
+//@third party code BEGIN SIMPLYGON
+#define USE_USER_OPACITY_CHANNEL 1
+#if USE_USER_OPACITY_CHANNEL
+static const char* USER_MATERIAL_CHANNEL_OPACITY = "UserOpacity";
+#endif
+//@third party code END SIMPLYGON
 
 // User defined material channel used for baking out sub surface colours
 static const char* USER_MATERIAL_CHANNEL_SUBSURFACE_COLOR = "UserSubSurfaceColor";

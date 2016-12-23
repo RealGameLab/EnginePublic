@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -21,4 +21,8 @@ class SLATE_API USlateSettings : public UObject
 	/** Display the virtual keyboard when it receives non-mouse focus. */
 	UPROPERTY(config, EditAnywhere, Category="VirtualKeyboard")
 	bool bVirtualKeyboardDisplayOnFocus;
+
+	/** Allow children of SConstraintCanvas to share render layers. Children must set explicit ZOrder on their slots to control render order. */
+	UPROPERTY(config, EditAnywhere, Category="ConstraintCanvas")
+	bool bExplicitCanvasChildZOrder;
 };

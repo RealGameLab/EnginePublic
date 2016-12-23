@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
  
@@ -81,6 +81,11 @@ class FOnlineIdentityFacebook :
 	FString LoginRedirectUrl;
 	/** The client id given to us by Facebook */
 	FString ClientId;
+
+	// @HSL_BEGIN - Josh.May - 10/04/2016 - Added permission scope fields
+	/** Config based list of permission scopes to use when logging in */
+	TArray<FString> ScopeFields;
+	// @HSL_END - Josh.May - 10/04/2016
 
 	/** Users that have been registered/authenticated */
 	FUserOnlineAccountFacebookMap UserAccounts;

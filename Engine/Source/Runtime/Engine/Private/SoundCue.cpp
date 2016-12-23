@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Sound/SoundCue.h"
 #include "Misc/App.h"
@@ -416,7 +416,7 @@ float USoundCue::GetPitchMultiplier()
 	return PitchMultiplier;
 }
 
-const FAttenuationSettings* USoundCue::GetAttenuationSettingsToApply() const
+const FSoundAttenuationSettings* USoundCue::GetAttenuationSettingsToApply() const
 {
 	if (bOverrideAttenuation)
 	{

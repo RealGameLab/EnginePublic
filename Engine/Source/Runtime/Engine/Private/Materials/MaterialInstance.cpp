@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Materials/MaterialInstance.h"
 #include "Stats/StatsMisc.h"
@@ -153,6 +153,11 @@ FMaterial* FMaterialInstanceResource::GetMaterialNoFallback(ERHIFeatureLevel::Ty
 		}
 	}
 	return NULL;
+}
+
+UMaterialInterface* FMaterialInstanceResource::GetMaterialInterface() const
+{
+	return Owner;
 }
 
 bool FMaterialInstanceResource::GetScalarValue(
@@ -2731,13 +2736,20 @@ bool UMaterialInstance::HasOverridenBaseProperties()const
 {
 	check(IsInGameThread());
 
+	// Always compare against the actual base material, inconsistent results comparing against instance chains
+	UMaterialInterface* BaseMaterial = Parent;
+	while (UMaterialInstance* BaseInstance = Cast<UMaterialInstance>(BaseMaterial))
+	{
+		BaseMaterial = BaseInstance->Parent;
+	}
+
 	const UMaterial* Material = GetMaterial();
-	if (Parent && Material && Material->bUsedAsSpecialEngineMaterial == false &&
-		((FMath::Abs(GetOpacityMaskClipValue() - Parent->GetOpacityMaskClipValue()) > SMALL_NUMBER) ||
-		(GetBlendMode() != Parent->GetBlendMode()) ||
-		(GetShadingModel() != Parent->GetShadingModel()) ||
-		(IsTwoSided() != Parent->IsTwoSided()) ||
-		(IsDitheredLODTransition() != Parent->IsDitheredLODTransition()))
+	if (BaseMaterial && Material && Material->bUsedAsSpecialEngineMaterial == false &&
+		((FMath::Abs(GetOpacityMaskClipValue() - BaseMaterial->GetOpacityMaskClipValue()) > SMALL_NUMBER) ||
+		(GetBlendMode() != BaseMaterial->GetBlendMode()) ||
+		(GetShadingModel() != BaseMaterial->GetShadingModel()) ||
+		(IsTwoSided() != BaseMaterial->IsTwoSided()) ||
+		(IsDitheredLODTransition() != BaseMaterial->IsDitheredLODTransition()))
 		)
 	{
 		return true;

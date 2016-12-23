@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -86,7 +86,7 @@ public:
 	void Initialize(class IDetailLayoutBuilder& InDetailBuilder);
 
 private:
-	void UpdateUI(const bool bForceRefresh);
+	void UpdateUI();
 
 	/**
 	 * Gets children FChordTreeItems from the passed in tree item.  Note: Only contexts have children and those children are the actual gestures.
@@ -97,7 +97,7 @@ private:
 	void UpdateContextMasterList();
 
 	/** Called when new commands are registered with the input binding manager. */
-	void OnCommandsChanged();
+	void OnCommandsChanged(const FBindingContext& ContextThatChanged);
 
 private:
 	IDetailLayoutBuilder* DetailBuilder;

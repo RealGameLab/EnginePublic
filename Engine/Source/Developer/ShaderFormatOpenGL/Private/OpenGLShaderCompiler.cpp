@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 // ..
 
 #include "CoreMinimal.h"
@@ -1280,6 +1280,7 @@ void FOpenGLFrontend::SetupPerVersionCompilationEnvironment(GLSLVersion Version,
 
 		case GLSL_310_ES_EXT:
 			AdditionalDefines.SetDefine(TEXT("COMPILER_GLSL"), 1);
+			AdditionalDefines.SetDefine(TEXT("COMPILER_GLSL_ES3_1_EXT"), 1);
 			AdditionalDefines.SetDefine(TEXT("ESDEFERRED_PROFILE"), 1);
 			AdditionalDefines.SetDefine(TEXT("GL4_PROFILE"), 1);
 			HlslCompilerTarget = HCT_FeatureLevelES3_1Ext;

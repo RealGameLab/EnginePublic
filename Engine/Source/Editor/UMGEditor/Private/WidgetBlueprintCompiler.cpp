@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "WidgetBlueprintCompiler.h"
 #include "Components/SlateWrapperTypes.h"
@@ -15,16 +15,25 @@
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Components/NamedSlot.h"
 #include "WidgetBlueprintEditorUtils.h"
+#include "WidgetGraphSchema.h"
 
 #define LOCTEXT_NAMESPACE "UMG"
 
 FWidgetBlueprintCompiler::FWidgetBlueprintCompiler(UWidgetBlueprint* SourceSketch, FCompilerResultsLog& InMessageLog, const FKismetCompilerOptions& InCompilerOptions, TArray<UObject*>* InObjLoaded)
 	: Super(SourceSketch, InMessageLog, InCompilerOptions, InObjLoaded)
+	, NewWidgetBlueprintClass(nullptr)
+	, WidgetSchema(nullptr)
 {
 }
 
 FWidgetBlueprintCompiler::~FWidgetBlueprintCompiler()
 {
+}
+
+UEdGraphSchema_K2* FWidgetBlueprintCompiler::CreateSchema()
+{
+	WidgetSchema = NewObject<UWidgetGraphSchema>();
+	return WidgetSchema;
 }
 
 void FWidgetBlueprintCompiler::CreateFunctionList()

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	LightComponent.cpp: LightComponent implementation.
@@ -1157,7 +1157,7 @@ void ULightComponent::ReassignStationaryLightChannels(UWorld* TargetWorld, bool 
 		{
 			ULevel* LightLevel = LightOwner->GetLevel();
 
-			if (!LightingScenario || LightLevel == LightingScenario)
+			if (!LightingScenario || !LightLevel->bIsLightingScenario || LightLevel == LightingScenario)
 			{				
 				if (LightComponent->bAffectsWorld
 					&& LightComponent->CastShadows 

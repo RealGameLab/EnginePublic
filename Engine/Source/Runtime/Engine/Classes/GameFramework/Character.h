@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -595,7 +595,7 @@ public:
 	virtual void NotifyJumpApex();
 
 	/** Broadcast when Character's jump reaches its apex. Needs CharacterMovement->bNotifyApex = true */
-	UPROPERTY(BlueprintAssignable)
+	UPROPERTY(BlueprintAssignable, Category="Pawn|Character")
 	FCharacterReachedApexSignature OnReachedJumpApex;
 
 	/**
@@ -715,8 +715,10 @@ public:
 	 */
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0);
 
-	/** Native multicast delegate for MovementMode changing. */
+	/** Multicast delegate for MovementMode changing. */
+	UPROPERTY(BlueprintAssignable, Category="Pawn|Character")
 	FMovementModeChangedSignature MovementModeChangedDelegate;
+
 	/**
 	 * Called from CharacterMovementComponent to notify the character that the movement mode has changed.
 	 * @param	PrevMovementMode	Movement mode before the change
@@ -779,15 +781,15 @@ public:
 
 	UFUNCTION(reliable, client)
 	void ClientCheatWalk();
-	void ClientCheatWalk_Implementation();
+	virtual void ClientCheatWalk_Implementation();
 
 	UFUNCTION(reliable, client)
 	void ClientCheatFly();
-	void ClientCheatFly_Implementation();
+	virtual void ClientCheatFly_Implementation();
 
 	UFUNCTION(reliable, client)
 	void ClientCheatGhost();
-	void ClientCheatGhost_Implementation();
+	virtual void ClientCheatGhost_Implementation();
 
 	// Root Motion
 public:

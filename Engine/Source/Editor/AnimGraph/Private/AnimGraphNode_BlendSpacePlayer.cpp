@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "AnimGraphNode_BlendSpacePlayer.h"
 #include "UObject/UObjectHash.h"
@@ -248,6 +248,18 @@ const TCHAR* UAnimGraphNode_BlendSpacePlayer::GetTimePropertyName() const
 UScriptStruct* UAnimGraphNode_BlendSpacePlayer::GetTimePropertyStruct() const 
 {
 	return FAnimNode_BlendSpacePlayer::StaticStruct();
+}
+
+EAnimAssetHandlerType UAnimGraphNode_BlendSpacePlayer::SupportsAssetClass(const UClass* AssetClass) const
+{
+	if (AssetClass->IsChildOf(UBlendSpaceBase::StaticClass()) && !IsAimOffsetBlendSpace(AssetClass))
+	{
+		return EAnimAssetHandlerType::PrimaryHandler;
+	}
+	else
+	{
+		return EAnimAssetHandlerType::NotSupported;
+	}
 }
 
 #undef LOCTEXT_NAMESPACE

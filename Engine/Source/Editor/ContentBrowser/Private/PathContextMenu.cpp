@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "PathContextMenu.h"
 #include "Misc/MessageDialog.h"
@@ -912,36 +912,7 @@ void FPathContextMenu::ExecuteSCCCheckIn()
 
 void FPathContextMenu::ExecuteSCCSync() const
 {
-	ISourceControlProvider& SourceControlProvider = ISourceControlModule::Get().GetProvider();
-
-	TArray<FString> RootPaths;
-	FPackageName::QueryRootContentPaths( RootPaths );
-
-	// find valid paths on disk
-	TArray<FString> PathsOnDisk;
-	for(const auto& SelectedPath : SelectedPaths)
-	{
-		// note: we make sure to terminate our path here so root directories map correctly.
-		const FString CompletePath = SelectedPath / "";
-
-		const bool bMatchesRoot = RootPaths.ContainsByPredicate([&](const FString& RootPath){ return CompletePath.StartsWith(RootPath); });
-		if(bMatchesRoot)
-		{
-			FString PathOnDisk = FPackageName::LongPackageNameToFilename(CompletePath);
-			PathsOnDisk.Add(PathOnDisk);
-		}
-	}
-
-	if ( PathsOnDisk.Num() > 0 )
-	{
-		TArray<FString> PackageNames;
-		GetPackageNamesInSelectedPaths(PackageNames);
-		ContentBrowserUtils::SyncPackagesFromSourceControl(PackageNames);
-	}
-	else
-	{
-		UE_LOG(LogContentBrowser, Warning, TEXT("Couldn't find any valid paths to sync."))
-	}
+	ContentBrowserUtils::SyncPathsFromSourceControl(SelectedPaths);
 }
 
 void FPathContextMenu::ExecuteSCCConnect() const

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Hierarchy/SHierarchyViewItem.h"
 #include "Components/NamedSlotInterface.h"
@@ -157,6 +157,7 @@ TOptional<EItemDropZone> ProcessHierarchyDragDrop(const FDragDropEvent& DragDrop
 	}
 
 	UWidgetBlueprint* Blueprint = BlueprintEditor->GetWidgetBlueprintObj();
+	check( Blueprint != nullptr && Blueprint->WidgetTree != nullptr );
 
 	// Is this a drag/drop op to create a new widget in the tree?
 	TSharedPtr<FWidgetTemplateDragDropOp> TemplateDragDropOp = DragDropEvent.GetOperationAs<FWidgetTemplateDragDropOp>();
@@ -330,7 +331,35 @@ TOptional<EItemDropZone> ProcessHierarchyDragDrop(const FDragDropEvent& DragDrop
 						}
 					}
 
+					UPanelWidget* OriginalParent = TemplateWidget->GetParent();
+					UBlueprint* OriginalBP = nullptr;
+
+					// The widget's parent is changing
+					if (OriginalParent != NewParent)
+					{
+						NewParent->SetFlags(RF_Transactional);
+						NewParent->Modify();
+
+						Blueprint->WidgetTree->SetFlags(RF_Transactional);
+						Blueprint->WidgetTree->Modify();
+
+						UWidgetTree* OriginalWidgetTree = Cast<UWidgetTree>(TemplateWidget->GetOuter());
+
+						if (OriginalWidgetTree != nullptr && UWidgetTree::TryMoveWidgetToNewTree(TemplateWidget, Blueprint->WidgetTree))
+						{
+							OriginalWidgetTree->SetFlags(RF_Transactional);
+							OriginalWidgetTree->Modify();
+
+							OriginalBP = OriginalWidgetTree->GetTypedOuter<UBlueprint>();
+						}
+					}
+
 					TemplateWidget->RemoveFromParent();
+
+					if (OriginalBP != nullptr && OriginalBP != Blueprint)
+					{
+						FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(OriginalBP);
+					}
 
 					UPanelSlot* NewSlot = nullptr;
 					if (Index.IsSet())

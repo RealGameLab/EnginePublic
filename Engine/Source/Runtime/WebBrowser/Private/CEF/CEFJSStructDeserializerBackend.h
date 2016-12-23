@@ -1,12 +1,8 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
-
-class FCEFJSScripting;
-class IStructDeserializerBackend;
-enum class EStructDeserializerBackendTokens;
 
 #if WITH_CEF3
 
@@ -14,10 +10,6 @@ enum class EStructDeserializerBackendTokens;
 #include "UObject/UnrealType.h"
 #include "IStructDeserializerBackend.h"
 #include "CEFJSScripting.h"
-
-// forward declarations
-class UProperty;
-class UStruct;
 
 #if PLATFORM_WINDOWS
 #include "AllowWindowsPlatformTypes.h"
@@ -34,6 +26,15 @@ THIRD_PARTY_INCLUDES_END
 #include "HideWindowsPlatformTypes.h"
 #endif
 
+#endif
+
+class FCEFJSScripting;
+class IStructDeserializerBackend;
+enum class EStructDeserializerBackendTokens;
+class UProperty;
+class UStruct;
+
+#if WITH_CEF3
 
 class ICefContainerWalker
 	: public TSharedFromThis<ICefContainerWalker>

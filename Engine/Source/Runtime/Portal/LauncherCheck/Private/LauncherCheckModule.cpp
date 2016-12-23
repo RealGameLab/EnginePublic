@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "CoreMinimal.h"
 #include "Templates/UnrealTemplate.h"
@@ -10,7 +10,7 @@
 #include "Modules/ModuleManager.h"
 #include "Interfaces/ILauncherCheckModule.h"
 
-#if WITH_LAUNCHERCHECK
+#if defined(WITH_LAUNCHERCHECK) && WITH_LAUNCHERCHECK
 
 #include "GenericPlatformHttp.h"
 #include "IDesktopPlatform.h"

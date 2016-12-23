@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "IntegralKeyArea.h"
 #include "UObject/StructOnScope.h"
@@ -108,6 +108,14 @@ TArray<FKeyHandle> FIntegralCurveKeyAreaBase::GetUnsortedKeyHandles() const
 	}
 
 	return OutKeyHandles;
+}
+
+
+FKeyHandle FIntegralCurveKeyAreaBase::DilateKey(FKeyHandle KeyHandle, float Scale, float Origin)
+{
+	float NewKeyTime = Curve.GetKeyTime(KeyHandle);
+	NewKeyTime = (NewKeyTime - Origin) * Scale + Origin;
+	return Curve.SetKeyTime(KeyHandle, NewKeyTime);
 }
 
 

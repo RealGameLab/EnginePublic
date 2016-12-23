@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -155,6 +155,9 @@ public:
 	/** Whether the user needs to be prompted about a package being saved when the user does not have permission to write the file */
 	UPROPERTY()
 	uint32 bNeedWarningForWritePermission:1;
+
+	/** Whether there is a pending package notification */
+ 	uint32 bShowPackageNotification:1;
 
 	/** Array of sorted, localized editor sprite categories */
 	UPROPERTY()

@@ -1,10 +1,24 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Stats/Stats.h"
 #include "MovieSceneSequenceID.h"
+
+namespace EMovieScenePlayerStatus
+{
+	enum Type
+	{
+		Stopped,
+		Playing,
+		Recording,
+		Scrubbing,
+		Jumping,
+		Stepping,
+		MAX
+	};
+}
 
 DECLARE_STATS_GROUP(TEXT("Movie Scene Evaluation"), STATGROUP_MovieSceneEval, STATCAT_Advanced);
 

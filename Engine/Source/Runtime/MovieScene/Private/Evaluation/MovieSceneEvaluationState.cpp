@@ -1,8 +1,9 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Evaluation/MovieSceneEvaluationState.h"
 #include "MovieSceneSequence.h"
 #include "MovieScene.h"
+#include "IMovieScenePlayer.h"
 
 DECLARE_CYCLE_STAT(TEXT("Find Bound Objects"), MovieSceneEval_FindBoundObjects, STATGROUP_MovieSceneEval);
 
@@ -178,7 +179,7 @@ void FMovieSceneObjectCache::UpdateBindings(const FGuid& InGuid, IMovieScenePlay
 				}
 
 				TArray<UObject*, TInlineAllocator<1>> FoundObjects;
-				Sequence->LocateBoundObjects(InGuid, ResolutionContext, FoundObjects);
+				Player.ResolveBoundObjects(InGuid, SequenceID, *Sequence, ResolutionContext, FoundObjects);
 				for (UObject* Object : FoundObjects)
 				{
 					Bindings.Objects.Add(Object);
@@ -188,7 +189,7 @@ void FMovieSceneObjectCache::UpdateBindings(const FGuid& InGuid, IMovieScenePlay
 		else
 		{
 			TArray<UObject*, TInlineAllocator<1>> FoundObjects;
-			Sequence->LocateBoundObjects(InGuid, ResolutionContext, FoundObjects);
+			Player.ResolveBoundObjects(InGuid, SequenceID, *Sequence, ResolutionContext, FoundObjects);
 			for (UObject* Object : FoundObjects)
 			{
 				Bindings.Objects.Add(Object);

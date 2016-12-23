@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -35,7 +35,7 @@ public:
 protected:
 	void OnArrangeChildren(const FGeometry& AllottedGeometry, FArrangedChildren& ArrangedChildren) const override;
 
-	virtual float GetRelativeLayoutScale( const FSlotBase& Child ) const override;
+	virtual float GetRelativeLayoutScale( const FSlotBase& Child, float LayoutScaleMultiplier) const override;
 
 	/** The position within the panel at which the user is looking */
 	TAttribute<FVector2D> ViewOffset;

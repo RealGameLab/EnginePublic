@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -1930,6 +1930,9 @@ public:
 	
 	/** Helper for getting the time since a certain time. */
 	float TimeSince( float Time ) const;
+
+	/** Helper for getting the mono far field culling distance. */
+	float GetMonoFarFieldCullingDistance() const;
 
 	/** Creates a new physics scene for this world. */
 	void CreatePhysicsScene();

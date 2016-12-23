@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -42,7 +42,7 @@ struct FMovieSceneSequenceID
 
 	FORCEINLINE FMovieSceneSequenceID AccumulateParentID(FMovieSceneSequenceID InParentID)
 	{
-		return FMovieSceneSequenceID(HashCombine(Value, InParentID.Value));
+		return Value == 0 ? InParentID : FMovieSceneSequenceID(HashCombine(Value, InParentID.Value));
 	}
 
 	FORCEINLINE bool Serialize(FArchive& Ar)
@@ -72,7 +72,8 @@ struct TStructOpsTypeTraits<FMovieSceneSequenceID> : public TStructOpsTypeTraits
 {
 	enum
 	{
-		WithSerializer = true
+		WithSerializer = true,
+		WithCopy = true
 	};
 };
 

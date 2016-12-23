@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	D3D12Viewport.h: D3D viewport RHI definitions.
@@ -8,6 +8,8 @@
 
 #include "CoreMinimal.h"
 #include "HAL/Runnable.h"
+
+#define ALTERNATE_TIMESTAMP_METRIC 0
 
 static DXGI_FORMAT GetRenderTargetFormat(EPixelFormat PixelFormat)
 {

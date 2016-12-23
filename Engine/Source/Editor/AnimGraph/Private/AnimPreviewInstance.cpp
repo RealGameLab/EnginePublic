@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #include "AnimPreviewInstance.h"
@@ -457,6 +457,16 @@ void UAnimPreviewInstance::ResetModifiedBone(bool bCurveController/*=false*/)
 void UAnimPreviewInstance::SetKey(FSimpleDelegate InOnSetKeyCompleteDelegate)
 {
 	GetProxyOnGameThread<FAnimPreviewInstanceProxy>().SetKey(InOnSetKeyCompleteDelegate);
+}
+
+void UAnimPreviewInstance::SetKey()
+{
+	GetProxyOnGameThread<FAnimPreviewInstanceProxy>().SetKey();
+}
+
+void UAnimPreviewInstance::SetKeyCompleteDelegate(FSimpleDelegate InOnSetKeyCompleteDelegate)
+{
+	GetProxyOnGameThread<FAnimPreviewInstanceProxy>().SetKeyCompleteDelegate(InOnSetKeyCompleteDelegate);
 }
 
 void UAnimPreviewInstance::RefreshCurveBoneControllers()

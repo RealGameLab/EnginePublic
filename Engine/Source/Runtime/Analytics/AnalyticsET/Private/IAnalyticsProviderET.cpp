@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "IAnalyticsProviderET.h"
 #include "Misc/CommandLine.h"
@@ -36,7 +36,7 @@ struct FAnalyticsPerfTracker : FTickerObjectBase
 			LogFile.Serialize(TEXT("Date,CL,RunID,Time,WindowSeconds,ProfiledSeconds,Frames,Flushes,Events,Bytes"), ELogVerbosity::Log, FName());
 			LastSubmitTime = StartTime;
 			StartDate = FDateTime::UtcNow().ToIso8601();
-			CL = LexicalConversion::ToString(FEngineVersion::Current().GetChangelist());
+			CL = Lex::ToString(FEngineVersion::Current().GetChangelist());
 		}
 	}
 

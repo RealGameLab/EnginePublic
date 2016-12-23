@@ -1,4 +1,4 @@
-﻿// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+﻿// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 using System;
 using System.IO;
@@ -68,6 +68,10 @@ namespace Tools.CrashReporter.CrashReportCommon
 		/// <summary>The mode the game was in e.g. editor.</summary>
 		[XmlElement]
 		public string EngineMode = "";
+
+		/// <summary>Extended mode info (Vanilla, Dirty, Unset).</summary>
+		[XmlElement]
+		public string EngineModeEx = "";
 
 		/// <summary>The four component version of the app e.g. 4.4.1.0</summary>
 		[XmlElement]

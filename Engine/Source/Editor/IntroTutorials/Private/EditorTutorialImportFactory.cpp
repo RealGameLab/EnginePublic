@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "EditorTutorialImportFactory.h"
 #include "Misc/Paths.h"
@@ -65,7 +65,7 @@ UObject* UEditorTutorialImportFactory::FactoryCreateBinary(UClass* InClass, UObj
 bool UEditorTutorialImportFactory::CanReimport(UObject* Obj, TArray<FString>& OutFilenames)
 {
 	UBlueprint* Blueprint = Cast<UBlueprint>(Obj);
-	if(Blueprint != nullptr)
+	if(Blueprint != nullptr && Blueprint->GeneratedClass)
 	{
 		UEditorTutorial* EditorTutorial = Cast<UEditorTutorial>(Blueprint->GeneratedClass->GetDefaultObject());
 		if(EditorTutorial != nullptr)

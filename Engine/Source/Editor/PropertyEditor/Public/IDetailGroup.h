@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -41,6 +41,15 @@ public:
 	 * @return an interface for customizing the appearance of the property row
 	 */
 	virtual class IDetailPropertyRow& AddPropertyRow( TSharedRef<IPropertyHandle> PropertyHandle ) = 0;
+
+	/**
+	 * Adds a group to the category
+	 *
+	 * @param NewGroupName	The name of the group
+	 * @param LocalizedDisplayName	The display name of the group
+	 * @param true if the group should start expanded
+	 */
+	virtual IDetailGroup& AddGroup(FName NewGroupName, const FText& InLocalizedDisplayName, bool bInStartExpanded = false) = 0;
 
 	/**
 	 * Toggles expansion on the group

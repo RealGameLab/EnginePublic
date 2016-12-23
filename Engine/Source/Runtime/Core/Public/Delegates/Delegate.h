@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -415,7 +415,7 @@ namespace UE4Delegates_Private
 #define __Delegate_h__
 #define FUNC_INCLUDING_INLINE_IMPL
 
-#ifndef UE_BUILD_DOCS
+#if !UE_BUILD_DOCS
 	#include "Delegates/DelegateInstanceInterface.h"
 	#include "Delegates/DelegateInstancesImpl.h"
 	#include "Delegates/DelegateSignatureImpl.inl"

@@ -1,14 +1,18 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SlateWidgetLocatorByUniqueTag.h"
 #include "SlateWidgetElement.h"
 #include "IElementLocator.h"
 #include "DriverUniqueTagMetaData.h"
+#include "Framework/Application/SlateApplication.h"
 
 class FSlateWidgetLocatorByUniqueTag
 	: public IElementLocator
 {
 public:
+
+	virtual ~FSlateWidgetLocatorByUniqueTag()
+	{ }
 
 	virtual FString ToDebugString() const
 	{

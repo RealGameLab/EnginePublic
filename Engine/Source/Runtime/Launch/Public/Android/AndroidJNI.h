@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -19,6 +19,8 @@ public:
 	static jclass GameActivityClassID;
 	static jobject GameActivityThis;
 	static jmethodID AndroidThunkJava_ShowConsoleWindow;
+    static jmethodID AndroidThunkJava_ShowVirtualKeyboardInputDialog;
+    static jmethodID AndroidThunkJava_HideVirtualKeyboardInputDialog;
 	static jmethodID AndroidThunkJava_ShowVirtualKeyboardInput;
 	static jmethodID AndroidThunkJava_HideVirtualKeyboardInput;
 	static jmethodID AndroidThunkJava_LaunchURL;
@@ -74,6 +76,8 @@ public:
 	static jmethodID AndroidThunkJava_IapBeginPurchase;
 	static jmethodID AndroidThunkJava_IapIsAllowedToMakePurchases;
 	static jmethodID AndroidThunkJava_IapRestorePurchases;
+	static jmethodID AndroidThunkJava_IapQueryExistingPurchases;
+	static jmethodID AndroidThunkJava_IapConsumePurchase;
 
 	// SurfaceView functionality for view scaling on some devices
 	static jmethodID AndroidThunkJava_UseSurfaceViewWorkaround;
@@ -105,4 +109,11 @@ public:
 
 	// Delegate that can be registered to that is called when an activity is finished
 	static FOnActivityResult OnActivityResultDelegate;
+
+private:
+
+	/** Find GooglePlay "game services" classes and methods */
+	static void FindGooglePlayMethods(JNIEnv* Env);
+	/** Find GooglePlay billing classes and methods */
+	static void FindGooglePlayBillingMethods(JNIEnv* Env);
 };

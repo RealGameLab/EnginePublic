@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	ConvexDecompTool.cpp: Utility for turning graphics mesh into convex hulls.
@@ -112,7 +112,7 @@ void DecomposeMeshToHulls(UBodySetup* InBodySetup, const TArray<FVector>& InVert
 
 	IVHACD* InterfaceVHACD = CreateVHACD();
 	
-#if CL_VERSION_1_1
+#if defined(CL_VERSION_1_1) && CL_VERSION_1_1
 	if (GetDefault<UEditorExperimentalSettings>()->bUseOpenCLForConvexHullDecomp)
 	{
 		cl_device_id max_gflops_device = NULL;

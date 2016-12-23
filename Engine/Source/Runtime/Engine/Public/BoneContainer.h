@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -12,6 +12,7 @@
 
 class USkeletalMesh;
 class USkeleton;
+class USkeletalMesh;
 
 /**
 * This is a native transient structure. Used to store virtual bone mappings for compact poses

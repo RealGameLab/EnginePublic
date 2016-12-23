@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	SceneComponent.cpp
@@ -2582,7 +2582,7 @@ void USceneComponent::UpdateOverlaps(TArray<FOverlapInfo> const* PendingOverlaps
 bool USceneComponent::CheckStaticMobilityAndWarn(const FText& ActionText) const
 {
 	// make sure mobility is movable, otherwise you shouldn't try to move
-	if (Mobility != EComponentMobility::Movable)
+	if (Mobility != EComponentMobility::Movable && IsRegistered())
 	{
 		if (UWorld * World = GetWorld())
 		{

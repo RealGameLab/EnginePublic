@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	CapsuleShadowRendering.cpp: Functionality for rendering shadows from capsules
@@ -691,7 +691,6 @@ bool FDeferredShadingSceneRenderer::RenderCapsuleDirectShadows(
 	{
 		QUICK_SCOPE_CYCLE_COUNTER(STAT_RenderCapsuleShadows);
 
-		FSceneRenderTargets::Get(RHICmdList).FinishRenderingLightAttenuation(RHICmdList);
 		TRefCountPtr<IPooledRenderTarget> RayTracedShadowsRT;
 
 		{
@@ -845,7 +844,7 @@ bool FDeferredShadingSceneRenderer::RenderCapsuleDirectShadows(
 				
 					FProjectedShadowInfo::SetBlendStateForProjection(
 						RHICmdList,
-						LightSceneInfo.Proxy->GetPreviewShadowMapChannel(),
+						LightSceneInfo.GetDynamicShadowMapChannel(),
 						false,
 						false,
 						bProjectingForForwardShading,
@@ -1090,6 +1089,7 @@ void FDeferredShadingSceneRenderer::SetupIndirectCapsuleShadows(FRHICommandListI
 		{
 			size_t CapsuleLightSourceDataSize = CapsuleLightSourceData.Num() * CapsuleLightSourceData.GetTypeSize();
 			const int32 DataSize = CapsuleLightSourceDataSize + DistanceFieldCasterLightSourceData.Num() * DistanceFieldCasterLightSourceData.GetTypeSize();
+			check(DataSize > 0);
 
 			if (!IsValidRef(View.ViewState->IndirectShadowLightDirectionVertexBuffer) || (int32)View.ViewState->IndirectShadowLightDirectionVertexBuffer->GetSize() < DataSize)
 			{
@@ -1119,6 +1119,7 @@ void FDeferredShadingSceneRenderer::RenderIndirectCapsuleShadows(
 	FTextureRHIParamRef ExistingIndirectOcclusionTexture) const
 {
 	if (SupportsCapsuleShadows(FeatureLevel, GShaderPlatformForFeatureLevel[FeatureLevel])
+		&& ViewFamily.EngineShowFlags.DynamicShadows
 		&& FSceneRenderTargets::Get(RHICmdList).IsStaticLightingAllowed())
 	{
 		QUICK_SCOPE_CYCLE_COUNTER(STAT_RenderIndirectCapsuleShadows);

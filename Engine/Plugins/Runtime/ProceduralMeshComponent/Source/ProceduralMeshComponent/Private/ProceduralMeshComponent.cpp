@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved. 
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved. 
 
 #include "ProceduralMeshComponent.h"
 #include "PrimitiveViewRelevance.h"
@@ -882,6 +882,8 @@ void UProceduralMeshComponent::UpdateCollision()
 
 	// New GUID as collision has changed
 	ProcMeshBodySetup->BodySetupGuid = FGuid::NewGuid();
+	// Also we want cooked data for this
+	ProcMeshBodySetup->bHasCookedCollisionData = true;
 
 #if WITH_RUNTIME_PHYSICS_COOKING || WITH_EDITOR
 	// Clear current mesh data

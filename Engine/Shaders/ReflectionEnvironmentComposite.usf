@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	ReflectionEnvironmentComposite
@@ -182,7 +182,7 @@ float3 CompositeReflectionCapturesAndSkylight(
 
 	ImageBasedReflections.rgb += ImageBasedReflections.a * ExtraIndirectSpecular;
 
-	return ImageBasedReflections.rgb;
+	return ImageBasedReflections.rgb * View.IndirectLightingColorScale;
 }
 
 float3 CompositeReflectionCapturesAndSkylight(

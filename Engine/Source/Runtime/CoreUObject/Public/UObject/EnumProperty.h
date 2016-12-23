@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -64,8 +64,10 @@ public:
 	}
 
 private:
-	friend struct UE4EnumProperty_Private::FEnumPropertyFriend;
+	virtual uint32 GetValueTypeHashInternal(const void* Src) const override;
 
+	friend struct UE4EnumProperty_Private::FEnumPropertyFriend;
+	
 #if HACK_HEADER_GENERATOR
 public:
 #endif

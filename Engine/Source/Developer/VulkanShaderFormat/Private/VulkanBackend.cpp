@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 // .
 
 // This code is largely based on that in ir_print_glsl_visitor.cpp from
@@ -3701,7 +3701,7 @@ static void ConfigureInOutVariableLayout(EHlslShaderFrequency Frequency,
 		}
 		else
 		{
-#if DEBUG
+#ifdef DEBUG
 #define _mesh_glsl_report _mesa_glsl_warning
 #else
 #define _mesh_glsl_report _mesa_glsl_error

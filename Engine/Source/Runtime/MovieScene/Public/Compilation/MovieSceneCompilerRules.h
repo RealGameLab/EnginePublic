@@ -1,4 +1,4 @@
-
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -62,6 +62,11 @@ namespace MovieSceneSegmentCompiler
 				break;
 			}
 		}
+	}
+
+	static void BlendSegmentUpperBoundExclusive(FMovieSceneSegment& Segment, const TArrayView<const FMovieSceneSectionData>& SourceData)
+	{
+		Segment.Range = FFloatRange(Segment.Range.GetLowerBoundValue(), Segment.Range.GetUpperBoundValue());
 	}
 }
 

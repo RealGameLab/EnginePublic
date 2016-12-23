@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -128,6 +128,12 @@ struct FTimeSliderArgs
 	FSimpleDelegate OnSelectionRangeEndDrag;
 	/** Round the scrub position to an integer during playback */
 	TAttribute<EMovieScenePlayerStatus::Type> PlaybackStatus;
+
+	/** Attribute defining whether the playback range is locked */
+	TAttribute<bool> IsPlaybackRangeLocked;
+
+	/** Called when toggling the playback range lock */
+	FSimpleDelegate OnTogglePlaybackRangeLocked;
 
 	/** If we are allowed to zoom */
 	bool AllowZoom;

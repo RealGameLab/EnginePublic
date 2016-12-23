@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	RHI.h: Render Hardware Interface definitions.
@@ -98,6 +98,18 @@ RHI_API bool IsRHIDeviceNVIDIA();
 
 // helper to convert GRHIVendorId into a printable string, or "Unknown" if unknown.
 RHI_API const TCHAR* RHIVendorIdToString();
+
+// helper to return the shader language version for the given shader platform.
+RHI_API uint32 RHIGetShaderLanguageVersion(const EShaderPlatform Platform);
+
+// helper to check that the shader platform supports tessellation.
+RHI_API bool RHISupportsTessellation(const EShaderPlatform Platform);
+
+// helper to check that the shader platform supports writing to UAVs from pixel shaders.
+RHI_API bool RHISupportsPixelShaderUAVs(const EShaderPlatform Platform);
+
+/** true if the GPU is AMD's Pre-GCN architecture */
+extern RHI_API bool GRHIDeviceIsAMDPreGCNArchitecture;
 
 /** true if PF_G8 render targets are supported */
 extern RHI_API bool GSupportsRenderTargetFormat_PF_G8;

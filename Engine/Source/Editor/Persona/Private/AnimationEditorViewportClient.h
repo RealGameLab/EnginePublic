@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -161,7 +161,7 @@ public:
 	bool IsSetCameraFollowChecked() const;
 
 	/** Handle the skeletal mesh mesh component being used for preview changing */
-	void HandleSkeletalMeshChanged(class USkeletalMesh* InSkeletalMesh);
+	void HandleSkeletalMeshChanged(class USkeletalMesh* OldSkeletalMesh, class USkeletalMesh* NewSkeletalMesh);
 
 	/** Function to display bone names*/
 	void ShowBoneNames(FViewport* Viewport, FCanvas* Canvas);

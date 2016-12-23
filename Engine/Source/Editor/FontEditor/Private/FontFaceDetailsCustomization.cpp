@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "FontFaceDetailsCustomization.h"
 #include "Styling/SlateColor.h"
@@ -144,7 +144,7 @@ void FFontFaceDetailsCustomization::OnFontPathPicked(const FString& InNewFontFil
 		{
 			FontFace->Modify();
 			FontFace->SourceFilename = InNewFontFilename;
-			FontFace->FontFaceData = FontData;
+			FontFace->FontFaceData = FFontFaceData::MakeFontFaceData(MoveTemp(FontData)); // Make a new instance as the existing one may be being used by the font cache
 		}
 	}
 

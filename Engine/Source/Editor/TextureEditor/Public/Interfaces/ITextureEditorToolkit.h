@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -18,6 +18,9 @@ public:
 
 	/** Returns the Texture asset being inspected by the Texture editor */
 	virtual UTexture* GetTexture() const = 0;
+
+	/** Returns if the Texture asset being inspected has a valid texture resource */
+	virtual bool HasValidTextureResource() const = 0;
 
 	/** Refreshes the quick info panel */
 	virtual void PopulateQuickInfo() = 0;

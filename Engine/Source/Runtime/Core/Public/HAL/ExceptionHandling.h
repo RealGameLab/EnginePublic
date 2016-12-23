@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -48,5 +48,6 @@ enum class ECrashType
 /** In debug builds we can crash on demand so we want to let the crash reporting system know about it */
 extern CORE_API void SetCrashType(ECrashType InCrashType);
 extern CORE_API int32 GetCrashType();
+
 extern CORE_API void ReportInteractiveEnsure(const TCHAR* InMessage);
 extern CORE_API bool IsInteractiveEnsureMode();

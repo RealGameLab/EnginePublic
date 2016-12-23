@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Widgets/STextureEditorViewport.h"
 #include "Framework/Application/SlateApplication.h"
@@ -72,7 +72,9 @@ void STextureEditorViewport::Construct( const FArguments& InArgs, const TSharedR
 	
 	if (InToolkit->GetTexture() != nullptr)
 	{
-		TextureName = FText::FromName(InToolkit->GetTexture()->GetFName());
+		FText FormattedText = InToolkit->HasValidTextureResource() ? FText::FromString(TEXT("{0}")) : LOCTEXT( "InvalidTexture", "{0} (Invalid Texture)");
+
+		TextureName = FText::Format(FormattedText, FText::FromName(InToolkit->GetTexture()->GetFName()));
 	}
 
 	this->ChildSlot
@@ -395,6 +397,11 @@ void STextureEditorViewport::HandleZoomMenuFitClicked()
 bool STextureEditorViewport::IsZoomMenuFitChecked() const
 {
 	return ToolkitPtr.Pin()->GetFitToViewport();
+}
+
+bool STextureEditorViewport::HasValidTextureResource() const
+{
+	return ToolkitPtr.Pin()->HasValidTextureResource();
 }
 
 FText STextureEditorViewport::HandleZoomPercentageText( ) const

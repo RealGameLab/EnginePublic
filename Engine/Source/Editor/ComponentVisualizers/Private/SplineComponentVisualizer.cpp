@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SplineComponentVisualizer.h"
 #include "Framework/Application/SlateApplication.h"
@@ -21,6 +21,7 @@ IMPLEMENT_HIT_PROXY(HSplineTangentHandleProxy, HSplineVisProxy);
 
 #define LOCTEXT_NAMESPACE "SplineComponentVisualizer"
 
+#define VISUALIZE_SPLINE_UPVECTORS 0
 
 /** Define commands for the spline component visualizer */
 class FSplineComponentVisualizerCommands : public TCommands<FSplineComponentVisualizerCommands>

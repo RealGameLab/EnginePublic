@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SkeletonTreeBoneItem.h"
 #include "SSkeletonTreeRow.h"
@@ -17,6 +17,7 @@
 #include "Textures/SlateIcon.h"
 #include "Framework/Commands/UIAction.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "SkeletalMeshTypes.h"
 
 #define LOCTEXT_NAMESPACE "FSkeletonTreeBoneItem"
 

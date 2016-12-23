@@ -1,3 +1,5 @@
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -337,13 +339,13 @@ public:
 	UPROPERTY()
 	TEnumAsByte<ERichCurveExtrapolation> PostInfinityExtrap;
 
-	/** Sorted array of keys */
-	UPROPERTY(EditAnywhere, EditFixedSize, Category="Curve")
-	TArray<FRichCurveKey> Keys;
-
 	/** Default value */
 	UPROPERTY(EditAnywhere, Category="Curve")
 	float DefaultValue;
+
+	/** Sorted array of keys */
+	UPROPERTY(EditAnywhere, EditFixedSize, Category="Curve")
+	TArray<FRichCurveKey> Keys;
 };
 
 

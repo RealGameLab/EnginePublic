@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Misc/Compression.h"
 #include "Misc/AssertionMacros.h"
@@ -11,7 +11,9 @@
 #include "Misc/CompressedGrowableBuffer.h"
 #include "GenericPlatform/GenericPlatformCompression.h"
 // #include "TargetPlatformBase.h"
+THIRD_PARTY_INCLUDES_START
 #include "ThirdParty/zlib/zlib-1.2.5/Inc/zlib.h"
+THIRD_PARTY_INCLUDES_END
 
 DECLARE_LOG_CATEGORY_EXTERN(LogCompression, Log, All);
 DEFINE_LOG_CATEGORY(LogCompression);

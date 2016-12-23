@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -10,10 +10,6 @@
 class FReferenceCollector;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogLinker, Log, All);
-
-#if !defined(USE_NEW_ASYNC_IO) || !defined(SPLIT_COOKED_FILES)
-#error "USE_NEW_ASYNC_IO and SPLIT_COOKED_FILES must be defined"
-#endif
 
 /**
  * Information about a compressed chunk in a file.

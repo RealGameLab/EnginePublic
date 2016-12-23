@@ -1,6 +1,7 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Engine/LevelStreaming.h"
+#include "ContentStreaming.h"
 #include "Misc/App.h"
 #include "UObject/Package.h"
 #include "Serialization/ArchiveTraceRoute.h"
@@ -266,7 +267,7 @@ UWorld* ULevelStreaming::GetWorld() const
 	// Fail gracefully if a CDO
 	if(IsTemplate())
 	{
-		return NULL;
+		return nullptr;
 	}
 	// Otherwise 
 	else
@@ -712,11 +713,6 @@ bool ULevelStreaming::IsLevelVisible() const
 	return LoadedLevel != NULL && LoadedLevel->bIsVisible;
 }
 
-bool ULevelStreaming::IsLevelLoaded() const
-{
-	return LoadedLevel != NULL;
-}
-
 bool ULevelStreaming::IsStreamingStatePending() const
 {
 	UWorld* PersistentWorld = GetWorld();
@@ -778,17 +774,17 @@ ULevelStreaming* ULevelStreaming::CreateInstance(FString InstanceUniqueName)
 
 void ULevelStreaming::BroadcastLevelLoadedStatus(UWorld* PersistentWorld, FName LevelPackageName, bool bLoaded)
 {
-	for (auto It = PersistentWorld->StreamingLevels.CreateIterator(); It; ++It)
+	for (ULevelStreaming* StreamingLevel : PersistentWorld->StreamingLevels)
 	{
-		if ((*It)->GetWorldAssetPackageFName() == LevelPackageName)
+		if (StreamingLevel->GetWorldAssetPackageFName() == LevelPackageName)
 		{
 			if (bLoaded)
 			{
-				(*It)->OnLevelLoaded.Broadcast();
+				StreamingLevel->OnLevelLoaded.Broadcast();
 			}
 			else
 			{
-				(*It)->OnLevelUnloaded.Broadcast();
+				StreamingLevel->OnLevelUnloaded.Broadcast();
 			}
 		}
 	}
@@ -796,17 +792,17 @@ void ULevelStreaming::BroadcastLevelLoadedStatus(UWorld* PersistentWorld, FName 
 	
 void ULevelStreaming::BroadcastLevelVisibleStatus(UWorld* PersistentWorld, FName LevelPackageName, bool bVisible)
 {
-	for (auto It = PersistentWorld->StreamingLevels.CreateIterator(); It; ++It)
+	for (ULevelStreaming* StreamingLevel : PersistentWorld->StreamingLevels)
 	{
-		if ((*It)->GetWorldAssetPackageFName() == LevelPackageName)
+		if (StreamingLevel->GetWorldAssetPackageFName() == LevelPackageName)
 		{
 			if (bVisible)
 			{
-				(*It)->OnLevelShown.Broadcast();
+				StreamingLevel->OnLevelShown.Broadcast();
 			}
 			else
 			{
-				(*It)->OnLevelHidden.Broadcast();
+				StreamingLevel->OnLevelHidden.Broadcast();
 			}
 		}
 	}
@@ -863,13 +859,13 @@ void ULevelStreaming::RenameForPIE(int32 PIEInstanceID)
 	// Rename LOD levels if any
 	if (LODPackageNames.Num() > 0)
 	{
-		LODPackageNamesToLoad.Empty();
-		for (auto It = LODPackageNames.CreateIterator(); It; ++It)
+		LODPackageNamesToLoad.Reset(LODPackageNames.Num());
+		for (FName& LODPackageName : LODPackageNames)
 		{
 			// Store LOD level original package name
-			LODPackageNamesToLoad.Add(*It); 
+			LODPackageNamesToLoad.Add(LODPackageName); 
 			// Apply PIE prefix to package name
-			*It = FName(*UWorld::ConvertToPIEPackageName((*It).ToString(), PIEInstanceID)); 
+			LODPackageName = FName(*UWorld::ConvertToPIEPackageName(LODPackageName.ToString(), PIEInstanceID)); 
 		}
 	}
 }

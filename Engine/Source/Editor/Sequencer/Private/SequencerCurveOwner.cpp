@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SequencerCurveOwner.h"
 #include "Containers/List.h"
@@ -160,6 +160,26 @@ void FSequencerCurveOwner::ModifyOwner()
 	{
 		Owner->Modify();
 	}
+}
+
+TArray<const UObject*> FSequencerCurveOwner::GetOwners() const
+{
+	TArray<UMovieSceneSection*> Owners;
+	EditInfoToSectionMap.GenerateValueArray( Owners );
+
+	TArray<const UObject*> CastedOwners;
+	CastedOwners.Reserve(Owners.Num());
+	for (auto Owner : Owners)
+	{
+		const UObject* CastedOwner = Cast<const UObject>(Owner);
+
+		if (CastedOwner)
+		{
+			CastedOwners.Add(CastedOwner);
+		}
+	}
+
+	return CastedOwners;
 }
 
 void FSequencerCurveOwner::MakeTransactional()

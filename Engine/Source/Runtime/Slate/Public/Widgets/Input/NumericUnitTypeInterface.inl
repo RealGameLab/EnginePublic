@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -24,7 +24,7 @@ FString TNumericUnitTypeInterface<NumericType>::ToString(const NumericType& Valu
 		return TDefaultNumericTypeInterface<NumericType>::ToString(Value);
 	}
 
-	using namespace LexicalConversion;
+	using namespace Lex;
 
 	FNumericUnit<NumericType> FinalValue(Value, UnderlyingUnits);
 
@@ -48,7 +48,7 @@ TOptional<NumericType> TNumericUnitTypeInterface<NumericType>::FromString(const 
 		return TDefaultNumericTypeInterface<NumericType>::FromString(InString, InExistingValue);
 	}
 
-	using namespace LexicalConversion;
+	using namespace Lex;
 
 	EUnit DefaultUnits = FixedDisplayUnits.IsSet() ? FixedDisplayUnits.GetValue() : UnderlyingUnits;
 

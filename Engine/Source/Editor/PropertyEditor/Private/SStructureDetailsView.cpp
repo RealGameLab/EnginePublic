@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SStructureDetailsView.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
@@ -224,6 +224,11 @@ void SStructureDetailsView::SetStructureData(TSharedPtr<FStructOnScope> InStruct
 void SStructureDetailsView::ForceRefresh()
 {
 	SetStructureData(StructData);
+}
+
+void SStructureDetailsView::AddExternalRootPropertyNode(TSharedRef<FPropertyNode> ExternalRootNode)
+{
+	ExternalRootPropertyNodes.Add( ExternalRootNode );
 }
 
 void SStructureDetailsView::ClearSearch()

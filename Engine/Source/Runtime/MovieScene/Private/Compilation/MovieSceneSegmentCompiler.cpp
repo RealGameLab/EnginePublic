@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Compilation/MovieSceneSegmentCompiler.h"
 
@@ -22,16 +22,19 @@ void FMovieSceneSegmentCompilerRules::ProcessSegments(TArray<FMovieSceneSegment>
 
 	int32 Index = 0;
 
+	// First off, add an open segment before the first segment if necessary/possible
 	if (!Segments[0].Range.GetLowerBound().IsOpen())
 	{
 		InsertSegment(Segments, 0, SourceData);
-		++Index;
 	}
+	++Index;
 
-	for (; Index < Segments.Num() - 1; ++Index)
+	// Then add any segments inbetween valid segments
+	for (; Index < Segments.Num(); ++Index)
 	{
 		if (InsertSegment(Segments, Index, SourceData))
 		{
+			// Increment the counter to account for the added segment
 			++Index;
 		}
 	}

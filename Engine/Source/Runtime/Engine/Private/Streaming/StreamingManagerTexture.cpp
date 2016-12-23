@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	TextureStreamingManager.cpp: Implementation of content streaming classes.
@@ -1404,7 +1404,8 @@ FORCEINLINE float SqrtKeepMax(float V)
 
 bool FStreamingManagerTexture::HandleDebugTrackedTexturesCommand( const TCHAR* Cmd, FOutputDevice& Ar )
 {
-#if ENABLE_TEXTURE_TRACKING
+	// The ENABLE_TEXTURE_TRACKING macro is defined in ContentStreaming.cpp and not available here. This code does not compile any more.
+#ifdef ENABLE_TEXTURE_TRACKING_BROKEN
 	int32 NumTrackedTextures = GTrackedTextureNames.Num();
 	if ( NumTrackedTextures )
 	{

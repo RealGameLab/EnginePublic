@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -121,6 +121,9 @@ UNREALED_API void ComputeBoundingBox(UStaticMesh* StaticMesh, FVector& Center, F
  * Utilities functions to propagate BodySetup change for StaticMesh
  *
  * @param	StaticMesh	StaticMesh that collision has been changed for
- */
+ */	
+UNREALED_API void RefreshCollisionChange(UStaticMesh& StaticMesh);
+
+DEPRECATED(4.15, "This version of RefreshCollisionChange is deprecated. Please use RefreshCollisionChange(UStaticMesh&) instead.")
 UNREALED_API void RefreshCollisionChange(const UStaticMesh* StaticMesh);
 	

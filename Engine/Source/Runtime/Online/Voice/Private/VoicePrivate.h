@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -10,11 +10,13 @@
 
 #include "AllowWindowsPlatformTypes.h"
 
+THIRD_PARTY_INCLUDES_START
 #include <Audiopolicy.h>
 #include <Mmdeviceapi.h>
 #include <Functiondiscoverykeys_devpkey.h>
 #include <audiodefs.h>
 #include <dsound.h>
+THIRD_PARTY_INCLUDES_END
 
 #include "HideWindowsPlatformTypes.h"
 

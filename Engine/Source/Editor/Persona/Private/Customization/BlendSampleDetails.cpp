@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Customization/BlendSampleDetails.h"
 
@@ -90,7 +90,9 @@ void FBlendSampleDetails::CustomizeDetails(class IDetailLayoutBuilder& DetailBui
 		.OnShouldFilterAsset(this, &FBlendSampleDetails::ShouldFilterAsset)
 		.PropertyHandle(AnimationProperty)
 	];
-	
+
+	TSharedPtr<IPropertyHandle> RateScaleProperty = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(FBlendSample, RateScale), (UClass*)(FBlendSample::StaticStruct()));
+	CategoryBuilder.AddProperty(RateScaleProperty);
 }
 
 bool FBlendSampleDetails::ShouldFilterAsset(const FAssetData& AssetData) const

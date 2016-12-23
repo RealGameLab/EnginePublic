@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "StringCurveKeyArea.h"
 #include "UObject/StructOnScope.h"
@@ -151,6 +151,14 @@ TArray<FKeyHandle> FStringCurveKeyArea::GetUnsortedKeyHandles() const
 	}
 
 	return OutKeyHandles;
+}
+
+
+FKeyHandle FStringCurveKeyArea::DilateKey(FKeyHandle KeyHandle, float Scale, float Origin)
+{
+	float NewKeyTime = Curve->GetKeyTime(KeyHandle);
+	NewKeyTime = (NewKeyTime - Origin) * Scale + Origin;
+	return Curve->SetKeyTime(KeyHandle, NewKeyTime);
 }
 
 

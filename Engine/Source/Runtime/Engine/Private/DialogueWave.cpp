@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Sound/DialogueWave.h"
 #include "Internationalization/InternationalizationMetadata.h"
@@ -423,7 +423,7 @@ bool UDialogueSoundWaveProxy::IsPlayable() const
 	return SoundWave->IsPlayable();
 }
 
-const FAttenuationSettings* UDialogueSoundWaveProxy::GetAttenuationSettingsToApply() const
+const FSoundAttenuationSettings* UDialogueSoundWaveProxy::GetAttenuationSettingsToApply() const
 {
 	return SoundWave->GetAttenuationSettingsToApply();
 }

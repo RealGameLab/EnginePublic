@@ -1,4 +1,4 @@
-// Copyright 1998-2015 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,13 +19,13 @@ public class OneSkyLocalizationProvider : LocalizationProvider
 	public OneSkyLocalizationProvider(LocalizationProviderArgs InArgs)
 		: base(InArgs)
 	{
-		var OneSkyConfigName = CommandUtils.ParseParamValue("OneSkyConfigName");
+		var OneSkyConfigName = Command.ParseParamValue("OneSkyConfigName");
 		if (OneSkyConfigName == null)
 		{
 			throw new AutomationException("Missing required command line argument: 'OneSkyConfigName'");
 		}
 
-		var OneSkyProjectGroupName = CommandUtils.ParseParamValue("OneSkyProjectGroupName");
+		var OneSkyProjectGroupName = Command.ParseParamValue("OneSkyProjectGroupName");
 		if (OneSkyProjectGroupName == null)
 		{
 			throw new AutomationException("Missing required command line argument: 'OneSkyProjectGroupName'");

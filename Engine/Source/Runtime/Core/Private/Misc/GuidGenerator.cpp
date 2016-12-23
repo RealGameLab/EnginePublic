@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 /*
@@ -19,7 +19,7 @@
 ** this software for any purpose.
 */
 
-#if __GNUC__
+#ifdef __GNUC__
 
 #include <sys/types.h>
 #include <sys/time.h>

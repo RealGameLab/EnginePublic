@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 #pragma once
 
 #include "GenericApplicationMessageHandler.h"
@@ -7,6 +7,9 @@ class FPassThroughMessageHandler
 	: public FGenericApplicationMessageHandler
 {
 public:
+
+	virtual ~FPassThroughMessageHandler()
+	{ }
 
 	virtual bool IsHandlingMessages() const = 0;
 
@@ -17,6 +20,9 @@ public:
 class IPassThroughMessageHandlerFactory
 {
 public:
+
+	virtual ~IPassThroughMessageHandlerFactory()
+	{ }
 
 	virtual TSharedRef<FPassThroughMessageHandler> Create(
 		const TSharedRef<FGenericApplicationMessageHandler>& MessageHandler) const = 0;

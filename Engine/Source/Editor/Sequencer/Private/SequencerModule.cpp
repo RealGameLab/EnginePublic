@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
@@ -13,7 +13,6 @@
 #include "SequencerEdMode.h"
 #include "SequencerObjectChangeListener.h"
 #include "IDetailKeyframeHandler.h"
-#include "SequencerDetailKeyframeHandler.h"
 
 
 // We disable the deprecation warnings here because otherwise it'll complain about us
@@ -40,9 +39,8 @@ public:
 	{
 		TSharedRef<FSequencer> Sequencer = MakeShareable(new FSequencer);
 		TSharedRef<ISequencerObjectChangeListener> ObjectChangeListener = MakeShareable(new FSequencerObjectChangeListener(Sequencer, InitParams.bEditWithinLevelEditor));
-		TSharedRef<IDetailKeyframeHandler> KeyframeHandler = MakeShareable( new FSequencerDetailKeyframeHandler( Sequencer ));
 
-		Sequencer->InitSequencer(InitParams, ObjectChangeListener, KeyframeHandler, TrackEditorDelegates);
+		Sequencer->InitSequencer(InitParams, ObjectChangeListener, TrackEditorDelegates);
 
 		return Sequencer;
 	}

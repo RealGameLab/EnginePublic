@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Hierarchy/SHierarchyView.h"
 #include "WidgetBlueprint.h"
@@ -297,6 +297,13 @@ void SHierarchyView::RefreshTree()
 
 void SHierarchyView::RebuildTreeView()
 {
+	float OldScrollOffset = 0.0f;
+
+	if (WidgetTreeView.IsValid())
+	{
+		OldScrollOffset = WidgetTreeView->GetScrollOffset();
+	}
+
 	SAssignNew(WidgetTreeView, STreeView< TSharedPtr<FHierarchyModel> >)
 		.ItemHeight(20.0f)
 		.SelectionMode(ESelectionMode::Multi)
@@ -315,6 +322,9 @@ void SHierarchyView::RebuildTreeView()
 		[
 			WidgetTreeView.ToSharedRef()
 		]);
+
+	// Restore the previous scroll offset
+	WidgetTreeView->SetScrollOffset(OldScrollOffset);
 }
 
 void SHierarchyView::OnObjectsReplaced(const TMap<UObject*, UObject*>& ReplacementMap)

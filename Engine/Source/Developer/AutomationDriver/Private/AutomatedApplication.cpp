@@ -1,12 +1,17 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "AutomatedApplication.h"
 #include "PassThroughMessageHandler.h"
+#include "Widgets/SWindow.h"
+#include "Framework/Application/SlateApplication.h"
 
 class FAutomatedCursor
 	: public ICursor
 {
 public:
+
+	virtual ~FAutomatedCursor()
+	{ }
 
 	virtual FVector2D GetPosition() const override
 	{
@@ -166,6 +171,9 @@ class FAutomatedApplicationImpl
 	: public FAutomatedApplication
 {
 public:
+
+	virtual ~FAutomatedApplicationImpl()
+	{ }
 
 	virtual void AllowPlatformMessageHandling() override
 	{

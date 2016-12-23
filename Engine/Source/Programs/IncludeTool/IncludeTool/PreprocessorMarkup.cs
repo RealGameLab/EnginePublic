@@ -1,4 +1,6 @@
-﻿using IncludeTool.Support;
+﻿// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
+
+using IncludeTool.Support;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -77,6 +79,11 @@ namespace IncludeTool
 		/// An empty '#' on a line of its own
 		/// </summary>
 		Empty,
+
+		/// <summary>
+		/// Macros which decorate an include directive (eg. THIRD_PARTY_INCLUDES_START, THIRD_PARTY_INCLUDES_END)
+		/// </summary>
+		IncludeMarkup,
 
 		/// <summary>
 		/// Some other directive
@@ -245,10 +252,11 @@ namespace IncludeTool
 		/// </summary>
 		/// <param name="Reader">Reader for token objects</param>
 		/// <returns>Array of markup objects which split up the given text buffer</returns>
-		public static PreprocessorMarkup[] ParseArray(TokenReader Reader)
+		public static PreprocessorMarkup[] ParseArray(TextBuffer Text)
 		{
-			List<PreprocessorMarkup> Markup = new List<PreprocessorMarkup>();
+			TokenReader Reader = new TokenReader(Text, TextLocation.Origin);
 
+			List<PreprocessorMarkup> Markup = new List<PreprocessorMarkup>();
 			if(Reader.MoveNext())
 			{
 				bool bMoveNext = true;
@@ -350,7 +358,8 @@ namespace IncludeTool
 						}
 
 						// Create the new fragment
-						Markup.Add(new PreprocessorMarkup(PreprocessorMarkupType.Text, StartLocation, Reader.TokenLocation, null));
+						PreprocessorMarkupType Type = IsIncludeMarkup(Text, StartLocation, Reader.TokenLocation)? PreprocessorMarkupType.IncludeMarkup : PreprocessorMarkupType.Text;
+						Markup.Add(new PreprocessorMarkup(Type, StartLocation, Reader.TokenLocation, null));
 					}
 					else
 					{
@@ -360,6 +369,26 @@ namespace IncludeTool
 				}
 			}
 			return Markup.ToArray();
+		}
+
+		/// <summary>
+		/// Checks whether the given block of text is an include decoration
+		/// </summary>
+		/// <param name="Text">The text buffer to read from</param>
+		/// <param name="StartLocation">Start of the block of text to check</param>
+		/// <param name="EndLocation">End of the block of text to check</param>
+		/// <returns>True if the region just consists of #include markup macros</returns>
+		public static bool IsIncludeMarkup(TextBuffer Text, TextLocation StartLocation, TextLocation EndLocation)
+		{
+			TokenReader Reader = new TokenReader(Text, StartLocation, EndLocation);
+			while(Reader.MoveNext(TokenReaderContext.IgnoreNewlines))
+			{
+				if(Reader.Current.Text != "THIRD_PARTY_INCLUDES_START" && Reader.Current.Text != "THIRD_PARTY_INCLUDES_END")
+				{
+					return false;
+				}
+			}
+			return true;
 		}
 	}
 }

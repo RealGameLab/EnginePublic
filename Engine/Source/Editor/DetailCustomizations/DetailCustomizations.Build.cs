@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 using UnrealBuildTool;
 
@@ -25,6 +25,7 @@ public class DetailCustomizations : ModuleRules
 				"KismetWidgets",
 				"MovieSceneCapture",
 				"MovieSceneTools",
+				"MovieScene",
 				"SharedSettingsWidgets",
                 "ContentBrowser",
 				"BlueprintGraph",

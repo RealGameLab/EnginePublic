@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #pragma once
@@ -1093,6 +1093,7 @@ public:
 #if WITH_EDITOR
 	virtual void CheckForErrors() override;
 #endif
+	virtual bool IsReadyForOwnerToAutoDestroy() const override;
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
 	virtual UObject const* AdditionalStatObject() const override
 	{

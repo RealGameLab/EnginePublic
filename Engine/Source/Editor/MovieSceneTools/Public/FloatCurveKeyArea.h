@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -73,6 +73,7 @@ public:
 	virtual UMovieSceneSection* GetOwningSection() override;
 	virtual FRichCurve* GetRichCurve() override;
 	virtual TArray<FKeyHandle> GetUnsortedKeyHandles() const override;
+	virtual FKeyHandle DilateKey(FKeyHandle KeyHandle, float Scale, float Origin) override;
 	virtual FKeyHandle MoveKey(FKeyHandle KeyHandle, float DeltaPosition) override;
 	virtual void SetExtrapolationMode(ERichCurveExtrapolation ExtrapMode, bool bPreInfinity) override;
 	virtual bool CanSetExtrapolationMode() const override;

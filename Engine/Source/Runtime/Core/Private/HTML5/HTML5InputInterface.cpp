@@ -1,10 +1,12 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "HTML5InputInterface.h"
 #include "HTML5Cursor.h"
 #include "HAL/OutputDevices.h"
 #include "HAL/PlatformTime.h"
+THIRD_PARTY_INCLUDES_START
 #include <SDL.h>
+THIRD_PARTY_INCLUDES_END
 
 DECLARE_LOG_CATEGORY_EXTERN(LogHTML5, Log, All);
 DEFINE_LOG_CATEGORY(LogHTML5);
@@ -12,8 +14,10 @@ DEFINE_LOG_CATEGORY_STATIC(LogHTML5Input, Log, All);
 
 
 #if PLATFORM_HTML5_BROWSER
+THIRD_PARTY_INCLUDES_START
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
+THIRD_PARTY_INCLUDES_END
 
 static FGamepadKeyNames::Type AxisMapping[4] =
 {

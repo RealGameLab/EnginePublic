@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	MacPlatformProcess.mm: Mac implementations of Process functions
@@ -616,6 +616,16 @@ FProcHandle FMacPlatformProcess::CreateProc( const TCHAR* URL, const TCHAR* Parm
 	}
 
 	return FProcHandle(ProcessHandle);
+}
+
+FProcHandle FMacPlatformProcess::OpenProcess(uint32 ProcessID)
+{
+	for (NSRunningApplication *app in[[NSWorkspace sharedWorkspace] runningApplications])
+	{
+		NSLog(@"%@",[app localizedName]);
+	}
+
+	return FProcHandle();
 }
 
 bool FMacPlatformProcess::IsProcRunning( FProcHandle& ProcessHandle )

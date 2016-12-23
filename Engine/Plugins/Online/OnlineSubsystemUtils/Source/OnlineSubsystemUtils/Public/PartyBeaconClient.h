@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -28,7 +28,9 @@ enum class EClientRequestType : uint8
 	/** Reservation to configure an empty server  */
 	EmptyServerReservation,
 	/** Simple reconnect (checks for existing reservation) */
-	Reconnect
+	Reconnect,
+	/** Abandon the reservation beacon (game specific handling)*/
+	Abandon
 };
 
 inline const TCHAR* ToString(EClientRequestType RequestType)

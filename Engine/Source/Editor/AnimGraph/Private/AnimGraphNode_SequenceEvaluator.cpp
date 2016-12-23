@@ -1,10 +1,12 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "AnimGraphNode_SequenceEvaluator.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 
 #include "Kismet2/CompilerResultsLog.h"
 #include "GraphEditorActions.h"
+#include "Animation/AnimComposite.h"
+#include "AnimGraphNode_SequenceEvaluator.h"
 
 /////////////////////////////////////////////////////
 // UAnimGraphNode_SequenceEvaluator
@@ -179,6 +181,18 @@ const TCHAR* UAnimGraphNode_SequenceEvaluator::GetTimePropertyName() const
 UScriptStruct* UAnimGraphNode_SequenceEvaluator::GetTimePropertyStruct() const 
 {
 	return FAnimNode_SequenceEvaluator::StaticStruct();
+}
+
+EAnimAssetHandlerType UAnimGraphNode_SequenceEvaluator::SupportsAssetClass(const UClass* AssetClass) const
+{
+	if (AssetClass->IsChildOf(UAnimSequence::StaticClass()) || AssetClass->IsChildOf(UAnimComposite::StaticClass()))
+	{
+		return EAnimAssetHandlerType::Supported;
+	}
+	else
+	{
+		return EAnimAssetHandlerType::NotSupported;
+	}
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -165,6 +165,11 @@ public:
 	 * @param	Constraints		Returns the found constraints
 	 **/
 	ENGINE_API void BodyFindConstraints(int32 BodyIndex, TArray<int32>& Constraints);
+
+#if WITH_EDITOR
+	/** Update skeletal meshes when physics asset changes*/
+	ENGINE_API void RefreshPhysicsAssetChange() const;
+#endif
 
 private:
 

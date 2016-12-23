@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -9,7 +9,6 @@
 #include "EditorUndoClient.h"
 
 class IPropertyHandle;
-class SComboButton;
 
 /** Customization for the gameplay tag struct */
 class FGameplayTagCustomization : public IPropertyTypeCustomization, public FEditorUndoClient
@@ -49,9 +48,6 @@ private:
 
 	/** Returns Tag name currently selected*/
 	FText SelectedTag() const;
-
-	/** Combo Button for the drop down list. */
-	TSharedPtr<SComboButton> ComboButton;
 
 	/** Cached property handle */
 	TSharedPtr<IPropertyHandle> StructPropertyHandle;

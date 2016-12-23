@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -1023,6 +1023,10 @@ protected:
 	/** Widget to transfer keyboard focus to when this window becomes active, if any.  This is used to
 		restore focus to a widget after a popup has been dismissed. */
 	TWeakPtr< SWidget > WidgetToFocusOnActivate;
+
+	/** Widget that had keyboard focus when this window was last de-activated, if any.  This is used to
+		restore focus to a widget after the window regains focus. */
+	TWeakPtr< SWidget > WidgetFocusedOnDeactivate;
 
 	/** Style used to draw this window */
 	const FWindowStyle* Style;

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SAutomationDriverSpecSuite.h"
 #include "AutomationDriverSpecSuiteViewModel.h"
@@ -9,7 +9,9 @@
 #include "SScrollBox.h"
 #include "STileView.h"
 #include "SListView.h"
+#include "SOverlay.h"
 #include "SMultiLineEditableTextBox.h"
+#include "Widgets/Input/SEditableTextBox.h"
 
 class SAutomationDriverSpecSuiteImpl
 	: public SAutomationDriverSpecSuite

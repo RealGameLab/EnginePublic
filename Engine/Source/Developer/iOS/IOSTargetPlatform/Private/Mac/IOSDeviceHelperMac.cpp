@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved
 
 #include "IOSTargetPlatform.h"
 
@@ -345,7 +345,7 @@ void FIOSDeviceHelper::DoDeviceDisconnect(void* deviceHandle)
     }
     if (device != NULL)
     {
-        // extract the device id from the connected list¯
+        // extract the device id from the connected list
 		FIOSLaunchDaemonPong Event = ConnectedDevices.FindAndRemoveChecked(device);
     
         // fire the event

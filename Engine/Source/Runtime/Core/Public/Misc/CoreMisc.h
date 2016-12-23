@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -221,6 +221,8 @@ public:
 #ifndef DO_BLUEPRINT_GUARD
 	#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 		#define DO_BLUEPRINT_GUARD 1
+	#else
+		#define DO_BLUEPRINT_GUARD 0
 	#endif
 #endif
 

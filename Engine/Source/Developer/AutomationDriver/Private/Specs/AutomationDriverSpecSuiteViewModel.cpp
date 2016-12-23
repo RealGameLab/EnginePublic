@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "AutomationDriverSpecSuiteViewModel.h"
 
@@ -7,6 +7,9 @@ class FAutomationDriverSpecSuiteViewModel
 	, public TSharedFromThis<FAutomationDriverSpecSuiteViewModel>
 {
 public:
+
+	virtual ~FAutomationDriverSpecSuiteViewModel()
+	{ }
 
 	virtual FText GetFormText(EFormElement Element) const override
 	{
@@ -40,7 +43,7 @@ public:
 
 	virtual bool IsKeyEnabled(EPianoKey Key) const override
 	{
-		if (KeyResetDelay == FTimespan::Zero())
+		if (KeyResetDelay.IsZero())
 		{
 			return true;
 		}

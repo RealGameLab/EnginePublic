@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -121,7 +121,7 @@ enum class EMovieSceneCompileResult : uint8
 /**
  * Base class for a track in a Movie Scene
  */
-UCLASS(abstract, MinimalAPI)
+UCLASS(abstract, DefaultToInstanced, MinimalAPI)
 class UMovieSceneTrack
 	: public UMovieSceneSignedObject
 {
@@ -210,6 +210,11 @@ protected:
 	 */
 	DEPRECATED(4.15, "Create Instance has been deprecated. Please provide an evaluation template through CreateTemplateForSection instead.")
 	virtual TSharedPtr<class IMovieSceneTrackInstance> CreateInstance() { return nullptr; }
+
+protected:
+
+	//~ UObject interface
+	MOVIESCENE_API virtual void PostInitProperties() override;
 
 public:
 

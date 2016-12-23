@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -143,7 +143,7 @@ public:
 	void SetIgnoreInheritedScale(bool InIgnoreInheritedScale);
 	
 protected:
-	virtual float GetRelativeLayoutScale(const FSlotBase& Child) const override;
+	virtual float GetRelativeLayoutScale(const FSlotBase& Child, float LayoutScaleMultiplier) const override;
 
 	float GetLayoutScale() const;
 	void RefreshSafeZoneScale();

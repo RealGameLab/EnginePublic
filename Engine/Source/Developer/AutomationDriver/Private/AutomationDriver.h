@@ -1,9 +1,10 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 #pragma once
 
 #include "IAutomationDriver.h"
 #include "WaitUntil.h"
 #include "Misc/Timespan.h"
+#include "InputCoreTypes.h"
 
 class FAutomatedApplication;
 class IElementLocator;
@@ -96,6 +97,8 @@ class FAutomationDriver
 	, public TSharedFromThis<FAutomationDriver, ESPMode::ThreadSafe>
 {
 public:
+
+	virtual ~FAutomationDriver();
 
 	virtual bool Wait(FTimespan Timespan) override;
 	virtual bool Wait(const FDriverWaitDelegate& Delegate) override;

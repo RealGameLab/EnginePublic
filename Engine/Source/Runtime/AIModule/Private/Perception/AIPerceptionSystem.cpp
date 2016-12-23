@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Perception/AIPerceptionSystem.h"
 #include "EngineGlobals.h"
@@ -71,7 +71,11 @@ FAISenseID UAIPerceptionSystem::RegisterSenseClass(TSubclassOf<UAISense> SenseCl
 			UWorld* World = GetWorld();
 			if (World->HasBegunPlay())
 			{
-				RegisterAllPawnsAsSourcesForSense(SenseID);
+				// this @hack is required due to UAIPerceptionSystem::RegisterSenseClass
+				// being potentially called from UAIPerceptionComponent::OnRegister
+				// and at that point UWorld might not have registered 
+				// the pawn related to given UAIPerceptionComponent.
+				World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateUObject(this, &UAIPerceptionSystem::RegisterAllPawnsAsSourcesForSense, SenseID));
 			}
 			// otherwise it will get called in StartPlay()
 		}

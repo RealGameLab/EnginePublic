@@ -1,10 +1,12 @@
-// Copyright 1998-2015 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "MovieSceneCommonHelpers.h"
 #include "MovieSceneSection.h"
+#include "SequenceRecorderSettings.h"
+
 
 /** Interface for a generic property recorder */
 class IMovieScenePropertyRecorder
@@ -73,7 +75,11 @@ public:
 			AddKeyToSection(MovieSceneSection, Key);
 		}
 
-		ReduceKeys(MovieSceneSection);
+		const USequenceRecorderSettings* Settings = GetDefault<USequenceRecorderSettings>();
+		if (Settings->bReduceKeys)
+		{
+			ReduceKeys(MovieSceneSection);
+		}
 	}
 
 private:

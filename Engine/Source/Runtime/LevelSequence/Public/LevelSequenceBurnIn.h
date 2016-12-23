@@ -1,4 +1,4 @@
-// Copyright 1998-2015 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -36,7 +36,7 @@ public:
 protected:
 
 	/** Called as part of the game tick loop when the sequence has been updated */
-	void OnSequenceUpdated(const ULevelSequencePlayer& Player, float CurrentTime, float PreviousTime);
+	void OnSequenceUpdated(const UMovieSceneSequencePlayer& Player, float CurrentTime, float PreviousTime);
 
 protected:
 

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -62,6 +62,7 @@ public:
 	virtual bool GetFitToViewport( ) const override;
 	virtual int32 GetMipLevel( ) const override;
 	virtual UTexture* GetTexture( ) const override;
+	virtual bool HasValidTextureResource( ) const override;
 	virtual bool GetUseSpecifiedMip( ) const override;
 	virtual double GetZoom( ) const override;
 	virtual void PopulateQuickInfo( ) override;

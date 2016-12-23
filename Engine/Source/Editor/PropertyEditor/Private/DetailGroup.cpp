@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "DetailGroup.h"
 #include "Widgets/Input/SButton.h"
@@ -56,6 +56,16 @@ IDetailPropertyRow& FDetailGroup::AddPropertyRow( TSharedRef<IPropertyHandle> Pr
 	GroupChildren.Add( NewCustomization );
 
 	return *NewCustomization.PropertyRow;
+}
+
+IDetailGroup& FDetailGroup::AddGroup(FName NewGroupName, const FText& InLocalizedDisplayName, bool bInStartExpanded)
+{
+	FDetailLayoutCustomization NewCustomization;
+	NewCustomization.DetailGroup = MakeShareable(new FDetailGroup(NewGroupName, ParentCategory.Pin().ToSharedRef(), InLocalizedDisplayName, bStartExpanded));
+
+	GroupChildren.Add(NewCustomization);
+
+	return *NewCustomization.DetailGroup;
 }
 
 void FDetailGroup::ToggleExpansion( bool bExpand )

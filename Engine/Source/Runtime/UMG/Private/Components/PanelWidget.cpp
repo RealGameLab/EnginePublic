@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Components/PanelWidget.h"
 
@@ -84,8 +84,12 @@ bool UPanelWidget::RemoveChildAt(int32 Index)
 
 	OnSlotRemoved(PanelSlot);
 
-	const bool bReleaseChildren = true;
-	PanelSlot->ReleaseSlateResources(bReleaseChildren);
+	// If the child is a UserWidget, we should let it manage it's own slate resources instead of forcing a clear here. This fixes issues such as UE-39106
+	if (PanelSlot->Content && !PanelSlot->Content->IsA<UUserWidget>())
+	{
+		const bool bReleaseChildren = true;
+		PanelSlot->ReleaseSlateResources(bReleaseChildren);
+	}
 
 	PanelSlot->Parent = nullptr;
 	PanelSlot->Content = nullptr;

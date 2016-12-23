@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "MovieSceneTrack.h"
 #include "Evaluation/MovieSceneSegment.h"
@@ -15,6 +15,17 @@ UMovieSceneTrack::UMovieSceneTrack(const FObjectInitializer& InInitializer)
 #if WITH_EDITORONLY_DATA
 	TrackTint = FColor(127, 127, 127, 0);
 #endif
+}
+
+void UMovieSceneTrack::PostInitProperties()
+{
+	// Propagate sub object flags from our outer (movie scene) to ourselves. This is required for tracks that are stored on blueprints (archetypes) so that they can be referenced in worlds.
+	if (GetOuter()->HasAnyFlags(RF_ClassDefaultObject|RF_ArchetypeObject))
+	{
+		SetFlags(GetOuter()->GetMaskedFlags(RF_PropagateToSubObjects));
+	}
+	
+	Super::PostInitProperties();
 }
 
 PRAGMA_DISABLE_DEPRECATION_WARNINGS

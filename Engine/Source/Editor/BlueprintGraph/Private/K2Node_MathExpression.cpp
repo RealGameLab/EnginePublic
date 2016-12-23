@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "K2Node_MathExpression.h"
 #include "UObject/UnrealType.h"
@@ -998,6 +998,14 @@ private:
 			ADD_ALIAS("RandomFloat")
 			ADD_ALIAS("RAND")
 			ADD_ALIAS("RANDOM")
+		FUNC_ALIASES_END
+
+		FUNC_ALIASES_BEGIN("Dot_VectorVector")
+			ADD_ALIAS("Dot")
+		FUNC_ALIASES_END
+
+		FUNC_ALIASES_BEGIN("Cross_VectorVector")
+			ADD_ALIAS("Cross")
 		FUNC_ALIASES_END
 				
 		// if none of the above aliases returned, then we don't have any for

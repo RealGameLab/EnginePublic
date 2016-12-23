@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -115,13 +115,16 @@ private:
 					Curve->AddKey(CurrentTime, Value,  CurrentKeyHandle);
 				}
 
-				if (OwningSection->GetStartTime() > CurrentTime)
+				if (Curve->GetNumKeys() != 0)
 				{
-					OwningSection->SetStartTime(CurrentTime);
-				}
-				if (OwningSection->GetEndTime() < CurrentTime)
-				{
-					OwningSection->SetEndTime(CurrentTime);
+					if (OwningSection->GetStartTime() > CurrentTime)
+					{
+						OwningSection->SetStartTime(CurrentTime);
+					}
+					if (OwningSection->GetEndTime() < CurrentTime)
+					{
+						OwningSection->SetEndTime(CurrentTime);
+					}
 				}
 			}
 

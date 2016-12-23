@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -140,6 +140,9 @@ private:
 
 	/** Restore the assets that were previously open when the editor was last closed */
 	void RestorePreviouslyOpenAssets();
+
+	/** Handles a package being reloaded */
+	void HandlePackageReloaded(const EPackageReloadPhase InPackageReloadPhase, FPackageReloadedEvent* InPackageReloadedEvent);
 
 private:
 

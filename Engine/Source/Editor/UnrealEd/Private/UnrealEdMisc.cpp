@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "UnrealEdMisc.h"
 #include "TickableEditorObject.h"
@@ -75,6 +75,8 @@
 #include "IPortalServiceLocator.h"
 #include "IDesktopPlatform.h"
 #include "DesktopPlatformModule.h"
+
+#define USE_UNIT_TESTS 0
 
 #define LOCTEXT_NAMESPACE "UnrealEd"
 

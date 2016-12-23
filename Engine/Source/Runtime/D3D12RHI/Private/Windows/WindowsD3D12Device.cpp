@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	WindowsD3D12Device.cpp: Windows D3D device RHI implementation.
@@ -75,7 +75,7 @@ static bool IsDelayLoadException(PEXCEPTION_POINTERS ExceptionPointers)
  */
 static void SafeCreateDXGIFactory(IDXGIFactory4** DXGIFactory)
 {
-#if !D3D12_CUSTOM_VIEWPORT_CONSTRUCTOR
+#if !defined(D3D12_CUSTOM_VIEWPORT_CONSTRUCTOR) || !D3D12_CUSTOM_VIEWPORT_CONSTRUCTOR
 	__try
 	{
 		CreateDXGIFactory(__uuidof(IDXGIFactory4), (void**)DXGIFactory);

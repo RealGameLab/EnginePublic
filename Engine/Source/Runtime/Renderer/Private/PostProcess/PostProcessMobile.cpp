@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	PostProcessMobile.cpp: Uber post for mobile implementation.
@@ -2777,6 +2777,13 @@ void FRCPassPostProcessAaES2::Process(FRenderingCompositePassContext& Context)
 	const FIntPoint& SrcSize = InputDesc->Extent;
 	const FIntPoint& DestSize = OutputDesc.Extent;
 
+	FSceneViewState* ViewState = (FSceneViewState*)Context.View.State;
+	if (ViewState) 
+	{
+		// Double buffer input for temporal AA.
+		ViewState->MobileAaColor0 = GetInput(ePId_Input0)->GetOutput()->PooledRenderTarget;
+	}
+	
 	check(SrcSize == DestSize);
 
 	SetRenderTarget(Context.RHICmdList, DestRenderTarget.TargetableTexture, FTextureRHIRef(), ESimpleRenderTargetMode::EExistingColorAndDepth);

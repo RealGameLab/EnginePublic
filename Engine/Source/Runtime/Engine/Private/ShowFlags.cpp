@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	ShowFlags.cpp: Show Flag Definitions.
@@ -334,8 +334,12 @@ void EngineShowFlagOverride(EShowFlagInitMode ShowFlagInitMode, EViewModeIndex V
 		// when taking a high resolution screenshot
 		if (GIsHighResScreenshot)
 		{
-			// disabled as it requires multiple frames, AA can be done by downsampling, more control and better masking
-			EngineShowFlags.TemporalAA = 0;
+			static const auto ICVar = IConsoleManager::Get().FindTConsoleVariableDataInt(TEXT("r.HighResScreenshotDelay"));
+			if(ICVar->GetValueOnGameThread() < 4)
+			{
+				// disabled as it requires multiple frames, AA can be done by downsampling, more control and better masking
+				EngineShowFlags.TemporalAA = 0;
+			}
 			// no editor gizmos / selection
 			EngineShowFlags.SetModeWidgets(false);
 			EngineShowFlags.SetSelection(false);

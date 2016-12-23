@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -42,6 +42,9 @@ public:
 
 	/* Is the original import create a folder hierarchy */
 	bool bCreateFolderHierarchy;
+
+	/* Is the original import force front X axis */
+	bool bForceFrontXAxis;
 
 	/* Which type of hierarchy was create see */
 	int32 HierarchyType;

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 #include "ISteamVRPlugin.h"
@@ -107,6 +107,8 @@ public:
 
 	virtual void SetTrackingOrigin(EHMDTrackingOrigin::Type NewOrigin) override;
 	virtual EHMDTrackingOrigin::Type GetTrackingOrigin() override;
+
+	virtual void RecordAnalytics() override;
 
 	/** IStereoRendering interface */
 	virtual bool IsStereoEnabled() const override;

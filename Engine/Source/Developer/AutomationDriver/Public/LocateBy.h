@@ -1,5 +1,8 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 #pragma once
+
+#include "CoreMinimal.h"
+#include "Widgets/SWidget.h"
 
 class IElementLocator;
 
@@ -9,7 +12,7 @@ DECLARE_DELEGATE_OneParam(FLocateSlateWidgetPathElementDelegate, TArray<FWidgetP
 /**
  * Represents a collection of fluent helper functions designed to make accessing and creating element locators easy
  */
-class By
+class AUTOMATIONDRIVER_API By
 {
 public:
 

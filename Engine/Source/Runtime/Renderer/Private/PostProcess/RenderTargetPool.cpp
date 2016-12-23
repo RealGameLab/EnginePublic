@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	RenderTargetPool.cpp: Scene render target pool manager.
@@ -1354,6 +1354,8 @@ void FRenderTargetPool::ReleaseDynamicRHI()
 {
 	check(IsInRenderingThread());
 	WaitForTransitionFence();
+
+	VisualizeTexture.Destroy();
 
 	PooledRenderTargets.Empty();
 	if (PooledRenderTargetSnapshots.Num())

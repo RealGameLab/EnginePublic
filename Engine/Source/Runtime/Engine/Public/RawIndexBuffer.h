@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	RawIndexBuffer.h: Raw index buffer definitions.
@@ -10,6 +10,8 @@
 #include "RHI.h"
 #include "RenderResource.h"
 #include "Containers/DynamicRHIResourceArray.h"
+
+#define DISALLOW_32BIT_INDICES 0
 
 class FRawIndexBuffer : public FIndexBuffer
 {

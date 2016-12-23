@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Kismet/HeadMountedDisplayFunctionLibrary.h"
 #include "EngineGlobals.h"
@@ -16,6 +16,11 @@ UHeadMountedDisplayFunctionLibrary::UHeadMountedDisplayFunctionLibrary(const FOb
 bool UHeadMountedDisplayFunctionLibrary::IsHeadMountedDisplayEnabled()
 {
 	return GEngine->HMDDevice.IsValid() && GEngine->HMDDevice->IsHeadTrackingAllowed();
+}
+
+bool UHeadMountedDisplayFunctionLibrary::IsHeadMountedDisplayConnected()
+{
+	return GEngine->HMDDevice.IsValid() && GEngine->HMDDevice->IsHMDConnected();
 }
 
 bool UHeadMountedDisplayFunctionLibrary::EnableHMD(bool bEnable)

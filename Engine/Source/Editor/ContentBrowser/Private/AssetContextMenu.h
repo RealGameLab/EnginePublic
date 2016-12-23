@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -59,6 +59,12 @@ public:
 
 	/** Handler for Delete */
 	void ExecuteDelete();
+
+	/** Handler to check to see if a reload command is allowed */
+	bool CanExecuteReload() const;
+
+	/** Handler for Reload */
+	void ExecuteReload();
 
 	/** Handler to check to see if "Save Asset" can be executed */
 	bool CanExecuteSaveAsset() const;

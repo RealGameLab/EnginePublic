@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 
@@ -131,7 +131,7 @@ ENGINE_API void DrawDebugCanvasWireSphere(UCanvas* Canvas, const FVector& Base, 
  */
 ENGINE_API void DrawDebugCanvasWireCone(UCanvas* Canvas, const FTransform& Transform, float ConeRadius, float ConeAngle, int32 ConeSides, FColor Color);
 
-#elif !SHIPPING_DRAW_DEBUG_ERROR
+#elif !defined(SHIPPING_DRAW_DEBUG_ERROR) || !SHIPPING_DRAW_DEBUG_ERROR
 
 // Empty versions of above functions
 

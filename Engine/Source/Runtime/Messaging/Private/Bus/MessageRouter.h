@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -201,7 +201,7 @@ private:
 		{
 			const FTimespan Difference = Other.Context->GetTimeSent() - Context->GetTimeSent();
 
-			if (Difference == FTimespan::Zero())
+			if (Difference.IsZero())
 			{
 				return (Sequence < Other.Sequence);
 			}

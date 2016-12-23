@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "GenericPlatform/GenericPlatformFile.h"
 #include "HAL/FileManager.h"
@@ -8,8 +8,6 @@
 #include "Stats/Stats.h"
 #include "Async/AsyncWork.h"
 #include "UniquePtr.h"
-
-#if USE_NEW_ASYNC_IO
 
 #include "AsyncFileHandle.h"
 
@@ -294,14 +292,13 @@ bool FGenericReadRequest::CheckForPrecache()
 
 IAsyncReadFileHandle* IPlatformFile::OpenAsyncRead(const TCHAR* Filename)
 {
+	check(GNewAsyncIO);
 	return new FGenericAsyncReadFileHandle(this, Filename);
 }
 
 DEFINE_STAT(STAT_AsyncFileMemory);
 DEFINE_STAT(STAT_AsyncFileHandles);
 DEFINE_STAT(STAT_AsyncFileRequests);
-
-#endif //USE_NEW_ASYNC_IO
 
 int64 IFileHandle::Size()
 {

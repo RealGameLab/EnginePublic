@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "VREditorModule.h"
 #include "Modules/ModuleManager.h"
@@ -7,6 +7,8 @@
 #include "IVREditorModule.h"
 #include "TickableEditorObject.h"
 #include "VREditorModeManager.h"
+#include "VREditorStyle.h"
+#include "Kismet/HeadMountedDisplayFunctionLibrary.h"	// For EHMDWornState::Type
 
 class FVREditorModule : public IVREditorModule, public FTickableEditorObject
 {
@@ -57,10 +59,20 @@ namespace VREd
 
 void FVREditorModule::StartupModule()
 {
+	if (GIsEditor)
+	{
+		FVREditorStyle::Initialize();
+	}
+
 }
 
 void FVREditorModule::ShutdownModule()
 {
+
+	if (GIsEditor)
+	{
+		FVREditorStyle::Shutdown();
+	}
 }
 
 void FVREditorModule::PostLoadCallback()

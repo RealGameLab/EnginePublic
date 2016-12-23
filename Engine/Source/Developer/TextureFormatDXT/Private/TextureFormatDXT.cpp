@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "CoreMinimal.h"
 #include "Misc/ScopeLock.h"
@@ -12,7 +12,10 @@
 #include "Interfaces/ITextureFormatModule.h"
 #include "TextureCompressorModule.h"
 #include "PixelFormat.h"
-#include "nvtt/nvtt.h"
+
+THIRD_PARTY_INCLUDES_START
+	#include "nvtt/nvtt.h"
+THIRD_PARTY_INCLUDES_END
 
 DEFINE_LOG_CATEGORY_STATIC(LogTextureFormatDXT, Log, All);
 

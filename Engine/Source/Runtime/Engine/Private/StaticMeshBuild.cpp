@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	StaticMeshBuild.cpp: Static mesh building.
@@ -161,10 +161,8 @@ void UStaticMesh::Build(bool bSilent, TArray<FText>* OutErrors)
 	// Calculate extended bounds
 	CalculateExtendedBounds();
 
-	if (NavCollision == NULL && !!bHasNavigationData)
-	{
-		CreateNavCollision();
-	}
+	// Update nav collision 
+	CreateNavCollision(/*bIsUpdate=*/true);
 
 	PostMeshBuild.Broadcast(this);
 

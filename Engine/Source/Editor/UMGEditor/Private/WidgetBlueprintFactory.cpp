@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "WidgetBlueprintFactory.h"
 #include "UObject/Interface.h"
@@ -9,6 +9,9 @@
 #include "Kismet2/KismetEditorUtilities.h"
 
 
+
+#include "Components/CanvasPanel.h"
+#include "WidgetTree.h"
 
 #define LOCTEXT_NAMESPACE "UWidgetBlueprintFactory"
 
@@ -57,6 +60,13 @@ UObject* UWidgetBlueprintFactory::FactoryCreateNew(UClass* Class, UObject* InPar
 	else
 	{
 		UWidgetBlueprint* NewBP = CastChecked<UWidgetBlueprint>(FKismetEditorUtilities::CreateBlueprint(ParentClass, InParent, Name, BlueprintType, UWidgetBlueprint::StaticClass(), UWidgetBlueprintGeneratedClass::StaticClass(), CallingContext));
+
+		// Create a CanvasPanel to use as the default root widget
+		if ( NewBP->WidgetTree->RootWidget == nullptr )
+		{
+			UWidget* Root = NewBP->WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass());
+			NewBP->WidgetTree->RootWidget = Root;
+		}
 
 		return NewBP;
 	}

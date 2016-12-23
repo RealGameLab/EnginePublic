@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -141,6 +141,8 @@ protected:
 	FString GameLocName;
 	/** Used to match any PAK files for this platform */
 	FString PlatformPrefix;
+	/** Used to match any server-only hotfixes */
+	FString ServerPrefix;
 	/** Normally will be "Default" but could be different if we have a debug prefix */
 	FString DefaultPrefix;
 	/** Holds a chunk of string that will be swapped for Game during processing pak files (MyGame/Content/Maps -> /Game/Maps) */

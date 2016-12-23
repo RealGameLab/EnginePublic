@@ -1,4 +1,4 @@
-// Copyright 1998-2015 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	PostProcessTonemap.usf: PostProcessing tone mapping
@@ -58,8 +58,10 @@ uint GetOutputDevice()
 // LUT for color grading
 #if USE_VOLUME_LUT == 1
 	Texture3D		ColorGradingLUT;
-	SamplerState	ColorGradingLUTSampler;
-#endif
+#else
+	Texture2D       ColorGradingLUT;
+#endif 
+SamplerState        ColorGradingLUTSampler;
 
 static const float LUTSize = 32;
 
@@ -78,7 +80,8 @@ half3 ColorLookupTable( half3 LinearColor )
 #if USE_VOLUME_LUT == 1
 	half3 OutDeviceColor = ColorGradingLUT.Sample( ColorGradingLUTSampler, UVW ).rgb;
 #else
-	half3 OutDeviceColor = UnwrappedTexture3DSample( PostprocessInput3, PostprocessInput3Sampler, UVW, LUTSize ).rgb;
+	half3 OutDeviceColor = UnwrappedTexture3DSample( ColorGradingLUT, ColorGradingLUTSampler, UVW, LUTSize ).rgb;
+	//half3 OutDeviceColor = UnwrappedTexture3DSample( PostprocessInput3, PostprocessInput3Sampler, UVW, LUTSize ).rgb;
 #endif
 	
 	return OutDeviceColor * 1.05;
@@ -518,8 +521,9 @@ void MainPS(
 			OutColor.rgb = InvertACESTonemapping( OutColor.rgb );
 		#endif
 
+		// We always process in PQ for precision but can output in ScRGB
 		BRANCH
-		if (EncodeHDROutput)
+		if (GetOutputDevice() == 5 || GetOutputDevice() == 6)
 		{
 			OutColor.xyz = ST2084ToScRGB(OutColor.xyz, GetOutputDevice());
 		}

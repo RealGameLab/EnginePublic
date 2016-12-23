@@ -1,4 +1,4 @@
-﻿// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+﻿// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -348,7 +348,7 @@ public class DeploymentContext //: ProjectParams
         }
         else
         {
-            ConfigCacheIni GameIni = ConfigCacheIni.CreateConfigCacheIni(InTargetPlatform.PlatformType, "Game", RawProjectPath.Directory);
+            ConfigHierarchy GameIni = ConfigCache.ReadHierarchy(ConfigHierarchyType.Game, RawProjectPath.Directory, InTargetPlatform.PlatformType);
             String IniPath = "/Script/UnrealEd.ProjectPackagingSettings";
             bool bSetting = false;
             if (GameIni.GetBool(IniPath, "bGenerateChunks", out bSetting))

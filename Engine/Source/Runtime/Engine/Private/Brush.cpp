@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	Brush.cpp: Brush Actor implementation
@@ -266,6 +266,11 @@ bool ABrush::IsLevelBoundsRelevant() const
 	// exclude default brush
 	ULevel* Level = GetLevel();
 	return (Level && this != Level->Actors[1]);
+}
+
+void ABrush::RebuildNavigationData()
+{
+	// empty in base class
 }
 
 FColor ABrush::GetWireColor() const

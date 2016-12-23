@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "AvfMediaTracks.h"
 #include "Containers/ResourceArray.h"
@@ -778,6 +778,12 @@ void FAvfMediaTracks::SetAudioSink(IMediaAudioSink* Sink)
 }
 
 
+void FAvfMediaTracks::SetMetadataSink(IMediaBinarySink* Sink)
+{
+	// not supported
+}
+
+
 void FAvfMediaTracks::SetOverlaySink(IMediaOverlaySink* Sink)
 {
 	if (Sink != OverlaySink)
@@ -1198,6 +1204,9 @@ void FAvfMediaTracks::InitializeVideoSink()
 FAvfVideoSampler::FAvfVideoSampler()
 : VideoSink(nullptr)
 , Output(nil)
+#if WITH_ENGINE && !PLATFORM_MAC
+, MetalTextureCache(nullptr)
+#endif
 {
 	
 }

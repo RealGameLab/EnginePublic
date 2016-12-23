@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #include "AnimationBlueprintEditor.h"
@@ -35,6 +35,7 @@
 #include "AnimGraphNode_SequenceEvaluator.h"
 #include "AnimGraphNode_PoseByName.h"
 #include "AnimGraphNode_PoseBlendNode.h"
+#include "AnimGraphNode_MultiWayBlend.h"
 
 #include "Animation/AnimNotifies/AnimNotifyState.h"
 
@@ -74,6 +75,7 @@ namespace AnimationBlueprintEditorTabs
 	const FName AnimBlueprintPreviewEditorTab(TEXT("AnimBlueprintPreviewEditor"));
 	const FName AssetOverridesTab(TEXT("AnimBlueprintParentPlayerEditor"));
 	const FName SlotNamesTab(TEXT("SkeletonSlotNames"));
+	const FName CurveNamesTab(TEXT("AnimCurveViewerTab"));
 };
 
 /////////////////////////////////////////////////////
@@ -93,7 +95,7 @@ public:
 	{
 		AnimationBlueprintEditorPtr = InAnimationBlueprintEditor;
 
-		SSingleObjectDetailsPanel::Construct(SSingleObjectDetailsPanel::FArguments().HostCommandList(InAnimationBlueprintEditor->GetToolkitCommands()), /*bAutomaticallyObserveViaGetObjectToObserve*/ true, /*bAllowSearch*/ true);
+		SSingleObjectDetailsPanel::Construct(SSingleObjectDetailsPanel::FArguments().HostCommandList(InAnimationBlueprintEditor->GetToolkitCommands()).HostTabManager(InAnimationBlueprintEditor->GetTabManager()), /*bAutomaticallyObserveViaGetObjectToObserve*/ true, /*bAllowSearch*/ true);
 
 		PropertyView->SetIsPropertyEditingEnabledDelegate(FIsPropertyEditingEnabled::CreateStatic([] { return !GIntraFrameDebuggingGameThread; }));
 	}
@@ -384,6 +386,11 @@ void FAnimationBlueprintEditor::OnAddPosePin()
 				FilterNode->AddPinToBlendByFilter();
 				break;
 			}
+			else if (UAnimGraphNode_MultiWayBlend* MultiBlendNode = Cast<UAnimGraphNode_MultiWayBlend>(Node))
+			{
+				MultiBlendNode->AddPinToBlendNode();
+				break;
+			}
 		}
 	}
 }
@@ -396,8 +403,9 @@ bool FAnimationBlueprintEditor::CanAddPosePin() const
 void FAnimationBlueprintEditor::OnRemovePosePin()
 {
 	const FGraphPanelSelectionSet SelectedNodes = GetSelectedNodes();
-	UAnimGraphNode_BlendListByInt* BlendListIntNode = NULL;
-	UAnimGraphNode_LayeredBoneBlend* BlendByFilterNode = NULL;
+	UAnimGraphNode_BlendListByInt* BlendListIntNode = nullptr;
+	UAnimGraphNode_LayeredBoneBlend* BlendByFilterNode = nullptr;
+	UAnimGraphNode_MultiWayBlend* BlendByMultiway = nullptr;
 
 	if (SelectedNodes.Num() == 1)
 	{
@@ -413,6 +421,11 @@ void FAnimationBlueprintEditor::OnRemovePosePin()
 				BlendByFilterNode = LayeredBlendNode;
 				break;
 			}		
+			else if (UAnimGraphNode_MultiWayBlend* MultiwayBlendNode = Cast<UAnimGraphNode_MultiWayBlend>(*NodeIt))
+			{
+				BlendByMultiway = MultiwayBlendNode;
+				break;
+			}
 		}
 	}
 
@@ -440,6 +453,17 @@ void FAnimationBlueprintEditor::OnRemovePosePin()
 			UEdGraphPin* SelectedPin = FocusedGraphEd->GetGraphPinForMenu();
 
 			BlendByFilterNode->RemovePinFromBlendByFilter(SelectedPin);
+
+			// Update the graph so that the node will be refreshed
+			FocusedGraphEd->NotifyGraphChanged();
+		}
+
+		if (BlendByMultiway)
+		{
+			// make sure we at least have BlendListNode selected
+			UEdGraphPin* SelectedPin = FocusedGraphEd->GetGraphPinForMenu();
+
+			BlendByMultiway->RemovePinFromBlendNode(SelectedPin);
 
 			// Update the graph so that the node will be refreshed
 			FocusedGraphEd->NotifyGraphChanged();

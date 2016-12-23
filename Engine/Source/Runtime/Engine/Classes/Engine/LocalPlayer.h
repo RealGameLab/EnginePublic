@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 //=============================================================================
 // LocalPlayer
@@ -195,6 +195,7 @@ class ENGINE_API ULocalPlayer : public UPlayer
 private:
 	FSceneViewStateReference ViewState;
 	FSceneViewStateReference StereoViewState;
+	FSceneViewStateReference MonoViewState;
 
 	/** The controller ID which this player accepts input from. */
 	int32 ControllerId;

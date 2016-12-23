@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Framework/Commands/UICommandInfo.h"
 #include "Styling/SlateColor.h"
@@ -10,7 +10,7 @@
 #include "Widgets/SToolTip.h"
 
 
-FSimpleMulticastDelegate FBindingContext::CommandsChanged;
+FOnBindingContextChanged FBindingContext::CommandsChanged;
 
 
 FUICommandInfoDecl FBindingContext::NewCommand( const FName InCommandName, const FText& InCommandLabel, const FText& InCommandDesc )

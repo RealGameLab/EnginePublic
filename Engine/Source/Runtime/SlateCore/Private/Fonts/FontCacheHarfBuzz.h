@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -18,8 +18,10 @@ class FFreeTypeKerningPairCache;
 #endif	//PLATFORM_COMPILER_HAS_GENERIC_KEYWORD
 
 #if WITH_HARFBUZZ
+	THIRD_PARTY_INCLUDES_START
 	#include "hb.h"
 	#include "hb-ft.h"
+	THIRD_PARTY_INCLUDES_END
 #endif // #if WITH_HARFBUZZ
 
 #if PLATFORM_COMPILER_HAS_GENERIC_KEYWORD

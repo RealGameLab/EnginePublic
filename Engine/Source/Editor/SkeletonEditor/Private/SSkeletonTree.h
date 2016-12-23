@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #pragma once
@@ -334,4 +334,9 @@ private:
 
 	/** Compiled filter search terms. */
 	TSharedPtr<class FTextFilterExpressionEvaluator> TextFilterPtr;
+
+	/** Proxy object used to display and edit bone transforms in details panels */
+	class UBoneProxy* BoneProxy;
+
+	friend struct FScopedSavedSelection;
 }; 

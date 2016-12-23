@@ -1,10 +1,12 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SlateWidgetLocatorByPath.h"
 #include "SlateWidgetElement.h"
 #include "IElementLocator.h"
 #include "DriverIdMetaData.h"
 #include "AutomationDriverLogging.h"
+#include "Widgets/SWidget.h"
+#include "Framework/Application/SlateApplication.h"
 
 class FSlateWidgetLocatorByPath
 	: public IElementLocator
@@ -24,6 +26,9 @@ private:
 		: public FMatcher
 	{
 	public:
+
+		virtual ~FIdMatcher()
+		{ }
 
 		virtual bool IsMatch(const TSharedRef<SWidget>& Widget) const override
 		{
@@ -56,6 +61,9 @@ private:
 		: public FMatcher
 	{
 	public:
+
+		virtual ~FTagMatcher()
+		{ }
 
 		virtual bool IsMatch(const TSharedRef<SWidget>& Widget) const override
 		{
@@ -94,6 +102,9 @@ private:
 	{
 	public:
 
+		virtual ~FTypeMatcher()
+		{ }
+
 		virtual bool IsMatch(const TSharedRef<SWidget>& Widget) const override
 		{
 			return Widget->GetType() == Type;
@@ -107,6 +118,9 @@ private:
 	};
 
 public:
+
+	virtual ~FSlateWidgetLocatorByPath()
+	{ }
 
 	virtual FString ToDebugString() const
 	{

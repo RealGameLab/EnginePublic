@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "BlueprintCompilerCppBackendUtils.h"
 #include "Misc/App.h"
@@ -19,18 +19,7 @@
 #include "BlueprintCompilerCppBackend.h"
 #include "Animation/AnimBlueprint.h"
 
-FString GetPathPostfix(const UObject* ForObject)
-{
-	FString FullAssetName = ForObject->GetOutermost()->GetPathName();
-	if (FullAssetName.StartsWith(TEXT("/Temp/__TEMP_BP__"), ESearchCase::CaseSensitive))
-	{
-		FullAssetName.RemoveFromStart(TEXT("/Temp/__TEMP_BP__"), ESearchCase::CaseSensitive);
-	}
-	FString AssetName = FPackageName::GetLongPackageAssetName(FullAssetName);
-	// append a hash of the path, this uniquely identifies assets with the same name, but different folders:
-	FullAssetName.RemoveFromEnd(AssetName);
-	return FString::Printf(TEXT("%u"), FCrc::MemCrc32(*FullAssetName, FullAssetName.Len()*sizeof(TCHAR)));
-}
+extern ENGINE_API FString GetPathPostfix(const UObject* ForObject);
 
 FString FEmitterLocalContext::GenerateUniqueLocalName()
 {
@@ -42,6 +31,15 @@ FString FEmitterLocalContext::GenerateUniqueLocalName()
 
 FString FEmitterLocalContext::FindGloballyMappedObject(const UObject* Object, const UClass* ExpectedClass, bool bLoadIfNotFound, bool bTryUsedAssetsList)
 {
+	if (const UBlueprint* BP = Cast<const UBlueprint>(Object))
+	{
+		// BP should never be wanted. BPGC should be loaded instead.
+		if (!ExpectedClass || UClass::StaticClass()->IsChildOf(ExpectedClass))
+		{
+			Object = BP->GeneratedClass;
+		}
+	}
+
 	UClass* ActualClass = Cast<UClass>(Dependencies.GetActualStruct());
 	UClass* OriginalActualClass = Dependencies.FindOriginalClass(ActualClass);
 	UClass* OuterClass = Object ? Cast<UClass>(Object->GetOuter()) : nullptr;	// SCS component templates will have an Outer that equates to their owning BPGC; since they're not currently DSOs, we have to special-case them.
@@ -275,7 +273,7 @@ FString FEmitterLocalContext::ExportCppDeclaration(const UProperty* Property, EE
 		}
 	};
 
-	auto ArrayProperty = Cast<const UArrayProperty>(Property);
+	const UArrayProperty* ArrayProperty = Cast<const UArrayProperty>(Property);
 	if (ArrayProperty)
 	{
 		Property = ArrayProperty->Inner;
@@ -375,15 +373,24 @@ FString FEmitHelper::GetCppName(const UField* Field, bool bUInterface, bool bFor
 			FString VarPrefix;
 
 			const bool bIsUberGraphVariable = Owner->IsA<UBlueprintGeneratedClass>() && AsProperty->HasAllPropertyFlags(CPF_Transient | CPF_DuplicateTransient);
+			const bool bIsParameter = AsProperty->HasAnyPropertyFlags(CPF_Parm);
+			const bool bFunctionLocalVariable = Owner->IsA<UFunction>();
 			if (bIsUberGraphVariable)
 			{
 				int32 InheritenceLevel = GetInheritenceLevel(Owner);
 				VarPrefix = FString::Printf(TEXT("b%dl__"), InheritenceLevel);
 			}
+			else if (bIsParameter)
+			{
+				VarPrefix = TEXT("bpp__");
+			}
+			else if (bFunctionLocalVariable)
+			{
+				VarPrefix = TEXT("bpfv__");
+			}
 			else
 			{
-				const bool bIsParameter = AsProperty->HasAnyPropertyFlags(CPF_Parm);
-				VarPrefix = bIsParameter ? TEXT("bpp__") : TEXT("bpv__");
+				VarPrefix = TEXT("bpv__");
 			}
 			return ::UnicodeToCPPIdentifier(AsProperty->GetName(), AsProperty->HasAnyPropertyFlags(CPF_Deprecated), *VarPrefix);
 		}
@@ -723,6 +730,11 @@ FString FEmitHelper::GenerateReplaceConvertedMD(UObject* Obj)
 		Result += TEXT(", OverrideNativeName=\"");
 		Result += Obj->GetName();
 		Result += TEXT("\"");
+		
+		if(const UEnum* Enum = Cast<const UEnum>(Obj))
+		{
+			Result += FString::Printf(TEXT(", EnumDisplayNameFn=\"%s__GetUserFriendlyName\""), *FEmitHelper::GetCppName(Enum));
+		}
 	}
 
 	return Result;
@@ -1430,6 +1442,10 @@ FString FEmitHelper::GenerateGetPropertyByName(FEmitterLocalContext& EmitterCont
 	if (EmitterContext.CurrentCodeType != FEmitterLocalContext::EGeneratedCodeType::Regular)
 	{
 		EmitterContext.PropertiesForInaccessibleStructs.Add(Property, PropertyPtrName);
+		if (EmitterContext.ActiveScopeBlock)
+		{
+			EmitterContext.ActiveScopeBlock->TrackLocalAccessorDecl(Property);
+		}
 	}
 	return PropertyPtrName;
 }
@@ -1877,6 +1893,8 @@ FString FDependenciesGlobalMapHelper::EmitBodyCode()
 
 		CodeText.AddLine(TEXT("const FBlueprintDependencyObjectRef& F__NativeDependencies::Get(int16 Index)"));
 		CodeText.AddLine(TEXT("{"));
+		CodeText.AddLine(TEXT("static const FBlueprintDependencyObjectRef& NullObjectRef = FBlueprintDependencyObjectRef();"));
+		CodeText.AddLine(TEXT("if (Index == -1) { return NullObjectRef; }"));
 		CodeText.AddLine(FString::Printf(TEXT("\tcheck((Index >= 0) && (Index < %d));"), DependenciesArray.Num()));
 		CodeText.AddLine(TEXT("\treturn ::NativizedCodeDependenties[Index];"));
 		CodeText.AddLine(TEXT("};"));
@@ -1906,16 +1924,44 @@ TMap<FStringAssetReference, FNativizationSummary::FDependencyRecord>& FDependenc
 FDisableUnwantedWarningOnScope::FDisableUnwantedWarningOnScope(FCodeText& InCodeText)
 	: CodeText(InCodeText)
 {
-	// C4883 is a strange error (for big functions), introduced in VS2015 update 2
 	CodeText.AddLine(TEXT("#ifdef _MSC_VER"));
 	CodeText.AddLine(TEXT("#pragma warning (push)"));
+	// C4883 is a strange error (for big functions), introduced in VS2015 update 2
 	CodeText.AddLine(TEXT("#pragma warning (disable : 4883)"));
 	CodeText.AddLine(TEXT("#endif"));
+	CodeText.AddLine(TEXT("PRAGMA_DISABLE_DEPRECATION_WARNINGS"));
 }
 
 FDisableUnwantedWarningOnScope::~FDisableUnwantedWarningOnScope()
 {
+	CodeText.AddLine(TEXT("PRAGMA_ENABLE_DEPRECATION_WARNINGS"));
 	CodeText.AddLine(TEXT("#ifdef _MSC_VER"));
 	CodeText.AddLine(TEXT("#pragma warning (pop)"));
 	CodeText.AddLine(TEXT("#endif"));
+}
+
+FScopeBlock::FScopeBlock(FEmitterLocalContext& InContext)
+	: Context(InContext)
+	, OuterScopeBlock(InContext.ActiveScopeBlock)
+{
+	Context.ActiveScopeBlock = this;
+	Context.AddLine(TEXT("{"));
+	Context.IncreaseIndent();
+}
+
+FScopeBlock::~FScopeBlock()
+{
+	Context.DecreaseIndent();
+	Context.AddLine(TEXT("}"));
+	Context.ActiveScopeBlock = OuterScopeBlock;
+
+	for (const UProperty* InaccessibleProp : LocalAccessorDecls)
+	{
+		Context.PropertiesForInaccessibleStructs.Remove(InaccessibleProp);
+	}
+}
+
+void FScopeBlock::TrackLocalAccessorDecl(const UProperty* Property)
+{
+	LocalAccessorDecls.AddUnique(Property);
 }

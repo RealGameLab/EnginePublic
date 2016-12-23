@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "ThumbnailHelpers.h"
 #include "FinalPostProcessSettings.h"
@@ -638,7 +638,10 @@ bool FAnimationSequenceThumbnailScene::SetAnimation(UAnimSequenceBase* InAnimati
 		if (USkeleton* Skeleton = InAnimation->GetSkeleton())
 		{
 			USkeletalMesh* PreviewSkeletalMesh = Skeleton->GetAssetPreviewMesh(InAnimation);
-
+			if (!PreviewSkeletalMesh)
+			{
+				PreviewSkeletalMesh = Skeleton->FindCompatibleMesh();
+			}
 			PreviewActor->GetSkeletalMeshComponent()->SetSkeletalMesh(PreviewSkeletalMesh);
 
 			if (PreviewSkeletalMesh)

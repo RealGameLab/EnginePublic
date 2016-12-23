@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "ActorTreeItem.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
@@ -246,7 +246,7 @@ FTreeItemPtr FActorTreeItem::CreateParent() const
 	{
 		return MakeShareable(new FActorTreeItem(ParentActor));
 	}
-	else
+	else if(!ParentActor)
 	{
 		const bool bShouldShowFolders = SharedData->Mode == ESceneOutlinerMode::ActorBrowsing || SharedData->bOnlyShowFolders;
 
@@ -255,11 +255,11 @@ FTreeItemPtr FActorTreeItem::CreateParent() const
 		{
 			return MakeShareable(new FFolderTreeItem(ActorFolder));
 		}
-	}
 
-	if (UWorld* World = ActorPtr->GetWorld())
-	{
-		return MakeShareable(new FWorldTreeItem(World));
+		if (UWorld* World = ActorPtr->GetWorld())
+		{
+			return MakeShareable(new FWorldTreeItem(World));
+		}
 	}
 
 	return nullptr;

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "PrimitiveComponentDetails.h"
 #include "Components/SceneComponent.h"
@@ -109,7 +109,7 @@ void FPrimitiveComponentDetails::AddMaterialCategory( IDetailLayoutBuilder& Deta
 
 void FPrimitiveComponentDetails::AddLightingCategory(IDetailLayoutBuilder& DetailBuilder)
 {
-	IDetailCategoryBuilder& CollisionCategory = DetailBuilder.EditCategory("Lighting");
+	IDetailCategoryBuilder& LightingCategory = DetailBuilder.EditCategory("Lighting");
 }
 
 void FPrimitiveComponentDetails::AddAdvancedSubCategory( IDetailLayoutBuilder& DetailBuilder, FName MainCategoryName, FName SubCategoryName)

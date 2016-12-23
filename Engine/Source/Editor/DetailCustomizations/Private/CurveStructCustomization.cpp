@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "CurveStructCustomization.h"
 #include "Curves/CurveFloat.h"
@@ -223,6 +223,17 @@ void FCurveStructCustomization::ModifyOwner()
 	{
 		Owner->Modify(true);
 	}
+}
+
+TArray<const UObject*> FCurveStructCustomization::GetOwners() const
+{
+	TArray<const UObject*> Owners;
+	if (Owner)
+	{
+		Owners.Add(Owner);
+	}
+
+	return Owners;
 }
 
 void FCurveStructCustomization::MakeTransactional()

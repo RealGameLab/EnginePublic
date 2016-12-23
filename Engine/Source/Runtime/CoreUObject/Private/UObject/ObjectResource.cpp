@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "UObject/ObjectResource.h"
 #include "UObject/Class.h"
@@ -147,12 +147,9 @@ FArchive& operator<<( FArchive& Ar, FObjectExport& E )
 
 FObjectImport::FObjectImport()
 	: FObjectResource()
-#if USE_EVENT_DRIVEN_ASYNC_LOAD
 	, bImportPackageHandled(false)
 	, bImportSearchedFor(false)
 	, bImportFailed(false)
-#endif
-
 {
 }
 
@@ -163,11 +160,9 @@ FObjectImport::FObjectImport(UObject* InObject)
 	, XObject(InObject)
 	, SourceLinker(NULL)
 	, SourceIndex(INDEX_NONE)
-#if USE_EVENT_DRIVEN_ASYNC_LOAD
 	, bImportPackageHandled(false)
 	, bImportSearchedFor(false)
 	, bImportFailed(false)
-#endif
 {
 }
 
@@ -178,11 +173,9 @@ FObjectImport::FObjectImport(UObject* InObject, UClass* InClass)
 	, XObject(InObject)
 	, SourceLinker(NULL)
 	, SourceIndex(INDEX_NONE)
-#if USE_EVENT_DRIVEN_ASYNC_LOAD
 	, bImportPackageHandled(false)
 	, bImportSearchedFor(false)
 	, bImportFailed(false)
-#endif
 {
 }
 

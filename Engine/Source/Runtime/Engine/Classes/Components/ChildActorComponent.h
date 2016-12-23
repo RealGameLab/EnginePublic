@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #pragma once
@@ -8,9 +8,9 @@
 #include "Templates/SubclassOf.h"
 #include "UObject/CoreNet.h"
 #include "Components/SceneComponent.h"
-#include "GameFramework/Actor.h"
 #include "ChildActorComponent.generated.h"
 
+class AActor;
 struct FAttachedActorInfo;
 
 class ENGINE_API FChildActorComponentInstanceData : public FSceneComponentInstanceData

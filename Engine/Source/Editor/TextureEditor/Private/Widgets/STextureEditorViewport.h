@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -118,6 +118,9 @@ private:
 
 	// Callback for getting the zoom slider's value.
 	float HandleZoomSliderValue( ) const;
+
+	// Checks if the texture being edited has a valid texture resource
+	bool HasValidTextureResource( ) const;
 
 private:
 

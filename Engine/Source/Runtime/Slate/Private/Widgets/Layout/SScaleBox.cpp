@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Widgets/Layout/SScaleBox.h"
 #include "Layout/LayoutUtils.h"
@@ -188,8 +188,13 @@ FVector2D SScaleBox::ComputeDesiredSize(float InScale) const
 	return LayoutScale * SCompoundWidget::ComputeDesiredSize(InScale);
 }
 
-float SScaleBox::GetRelativeLayoutScale(const FSlotBase& Child) const
+float SScaleBox::GetRelativeLayoutScale(const FSlotBase& Child, float LayoutScaleMultiplier) const
 {
+	if ( IgnoreInheritedScale.Get(false) )
+	{
+		return GetLayoutScale() / LayoutScaleMultiplier;
+	}
+
 	return GetLayoutScale();
 }
 

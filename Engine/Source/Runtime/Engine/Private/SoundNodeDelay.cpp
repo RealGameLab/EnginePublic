@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #include "Sound/SoundNodeDelay.h"
@@ -33,7 +33,7 @@ void USoundNodeDelay::ParseNodes( FAudioDevice* AudioDevice, const UPTRINT NodeW
 
 		const float ActualDelay = FMath::Max(0.f, DelayMax + ( ( DelayMin - DelayMax ) * FMath::SRand() ));
 
-		if (ParseParams.StartTime >= ActualDelay)
+		if (ActualDelay > 0.0f && ParseParams.StartTime >= ActualDelay)
 		{
 			SoundNodeDelayPayload.StartTimeModifier = ActualDelay;
 			SoundNodeDelayPayload.EndOfDelay = -1.f;

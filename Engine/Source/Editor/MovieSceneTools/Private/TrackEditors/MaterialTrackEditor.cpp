@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "TrackEditors/MaterialTrackEditor.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
@@ -126,7 +126,7 @@ void FMaterialTrackEditor::AddScalarParameter( FGuid ObjectBinding, UMovieSceneM
 {
 	float KeyTime = GetTimeForKey();
 
-	UMaterial* Material = GetMaterialForTrack(ObjectBinding, MaterialTrack);
+	UMaterialInterface* Material = GetMaterialInterfaceForTrack(ObjectBinding, MaterialTrack);
 	if (Material != nullptr)
 	{
 		const FScopedTransaction Transaction( LOCTEXT( "AddScalarParameter", "Add scalar parameter" ) );
@@ -143,7 +143,7 @@ void FMaterialTrackEditor::AddColorParameter( FGuid ObjectBinding, UMovieSceneMa
 {
 	float KeyTime = GetTimeForKey();
 
-	UMaterial* Material = GetMaterialForTrack( ObjectBinding, MaterialTrack );
+	UMaterialInterface* Material = GetMaterialInterfaceForTrack( ObjectBinding, MaterialTrack );
 	if ( Material != nullptr )
 	{
 		const FScopedTransaction Transaction( LOCTEXT( "AddVectorParameter", "Add vector parameter" ) );

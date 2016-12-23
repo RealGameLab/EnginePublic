@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -50,6 +50,7 @@ namespace AnimationBlueprintEditorTabs
 	extern const FName AnimBlueprintPreviewEditorTab;
 	extern const FName AssetOverridesTab;
 	extern const FName SlotNamesTab;
+	extern const FName CurveNamesTab;
 };
 
 /**

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Engine/BlueprintGeneratedClass.h"
 #include "Misc/CoreMisc.h"
@@ -1051,10 +1051,6 @@ void UBlueprintGeneratedClass::GetPreloadDependencies(TArray<UObject*>& OutDeps)
 	if (UberGraphFunction)
 	{
 		OutDeps.Add(UberGraphFunction);
-	}
-	if (UInheritableComponentHandler* Handler = GetInheritableComponentHandler())
-	{
-		OutDeps.Add(Handler);
 	}
 	
 	UObject *CDO = GetDefaultObject();

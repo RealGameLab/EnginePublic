@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	Font.cpp: Unreal font code.
@@ -375,14 +375,12 @@ void UFont::GetResourceSizeEx(FResourceSizeEx& CumulativeResourceSize)
 			{
 				for (const FTypefaceEntry& TypefaceEntry : Typeface.Fonts)
 				{
-#if WITH_EDITORONLY_DATA
 					const UFontFace* FontFace = Cast<const UFontFace>(TypefaceEntry.Font.GetFontFaceAsset());
 					if (FontFace)
 					{
 						const_cast<UFontFace*>(FontFace)->GetResourceSizeEx(CumulativeResourceSize);
 					}
-					else if (TypefaceEntry.Font.GetLoadingPolicy() == EFontLoadingPolicy::PreLoad)
-#endif // WITH_EDITORONLY_DATA
+					else if (TypefaceEntry.Font.GetLoadingPolicy() == EFontLoadingPolicy::LazyLoad)
 					{
 						const int64 FileSize = IFileManager::Get().FileSize(*TypefaceEntry.Font.GetFontFilename());
 						if (FileSize > 0)

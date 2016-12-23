@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	LocalVertexFactory.cpp: Local vertex factory implementation
@@ -9,6 +9,7 @@
 #include "MeshBatch.h"
 #include "SpeedTreeWind.h"
 #include "ShaderParameterUtils.h"
+#include "Rendering/ColorVertexBuffer.h"
 
 class FSpeedTreeWindNullUniformBuffer : public TUniformBuffer<FSpeedTreeUniformParameters>
 {
@@ -95,7 +96,7 @@ void FLocalVertexFactory::Copy(const FLocalVertexFactory& Other)
 {
 	FLocalVertexFactory* VertexFactory = this;
 	const FDataType* DataCopy = &Other.Data;
-	EnqueueUniqueRenderCommand("FLocalVertexFactoryCopyData",
+	ENQUEUE_RENDER_COMMAND(FLocalVertexFactoryCopyData)(
 		[VertexFactory, DataCopy](FRHICommandListImmediate& RHICmdList)
 		{
 			VertexFactory->Data = *DataCopy;

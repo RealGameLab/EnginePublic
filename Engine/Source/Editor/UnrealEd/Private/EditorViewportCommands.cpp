@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #include "EditorViewportCommands.h"
@@ -11,6 +11,8 @@
 #include "ContentBrowserModule.h"
 #include "IContentBrowserSingleton.h"
 #include "Materials/MaterialInterface.h"
+#include "MaterialShared.h"
+#include "Engine/Texture2D.h"
 
 #define LOCTEXT_NAMESPACE "EditorViewportCommands"
 

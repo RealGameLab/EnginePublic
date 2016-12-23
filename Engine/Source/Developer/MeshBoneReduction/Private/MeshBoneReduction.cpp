@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "MeshBoneReduction.h"
 #include "Modules/ModuleManager.h"
@@ -11,6 +11,7 @@
 #include "Templates/ScopedPointer.h"
 #include "ComponentReregisterContext.h"
 #include "UniquePtr.h"
+#include "SkeletalMeshTypes.h"
 
 class FMeshBoneReductionModule : public IMeshBoneReductionModule
 {

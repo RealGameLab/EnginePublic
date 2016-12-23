@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	LocalMacTargetDevice.h: Declares the TLocalMacTargetDevice class.
@@ -82,7 +82,7 @@ public:
 
 	virtual FString GetOperatingSystemName( ) override
 	{
-		return TEXT("OS X");
+		return TEXT("macOS");
 	}
 
 	virtual int32 GetProcessSnapshot( TArray<FTargetDeviceProcessInfo>& OutProcessInfos ) override

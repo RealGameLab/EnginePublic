@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "StatsPages/PrimitiveStatsPage.h"
 #include "Engine/Level.h"
@@ -18,6 +18,7 @@
 #include "LightMap.h"
 #include "LandscapeComponent.h"
 #include "Engine/LevelStreaming.h"
+#include "SkeletalMeshTypes.h"
 
 #define LOCTEXT_NAMESPACE "Editor.StatsViewer.PrimitiveStats"
 
@@ -161,7 +162,7 @@ struct PrimitiveStatsGenerator
 				for( int32 LODIndex = 0; LODIndex < SkelMeshResource->LODModels.Num(); ++LODIndex )
 				{
 					const FStaticLODModel& LODModel = SkelMeshResource->LODModels[ LODIndex ];
-					VertexColorMem += LODModel.ColorVertexBuffer.GetVertexDataSize();
+					VertexColorMem += LODModel.ColorVertexBuffer.GetAllocatedSize();
 				}
 			}
 		}

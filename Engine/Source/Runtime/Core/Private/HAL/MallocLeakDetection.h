@@ -1,4 +1,4 @@
-// Copyright 1998-2015 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	MallocLeakDetection.h: Helper class to track memory allocations
@@ -51,7 +51,7 @@ class FMallocLeakDetection
 		}
 		static const int32 Depth = 32;
 		uint64 CallStack[Depth];
-		uint32 FirstFame;
+		uint32 FirstFrame;
 		uint32 LastFrame;
 		uint64 Size;
 		uint32 Count;

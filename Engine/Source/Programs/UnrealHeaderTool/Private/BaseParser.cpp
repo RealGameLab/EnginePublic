@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "BaseParser.h"
 #include "UnrealHeaderTool.h"
@@ -897,7 +897,7 @@ bool FBaseParser::PeekIdentifier( const TCHAR* Match )
 //
 // Unget the most recently gotten token.
 //
-void FBaseParser::UngetToken( FToken& Token )
+void FBaseParser::UngetToken( const FToken& Token )
 {
 	InputPos = Token.StartPos;
 	InputLine = Token.StartLine;

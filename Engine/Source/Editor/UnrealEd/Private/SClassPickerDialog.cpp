@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #include "Kismet2/SClassPickerDialog.h"
@@ -235,7 +235,12 @@ TSharedRef<ITableRow> SClassPickerDialog::GenerateListRow(TSharedPtr<FClassPicke
 			+SHorizontalBox::Slot()
 			.AutoWidth()
 			[
-				FEditorClassUtils::GetDocumentationLinkWidget(ItemClass)
+				SNew(SBox)
+				.WidthOverride(32)
+				.HeightOverride(32)
+				[
+					FEditorClassUtils::GetDocumentationLinkWidget(ItemClass)
+				]
 			]
 		]
 	];
