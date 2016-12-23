@@ -12614,6 +12614,36 @@ void FAudioDevice::ResolveDesiredStats(FViewportClient* ViewportClient)
 		ClearStats |= ERequestedAudioStats::SoundMixes;
 	}
 
+	if (ViewportClient->IsStatEnabled(TEXT("Sounds")))
+	{
+		const FViewportClient::ESoundShowFlags::Type SoundShowFlags = ViewportClient->GetSoundShowFlags();
+		SetStats |= ERequestedAudioStats::Sounds;
+		
+		if (SoundShowFlags & FViewportClient::ESoundShowFlags::Debug)
+		{
+			SetStats |= ERequestedAudioStats::DebugSounds;
+		}
+		else
+		{
+			ClearStats |= ERequestedAudioStats::DebugSounds;
+		}
+
+		if (SoundShowFlags & FViewportClient::ESoundShowFlags::Long_Names)
+		{
+			SetStats |= ERequestedAudioStats::LongSoundNames;
+		}
+		else
+		{
+			ClearStats |= ERequestedAudioStats::LongSoundNames;
+		}
+	}
+	else
+	{
+		ClearStats |= ERequestedAudioStats::Sounds;
+		ClearStats |= ERequestedAudioStats::DebugSounds;
+		ClearStats |= ERequestedAudioStats::LongSoundNames;
+	}
+
 	DECLARE_CYCLE_STAT(TEXT("FAudioThreadTask.ResolveDesiredStats"), STAT_AudioResolveDesiredStats, STATGROUP_TaskGraphTasks);
 
 	FAudioDevice* AudioDevice = this;
@@ -12780,7 +12810,7 @@ int32 UEngine::RenderStatSoundCues(UWorld* World, FViewport* Viewport, FCanvas* 
 // SOUNDS
 bool UEngine::ToggleStatSounds(UWorld* World, FCommonViewportClient* ViewportClient, const TCHAR* Stream)
 {
-	if( ViewportClient == nullptr )
+	if (ViewportClient == nullptr)
 	{
 		// Ignore if all Viewports are closed.
 		return false;
@@ -12805,7 +12835,7 @@ bool UEngine::ToggleStatSounds(UWorld* World, FCommonViewportClient* ViewportCli
 	uint32 OldSoundShowFlags = ViewportClient->GetSoundShowFlags();
 
 	uint32 ShowSounds = FViewportClient::ESoundShowFlags::Disabled;
-	
+
 	if (Stream)
 	{
 		const bool bHide = FParse::Command(&Stream, TEXT("off"));
@@ -12852,6 +12882,38 @@ bool UEngine::ToggleStatSounds(UWorld* World, FCommonViewportClient* ViewportCli
 		}
 	}
 
+	if (OldSoundShowFlags != FViewportClient::ESoundShowFlags::Disabled)
+	{
+		if (ShowSounds != FViewportClient::ESoundShowFlags::Disabled && ShowSounds != FViewportClient::ESoundShowFlags::Sort_Disabled)
+		{
+			if (!ViewportClient->IsStatEnabled(TEXT("Sounds")))
+			{
+				if (const TArray<FString>* CurrentStats = ViewportClient->GetEnabledStats())
+				{
+					TArray<FString> NewStats = *CurrentStats;
+					NewStats.Add(TEXT("Sounds"));
+					ViewportClient->SetEnabledStats(NewStats);
+					ViewportClient->SetShowStats(true);
+				}
+			}
+		}
+		else
+		{
+			ShowSounds = FViewportClient::ESoundShowFlags::Disabled;
+		}
+	}
+	else if (ShowSounds == FViewportClient::ESoundShowFlags::Disabled)
+	{
+		if (ViewportClient->IsStatEnabled(TEXT("Sounds")))
+		{
+			if (const TArray<FString>* CurrentStats = ViewportClient->GetEnabledStats())
+			{
+				TArray<FString> NewStats = *CurrentStats;
+				NewStats.Remove(TEXT("Sounds"));
+				ViewportClient->SetEnabledStats(NewStats);
+			}
+		}
+	}
 	ViewportClient->SetSoundShowFlags((FViewportClient::ESoundShowFlags::Type)ShowSounds);
 
 	if (FAudioDevice* AudioDevice = World->GetAudioDevice())
