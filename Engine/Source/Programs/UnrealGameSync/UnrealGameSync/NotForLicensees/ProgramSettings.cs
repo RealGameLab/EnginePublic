@@ -9,7 +9,6 @@
 			{
 				SqlConnectionStringBuilder SqlConnectionStringBuilder = new SqlConnectionStringBuilder();
 				SqlConnectionStringBuilder.DataSource = "ENGINESERVER\\SQLEXPRESS";
-				SqlConnectionStringBuilder.IntegratedSecurity = true;
 				SqlConnectionStringBuilder.UserID = "sa";
 				SqlConnectionStringBuilder.Password = "admin";
 				SqlConnectionStringBuilder.InitialCatalog = "UnrealGameSync";
