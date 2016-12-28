@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once 
 
@@ -34,6 +34,7 @@ public:
 
 	virtual void GetNavigationData(FNavigationRelevantData& Data) const override;
 	virtual FBox GetNavigationBounds() const override;
+	virtual void RebuildNavigationData() override;
 
 #if WITH_EDITOR
 	virtual void PostEditUndo() override;

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "CoreMinimal.h"
 #include "UObject/ObjectMacros.h"
@@ -28,6 +28,14 @@ uint8 UNumericProperty::ReadEnumAsUint8(FArchive& Ar, UStruct* DefaultsStruct, c
 	Ar.Preload(Enum);
 
 	int64 Result = Enum->GetValueByName(EnumName);
+	if (!Enum->IsValidEnumValue(Result))
+	{
+		const int32 EnumIndex = UEnum::FindEnumRedirects(Enum, EnumName);
+		if (EnumIndex != INDEX_NONE)
+		{
+			Result = Enum->GetValueByIndex(EnumIndex);
+		}
+	}
 	if (!Enum->IsValidEnumValue(Result))
 	{
 		UE_LOG(

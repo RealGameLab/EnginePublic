@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	StaticMesh.h: Static mesh class definition.
@@ -29,6 +29,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "PhysicsEngine/BodySetupEnums.h"
 #include "Materials/MaterialInterface.h"
+#include "Rendering/ColorVertexBuffer.h"
 #include "UniquePtr.h"
 
 class FDistanceFieldVolumeData;

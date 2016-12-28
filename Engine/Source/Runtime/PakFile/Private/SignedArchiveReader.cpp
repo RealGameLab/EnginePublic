@@ -1,10 +1,9 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SignedArchiveReader.h"
 #include "HAL/FileManager.h"
 #include "HAL/Event.h"
 #include "HAL/RunnableThread.h"
-#include "PublicKey.inl"
 
 DECLARE_FLOAT_ACCUMULATOR_STAT(TEXT("FChunkCacheWorker.ProcessQueue"), STAT_FChunkCacheWorker_ProcessQueue, STATGROUP_PakFile);
 DECLARE_FLOAT_ACCUMULATOR_STAT(TEXT("FChunkCacheWorker.CheckSignature"), STAT_FChunkCacheWorker_CheckSignature, STATGROUP_PakFile);
@@ -57,9 +56,12 @@ bool FChunkCacheWorker::Init()
 
 void FChunkCacheWorker::SetupDecryptionKey()
 {
-	DecryptionKey.Exponent.Parse(DECRYPTION_KEY_EXPONENT);
-	DecryptionKey.Modulus.Parse(DECRYPTION_KEY_MODULUS);
-	// Public key should never be zero at this point. Check PublicKey.inl for more details.
+	FString PakSigningKeyExponent, PakSigningKeyModulus;
+	FPakPlatformFile::GetPakSigningKeys(PakSigningKeyExponent, PakSigningKeyModulus);
+	DecryptionKey.Exponent.Parse(PakSigningKeyExponent);
+	DecryptionKey.Modulus.Parse(PakSigningKeyModulus);
+
+	// Public key should never be zero at this point.
 	UE_CLOG(DecryptionKey.Exponent.IsZero() || DecryptionKey.Modulus.IsZero(), LogPakFile, Fatal, TEXT("Invalid decryption key detected"));
 	// Public key should produce decrypted results - check for identity keys
 	static TEncryptionInt TestValues[] = 

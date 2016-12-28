@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -340,7 +340,7 @@ public:
 		AddProvider(TNameOf<R>::GetName(), Provider);
 	}
 
-#if _MSC_VER >= 1900 || __clang__
+#if (defined(_MSC_VER) && _MSC_VER >= 1900) || defined(__clang__)
 	/**
 	 * Register a factory function for the specified class.
 	 *

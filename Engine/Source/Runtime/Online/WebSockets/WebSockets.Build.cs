@@ -1,4 +1,4 @@
-// Copyright 1998-2015 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 using UnrealBuildTool;
 
@@ -32,6 +32,10 @@ public class WebSockets : ModuleRules
 
 			AddEngineThirdPartyPrivateStaticDependencies(Target, "OpenSSL", "libWebSockets", "zlib");
 			PrivateDependencyModuleNames.Add("SSL");
+		}
+		else
+		{
+			Definitions.Add("WITH_WEBSOCKETS=0");
 		}
 	}
 }

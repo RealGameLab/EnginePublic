@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -98,11 +98,7 @@ private:
 
 	void HandleAnimNotifiesChanged();
 
-	void HandleCurvesChanged();
-
 	void HandleSectionsChanged();
-
-	void HandleSetKeyCompleted();
 
 	bool HasValidAnimationSequence() const;
 
@@ -160,9 +156,6 @@ public:
 
 	/** Multicast delegate fired on global undo/redo */
 	FSimpleMulticastDelegate OnLODChanged;
-
-	/** Multicast delegate fired on curves changing */
-	FSimpleMulticastDelegate OnCurvesChanged;
 
 	/** Multicast delegate fired on sections changing */
 	FSimpleMulticastDelegate OnSectionsChanged;

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -37,7 +37,7 @@ struct FIPv4SubnetMask
 		struct
 		{
 #if PLATFORM_LITTLE_ENDIAN
-	#if _MSC_VER
+	#ifdef _MSC_VER
 			uint8 D, C, B, A;
 	#else
 			uint8 D GCC_ALIGN(4);

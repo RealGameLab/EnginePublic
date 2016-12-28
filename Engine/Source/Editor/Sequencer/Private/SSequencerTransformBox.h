@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -31,7 +31,10 @@ private:
 	/** Callback for transform operations. */
 	FReply OnPlusButtonClicked();
 	FReply OnMinusButtonClicked();
+	FReply OnMultiplyButtonClicked();
+	FReply OnDivideButtonClicked();
 	void OnDeltaChanged(float Value, ETextCommit::Type CommitType);
+	void OnScaleChanged(float Value, ETextCommit::Type CommitType);
 
 	/** Callback for when the close button is clicked. */
 	FReply OnCloseButtonClicked();
@@ -58,4 +61,7 @@ private:
 
 	/** Cached delta time. */
 	float DeltaTime;
+
+	/** Cached scale factor. */
+	float ScaleFactor;
 };

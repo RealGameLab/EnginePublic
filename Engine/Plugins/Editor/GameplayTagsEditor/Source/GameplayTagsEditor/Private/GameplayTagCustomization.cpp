@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "GameplayTagCustomization.h"
 #include "Widgets/Input/SComboButton.h"
@@ -31,7 +31,7 @@ void FGameplayTagCustomization::CustomizeHeader(TSharedRef<class IPropertyHandle
 		+ SHorizontalBox::Slot()
 		.AutoWidth()
 		[
-			SAssignNew(ComboButton, SComboButton)
+			SNew(SComboButton)
 			.OnGetMenuContent(this, &FGameplayTagCustomization::GetListContent)
 			.ContentPadding(FMargin(2.0f, 2.0f))
 			.MenuPlacement(MenuPlacement_BelowAnchor)
@@ -73,13 +73,13 @@ TSharedRef<SWidget> FGameplayTagCustomization::GetListContent()
 		.AutoHeight()
 		.MaxHeight(400)
 		[
-            SNew(SGameplayTagWidget, EditableContainers)
-            .Filter(Categories)
-            .ReadOnly(bReadOnly)
-            .TagContainerName(StructPropertyHandle->GetPropertyDisplayName().ToString())
-            .MultiSelect(false)
-            .OnTagChanged(this, &FGameplayTagCustomization::OnTagChanged)
-            .PropertyHandle(StructPropertyHandle)
+			SNew(SGameplayTagWidget, EditableContainers)
+			.Filter(Categories)
+			.ReadOnly(bReadOnly)
+			.TagContainerName(StructPropertyHandle->GetPropertyDisplayName().ToString())
+			.MultiSelect(false)
+			.OnTagChanged(this, &FGameplayTagCustomization::OnTagChanged)
+			.PropertyHandle(StructPropertyHandle)
 		];
 }
 

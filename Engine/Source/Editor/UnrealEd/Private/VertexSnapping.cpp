@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "VertexSnapping.h"
 #include "GameFramework/Actor.h"
@@ -17,6 +17,7 @@
 #include "EditorModeManager.h"
 #include "StaticMeshResources.h"
 #include "Engine/Polys.h"
+#include "SkeletalMeshTypes.h"
 
 namespace VertexSnappingConstants
 {

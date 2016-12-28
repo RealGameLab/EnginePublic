@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -7,7 +7,7 @@
 
 #if WITH_PHYSX
 
-#if _MSC_VER
+#ifdef _MSC_VER
 #pragma warning( push )
 #pragma warning( disable : 4946 ) // reinterpret_cast used between related classes
 #endif
@@ -47,7 +47,7 @@
 #pragma warning( pop )
 #endif	// USING_CODE_ANALYSIS
 
-#if _MSC_VER
+#ifdef _MSC_VER
 #pragma warning( pop )
 #endif
 

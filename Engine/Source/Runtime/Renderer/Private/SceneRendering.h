@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	SceneRendering.h: Scene rendering definitions.
@@ -959,6 +959,19 @@ public:
 	/** Informs sceneinfo that eyedaptation has queued commands to compute it at least once */
 	void SetValidEyeAdaptation() const;
 
+	/** Informs sceneinfo that tonemapping LUT has queued commands to compute it at least once */
+	void SetValidTonemappingLUT() const;
+
+	/** Gets the tonemapping LUT texture, previously computed by the CombineLUTS post process,
+	* for stereo rendering, this will force the post-processing to use the same texture for both eyes*/
+	const FTextureRHIRef* GetTonemappingLUTTexture() const;
+
+	/** Gets the rendertarget that will be populated by CombineLUTS post process 
+	* for stereo rendering, this will force the post-processing to use the same render target for both eyes*/
+	FSceneRenderTargetItem* GetTonemappingLUTRenderTarget(FRHICommandList& RHICmdList, const int32 LUTSize, const bool bUseVolumeLUT) const;
+	
+
+
 	/** Instanced stereo and multi-view only need to render the left eye. */
 	bool ShouldRenderView() const 
 	{
@@ -1369,6 +1382,12 @@ protected:
 	/** Renders the scene's distortion */
 	void RenderDistortion(FRHICommandListImmediate& RHICmdList);
 	void RenderDistortionES2(FRHICommandListImmediate& RHICmdList);
+
+	/** Composites the monoscopic far field view into the stereo views. */
+	void CompositeMonoscopicFarField(FRHICommandListImmediate& RHICmdList);
+
+	/** Renders a depth mask into the monoscopic far field view to ensure we only render visible pixels. */
+	void RenderMonoscopicFarFieldMask(FRHICommandListImmediate& RHICmdList);
 
 	static int32 GetRefractionQuality(const FSceneViewFamily& ViewFamily);
 

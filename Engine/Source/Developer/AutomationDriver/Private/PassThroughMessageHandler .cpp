@@ -1,6 +1,7 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "PassThroughMessageHandler.h"
+#include "InputCoreTypes.h"
 
 class FPassThroughMessageHandlerFactory;
 
@@ -8,6 +9,9 @@ class FPassThroughMessageHandlerImpl
 	: public FPassThroughMessageHandler
 {
 public:
+
+	virtual ~FPassThroughMessageHandlerImpl()
+	{ }
 
 	virtual bool IsHandlingMessages() const override
 	{
@@ -455,6 +459,9 @@ class FPassThroughMessageHandlerFactory
 	: public IPassThroughMessageHandlerFactory
 {
 public:
+
+	virtual ~FPassThroughMessageHandlerFactory()
+	{ }
 
 	virtual TSharedRef<FPassThroughMessageHandler> Create(
 		const TSharedRef<FGenericApplicationMessageHandler>& MessageHandler) const override

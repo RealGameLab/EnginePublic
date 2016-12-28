@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -471,6 +471,11 @@ public:
 	 * @return true if the subsystem was successfully initialized, false otherwise
 	 */
 	virtual bool Init() = 0;
+
+	/** 
+	 * Perform any shutdown actions prior to any other modules being unloaded/shutdown
+	 */
+	virtual void PreUnload() = 0;
 
 	/** 
 	 * Shutdown the underlying subsystem APIs

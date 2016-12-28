@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -84,6 +84,8 @@ public:
 		return CachedAllottedGeometry;
 	}
 
+	void SetWorld(UWorld* World);
+
 protected:
 	// BEGIN SLeafWidget interface
 	virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyClippingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override;
@@ -123,6 +125,7 @@ private:
 
 	TSharedPtr<SVirtualWindow> Window;
 	TSharedPtr<FHittestGrid> HitTestGrid;
+	TWeakObjectPtr<UWorld> OuterWorld;
 
 	STAT(TStatId MyStatId;)
 

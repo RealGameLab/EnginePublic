@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -283,6 +283,7 @@ namespace UE4Function_Private
 			return Callable(Derived->GetPtr(), Params...);
 		}
 
+	protected:
 		template <typename FunctorType>
 		void Set(FunctorType* Functor)
 		{

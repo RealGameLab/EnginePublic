@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #include "AssetRenameManager.h"
@@ -602,6 +602,23 @@ void FAssetRenameManager::RenameReferencingStringAssetReferences(const TArray<UP
 			if (Reference.ToString() == OldAssetPath + "_C")
 			{
 				Reference.SetPath(NewAssetPath + "_C");
+			}
+
+			return *this;
+		}
+
+		FArchive& operator<<(FAssetPtr& AssetPtr)
+		{
+			// Fixup AssetPtrs string asset reference, as the pointed to object may have changed
+
+			UObject* Object = static_cast<UObject*>(AssetPtr.Get());
+			if (Object)
+			{
+				AssetPtr = Object;
+			}
+			else
+			{
+				*this << AssetPtr.GetUniqueID();
 			}
 
 			return *this;

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "ApexClothingUtils.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -12,6 +12,8 @@
 DEFINE_LOG_CATEGORY_STATIC(LogApexClothingUtils, Log, All);
 
 #include "PhysXPublic.h"
+
+#define USE_MATERIAL_MAP 0
 
 #if WITH_APEX
 

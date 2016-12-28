@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -29,7 +29,6 @@
 #include "HAL/ThreadSafeCounter64.h"
 #include "HAL/ThreadSafeBool.h"
 #include "Misc/NoopCounter.h"
-#include "Misc/MultiReaderSingleWriterGT.h"
 #include "Misc/ScopeLock.h"
 #include "HAL/TlsAutoCleanup.h"
 #include "HAL/ThreadSingleton.h"

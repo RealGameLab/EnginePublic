@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	ParticleTrail2EmitterInstance.cpp: 
@@ -75,7 +75,7 @@ void FParticleTrailsEmitterInstance_Base::Tick(float DeltaTime, bool bSuppressSp
 	if (Component)
 	{
 
-#if ULTRA_VERBOSE_TRAILS_DEBUG
+#if defined(ULTRA_VERBOSE_TRAILS_DEBUG) && ULTRA_VERBOSE_TRAILS_DEBUG
 		PrintTrails();
 #endif
 		check(SpriteTemplate);

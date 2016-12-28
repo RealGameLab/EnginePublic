@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "AI/Navigation/PImplRecastNavMesh.h"
 #include "AI/Navigation/NavigationSystem.h"
@@ -1618,7 +1618,7 @@ bool FPImplRecastNavMesh::GetPolyVerts(NavNodeRef PolyID, TArray<FVector>& OutVe
 		if (dtStatusSucceed(Status))
 		{
 			// flush and pre-size output array
-			OutVerts.Empty(Poly->vertCount);
+			OutVerts.Reset(Poly->vertCount);
 
 			// convert to UE4 coords and copy verts into output array 
 			for (uint32 VertIdx=0; VertIdx < Poly->vertCount; ++VertIdx)

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Evaluation/MovieScenePropertyTemplates.h"
 #include "Sections/MovieSceneBoolSection.h"
@@ -10,6 +10,8 @@
 #include "Sections/MovieSceneStringSection.h"
 #include "Tracks/MovieScenePropertyTrack.h"
 #include "MovieScene.h"
+#include "MovieSceneEvaluation.h"
+
 
 namespace
 {

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "AndroidMediaTracks.h"
 #include "AndroidJavaMediaPlayer.h"
@@ -147,6 +147,12 @@ void FAndroidMediaTracks::SetAudioSink(IMediaAudioSink* Sink)
 		AudioSink = Sink;
 		InitializeAudioSink();
 	}
+}
+
+
+void FAndroidMediaTracks::SetMetadataSink(IMediaBinarySink* Sink)
+{
+	// not supported
 }
 
 
@@ -436,7 +442,13 @@ void FAndroidMediaTracks::InitializeVideoSink()
 	}
 
 	const auto& VideoTrack = VideoTracks[SelectedVideoTrack];
-	VideoSink->InitializeTextureSink(VideoTrack.Dimensions, VideoTrack.Dimensions, EMediaTextureSinkFormat::CharBGRA, EMediaTextureSinkMode::Unbuffered);
+
+	VideoSink->InitializeTextureSink(
+		VideoTrack.Dimensions,
+		VideoTrack.Dimensions,
+		EMediaTextureSinkFormat::CharBGRA,
+		EMediaTextureSinkMode::Unbuffered
+	);
 }
 
 

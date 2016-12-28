@@ -1,14 +1,10 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "UObject/ObjectMacros.h"
 #include "Misc/Guid.h"
-
-#if !defined(USE_NEW_ASYNC_IO) || !defined(SPLIT_COOKED_FILES)
-#error "USE_NEW_ASYNC_IO and SPLIT_COOKED_FILES must be defined"
-#endif
 
 /**
  * Wrapper for index into a ULnker's ImportMap or ExportMap.
@@ -379,11 +375,9 @@ struct FObjectImport : public FObjectResource
 	 */
 	int32             SourceIndex;
 
-#if USE_EVENT_DRIVEN_ASYNC_LOAD
 	bool			bImportPackageHandled;
 	bool			bImportSearchedFor;
 	bool			bImportFailed;
-#endif
 
 	/**
 	 * Constructors

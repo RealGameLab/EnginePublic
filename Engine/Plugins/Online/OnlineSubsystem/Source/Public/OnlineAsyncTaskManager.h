@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -222,7 +222,7 @@ PACKAGE_SCOPE:
 	volatile bool bWasSuccessful;
 
 	/** Hidden on purpose */
-	FOnlineAsyncTaskBasic() 
+	FOnlineAsyncTaskBasic()
 		: Subsystem(NULL)
 		, bIsComplete(false)
 		, bWasSuccessful(false)
@@ -231,7 +231,7 @@ PACKAGE_SCOPE:
 
 public:
 
-	FOnlineAsyncTaskBasic(T* InSubsystem) 
+	FOnlineAsyncTaskBasic(T* const InSubsystem)
 		: Subsystem(InSubsystem)
 		, bIsComplete(false)
 		, bWasSuccessful(false)

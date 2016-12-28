@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "EditableSkeleton.h"
 #include "Misc/MessageDialog.h"
@@ -555,8 +555,14 @@ USkeletalMeshSocket* FEditableSkeleton::HandleAddSocket(const FName& InBoneName)
 
 bool FEditableSkeleton::HandleAddVirtualBone(const FName SourceBoneName, const FName TargetBoneName)
 {
+	FName Dummy;
+	return HandleAddVirtualBone(SourceBoneName, TargetBoneName, Dummy);
+}
+
+bool FEditableSkeleton::HandleAddVirtualBone(const FName SourceBoneName, const FName TargetBoneName, FName& NewVirtualBoneName)
+{
 	FScopedTransaction Transaction(LOCTEXT("AddVirtualBone", "Add Virtual Bone to Skeleton"));
-	const bool Success = Skeleton->AddNewVirtualBone(SourceBoneName, TargetBoneName);
+	const bool Success = Skeleton->AddNewVirtualBone(SourceBoneName, TargetBoneName, NewVirtualBoneName);
 	if (!Success)
 	{
 		Transaction.Cancel();

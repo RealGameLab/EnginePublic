@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	MallocTTB.cpp: IntelTTB Malloc
@@ -23,7 +23,9 @@
 		#define TBB_USE_DEBUG 1
 	#endif
 #endif
+THIRD_PARTY_INCLUDES_START
 #include <tbb/scalable_allocator.h>
+THIRD_PARTY_INCLUDES_END
 
 #define MEM_TIME(st)
 

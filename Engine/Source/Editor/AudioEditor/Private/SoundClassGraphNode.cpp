@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SoundClassGraph/SoundClassGraphNode.h"
 #include "Sound/SoundClass.h"
@@ -19,6 +19,11 @@ USoundClassGraphNode::USoundClassGraphNode(const FObjectInitializer& ObjectIniti
 
 bool USoundClassGraphNode::CheckRepresentsSoundClass()
 {
+	if (!SoundClass)
+	{
+		return false;
+	}
+
 	for (int32 ChildIndex = 0; ChildIndex < ChildPin->LinkedTo.Num(); ChildIndex++)
 	{
 		USoundClassGraphNode* ChildNode = CastChecked<USoundClassGraphNode>(ChildPin->LinkedTo[ChildIndex]->GetOwningNode());

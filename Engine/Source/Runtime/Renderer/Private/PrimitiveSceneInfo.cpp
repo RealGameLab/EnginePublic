@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	PrimitiveSceneInfo.cpp: Primitive scene info implementation.
@@ -48,6 +48,8 @@ public:
 #if DO_CHECK
 			Mesh.CheckUniformBuffers();
 #endif
+			PrimitiveSceneInfo->Proxy->VerifyUsedMaterial(Mesh.MaterialRenderProxy);
+
 			FStaticMesh* StaticMesh = new(PrimitiveSceneInfo->StaticMeshes) FStaticMesh(
 				PrimitiveSceneInfo,
 				Mesh,
@@ -130,6 +132,8 @@ FPrimitiveSceneInfo::FPrimitiveSceneInfo(UPrimitiveComponent* InComponent,FScene
 	{
 		LODParentComponentId = LODParent->ComponentId;
 	}
+
+	FMemory::Memzero(CachedReflectionCaptureProxies);
 }
 
 FPrimitiveSceneInfo::~FPrimitiveSceneInfo()

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 LandscapeDataAccess.h: Classes for the editor to access to Landscape data
@@ -108,7 +108,7 @@ private:
 };
 
 //@todo.VC10: Apparent VC10 compiler bug here causes an access violation in UnlockMip in Shipping builds
-#if _MSC_VER
+#ifdef _MSC_VER
 PRAGMA_ENABLE_OPTIMIZATION
 #endif
 

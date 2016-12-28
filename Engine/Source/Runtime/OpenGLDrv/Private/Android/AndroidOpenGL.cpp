@@ -1,4 +1,6 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
+
+#include "CoreMinimal.h"
 
 #if !PLATFORM_ANDROIDESDEFERRED
 
@@ -651,6 +653,11 @@ bool FAndroidMisc::SupportsFloatingPointRenderTargets()
 bool FAndroidMisc::SupportsShaderFramebufferFetch()
 {
 	return FAndroidGPUInfo::Get().bSupportsFrameBufferFetch;
+}
+
+bool FAndroidMisc::SupportsES30()
+{
+	return FAndroidGPUInfo::Get().bES30Support;
 }
 
 bool FAndroidMisc::SupportsShaderIOBlocks()

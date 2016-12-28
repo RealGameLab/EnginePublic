@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Widgets/SMediaPlayerEditorStats.h"
 #include "IMediaPlayer.h"
@@ -63,14 +63,14 @@ void SMediaPlayerEditorStats::Construct(const FArguments& InArgs, UMediaPlayer& 
 
 FText SMediaPlayerEditorStats::HandleStatsTextBlockText() const
 {
-	TSharedPtr<IMediaPlayer> Player = MediaPlayer->GetPlayer();
+	FMediaPlayerBase& Player = MediaPlayer->GetBasePlayer();
 
-	if (!Player.IsValid())
+	if (Player.GetUrl().IsEmpty())
 	{
 		return LOCTEXT("NoMediaOpened", "No media opened");
 	}
 
-	return FText::FromString(Player->GetStats());
+	return FText::FromString(Player.GetStats());
 }
 
 

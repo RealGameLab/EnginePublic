@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Evaluation/MovieSceneColorTemplate.h"
 #include "Sections/MovieSceneColorSection.h"
@@ -7,8 +7,12 @@
 #include "MovieSceneCommonHelpers.h"
 #include "Components/LightComponent.h"
 #include "Styling/SlateColor.h"
+#include "MovieSceneEvaluation.h"
+#include "IMovieScenePlayer.h"
+
 
 DECLARE_CYCLE_STAT(TEXT("Color Track Token Execute"), MovieSceneEval_ColorTrack_TokenExecute, STATGROUP_MovieSceneEval);
+
 
 enum class EColorType : uint8
 {

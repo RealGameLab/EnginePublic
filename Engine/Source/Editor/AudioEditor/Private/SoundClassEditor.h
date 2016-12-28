@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -54,7 +54,7 @@ public:
 	virtual FLinearColor GetWorldCentricTabColorScale() const override;
 
 	/** ISoundClassEditor interface */
-	void CreateSoundClass(class UEdGraphPin* FromPin, const FVector2D& Location, FString Name) override;
+	void CreateSoundClass(class UEdGraphPin* FromPin, const FVector2D& Location, const FString& Name) override;
 
 	/** FEditorUndoClient Interface */
 	virtual void PostUndo(bool bSuccess) override;

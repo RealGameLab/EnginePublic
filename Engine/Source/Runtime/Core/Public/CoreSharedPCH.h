@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -171,7 +171,6 @@
 #include "HAL/ThreadSafeCounter.h"
 #include "Modules/ModuleInterface.h"
 #include "Misc/CoreMisc.h"
-#include "Misc/MultiReaderSingleWriterGT.h"
 #include "Modules/ModuleManager.h"
 #include "Modules/Boilerplate/ModuleBoilerplate.h"
 #include "HAL/PlatformTime.h"

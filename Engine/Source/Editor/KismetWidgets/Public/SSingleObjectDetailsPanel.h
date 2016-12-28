@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -18,6 +18,7 @@ class KISMETWIDGETS_API SSingleObjectDetailsPanel : public SCompoundWidget
 public:
 	SLATE_BEGIN_ARGS(SSingleObjectDetailsPanel) {}
 		SLATE_ARGUMENT(TSharedPtr<class FUICommandList>, HostCommandList)
+		SLATE_ARGUMENT(TSharedPtr<class FTabManager>, HostTabManager)
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs, bool bAutomaticallyObserveViaGetObjectToObserve = true, bool bAllowSearch = false);

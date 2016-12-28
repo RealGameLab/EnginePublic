@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -39,5 +39,8 @@ public:
 
 	/** Whether or not SerializeNewActor is about to spawn an actor, from an archetype */
 	bool bPendingArchetypeSpawn;
+
+	/** Map of objects to watch and replace, in SerializeObject */
+	TMap<UObject*, UObject*> ReplaceObjects;
 };
 

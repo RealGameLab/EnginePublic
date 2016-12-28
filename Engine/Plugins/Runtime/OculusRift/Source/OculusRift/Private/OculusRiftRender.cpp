@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 //
 #include "CoreMinimal.h"
 #include "IOculusRiftPlugin.h"
@@ -87,7 +87,12 @@ void FViewExtension::PreRenderViewFamily_RenderThread(FRHICommandListImmediate& 
 			(!CurrentFrame->Flags.bOrientationChanged && !CurrentFrame->Flags.bPositionChanged))
 		{
 			// get latest orientation/position and cache it
-			CurrentFrame->GetHeadAndEyePoses(CurrentFrame->GetTrackingState(OvrSession), CurrentFrame->CurHeadPose, CurrentFrame->CurEyeRenderPose);
+			CurrentFrame->RenderThreadTrackingState = CurrentFrame->GetTrackingState(OvrSession);
+			CurrentFrame->GetHeadAndEyePoses(CurrentFrame->RenderThreadTrackingState, CurrentFrame->CurHeadPose, CurrentFrame->CurEyeRenderPose);
+		}
+		else
+		{
+			CurrentFrame->RenderThreadTrackingState = CurrentFrame->InitialTrackingState;
 		}
 	}
 

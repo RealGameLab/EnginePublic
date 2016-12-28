@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	VisualizeTexture.h: Post processing visualize texture.
@@ -16,6 +16,7 @@ class FVisualizeTexture
 {
 public:
 	FVisualizeTexture();
+	void Destroy();
 
 	/** renders the VisualizeTextureContent to the current render target */
 	void PresentContent(FRHICommandListImmediate& RHICmdList, const FViewInfo& View);

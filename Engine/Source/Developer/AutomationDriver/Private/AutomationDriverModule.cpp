@@ -1,9 +1,10 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "IAutomationDriverModule.h"
 #include "PassThroughMessageHandler.h"
 #include "AutomatedApplication.h"
 #include "AutomationDriver.h"
+#include "Framework/Application/SlateApplication.h"
 
 class FAutomationDriverModule
 	: public IAutomationDriverModule

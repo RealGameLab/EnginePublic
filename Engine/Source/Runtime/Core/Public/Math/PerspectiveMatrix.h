@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -61,7 +61,7 @@ public:
 };
 
 
-#if _MSC_VER
+#ifdef _MSC_VER
 #pragma warning (push)
 // Disable possible division by 0 warning
 #pragma warning (disable : 4723)
@@ -128,6 +128,6 @@ FORCEINLINE FReversedZPerspectiveMatrix::FReversedZPerspectiveMatrix(float HalfF
 { }
 
 
-#if _MSC_VER
+#ifdef _MSC_VER
 #pragma warning (pop)
 #endif

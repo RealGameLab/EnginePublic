@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "CoreMinimal.h"
 #include "HAL/FileManager.h"
@@ -18,6 +18,7 @@
 #include "Settings/LevelEditorViewportSettings.h"
 #include "Settings/EditorExperimentalSettings.h"
 #include "Settings/EditorLoadingSavingSettings.h"
+#include "Settings/EditorSettings.h"
 #include "Preferences/PersonaOptions.h"
 #include "UnrealEdMisc.h"
 #include "Dialogs/Dialogs.h"
@@ -36,6 +37,7 @@
 
 #include "Tests/AutomationTestSettings.h"
 #include "BlueprintEditorSettings.h"
+#include "CurveEditorSettings.h"
 
 #include "CrashReporterSettings.h"
 #include "Analytics/AnalyticsPrivacySettings.h"
@@ -140,6 +142,13 @@ protected:
 		// @todo thomass: proper settings support for source control module
 		GetMutableDefault<UEditorLoadingSavingSettings>()->SccHackInitialize();
 
+		// global editor settings
+		SettingsModule.RegisterSettings("Editor", "General", "Global",
+			LOCTEXT("GlobalSettingsName", "Global"),
+			LOCTEXT("GlobalSettingsDescription", "Edit global settings that affect all editors."),
+			GetMutableDefault<UEditorSettings>()
+		);
+
 		// misc unsorted settings
 		SettingsModule.RegisterSettings("Editor", "General", "UserSettings",
 			LOCTEXT("UserSettingsName", "Miscellaneous"),
@@ -225,6 +234,13 @@ protected:
 			LOCTEXT("ContentEditorsPersonaSettingsDescription", "Customize Persona Editor."),
 			GetMutableDefault<UPersonaOptions>()
 		);
+
+		// curve editor
+		SettingsModule.RegisterSettings("Editor", "ContentEditors", "CurveEditor",
+			LOCTEXT("ContentEditorsCurveEditorSettingsName", "Curve Editor"),
+			LOCTEXT("ContentEditorsCurveEditorSettingsDescription", "Customize Curve Editors."),
+			GetMutableDefault<UCurveEditorSettings>()
+		);
 	}
 
 	void RegisterPrivacySettings(ISettingsModule& SettingsModule)
@@ -265,6 +281,7 @@ protected:
 //			SettingsModule->UnregisterSettings("Editor", "ContentEditors", "DestructableMeshEditor");
 			SettingsModule->UnregisterSettings("Editor", "ContentEditors", "GraphEditor");
 			SettingsModule->UnregisterSettings("Editor", "ContentEditors", "Persona");
+			SettingsModule->UnregisterSettings("Editor", "ContentEditors", "CurveEditor");
 		}
 	}
 

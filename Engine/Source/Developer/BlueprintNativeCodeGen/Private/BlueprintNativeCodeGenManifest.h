@@ -1,10 +1,11 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "UObject/ObjectMacros.h"
 #include "Misc/StringAssetReference.h"
+#include "Engine/Blueprint.h"
 #include "BlueprintNativeCodeGenManifest.generated.h"
 
 class FAssetData;
@@ -118,7 +119,7 @@ struct FBlueprintNativeCodeGenManifest
 
 public: 
 	FBlueprintNativeCodeGenManifest(); // default ctor for USTRUCT() system
-	FBlueprintNativeCodeGenManifest(const FString& InPluginName, const FString& InOutputDir);
+	FBlueprintNativeCodeGenManifest(const FString& InPluginName, const FString& InOutputDir, FCompilerNativizationOptions InCompilerNativizationOptions);
 	FBlueprintNativeCodeGenManifest(const FString& ManifestFilePath);
 
 	/**
@@ -169,6 +170,11 @@ public:
 	const FUnconvertedRecord& GetUnconvertedDependencies() const { return UnconvertedDependencies; }
 
 	/**
+	 * @return compiler nativization options
+	 */
+	const FCompilerNativizationOptions GetCompilerNativizationOptions() const { return NativizationOptions; }
+
+	/**
 	 * Saves this manifest as json, to its target destination (which it was 
 	 * setup with).
 	 * 
@@ -214,4 +220,7 @@ private:
 
 	UPROPERTY()
 	TMap<FName, FUnconvertedDependencyRecord> UnconvertedDependencies;
+
+	UPROPERTY()
+	FCompilerNativizationOptions NativizationOptions;
 };

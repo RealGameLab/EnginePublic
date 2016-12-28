@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Framework/Application/AnalogCursor.h"
 #include "InputCoreTypes.h"
@@ -131,7 +131,7 @@ bool FAnalogCursor::HandleKeyDownEvent(FSlateApplication& SlateApp, const FKeyEv
 	}
 
 	// Bottom face button is a click
-	if (Key == EKeys::Gamepad_FaceButton_Bottom)
+	if (Key == EKeys::Virtual_Accept)
 	{
 		if ( !InKeyEvent.IsRepeat() )
 		{
@@ -169,7 +169,7 @@ bool FAnalogCursor::HandleKeyUpEvent(FSlateApplication& SlateApp, const FKeyEven
 	}
 
 	// Bottom face button is a click
-	if (Key == EKeys::Gamepad_FaceButton_Bottom && !InKeyEvent.IsRepeat())
+	if (Key == EKeys::Virtual_Accept && !InKeyEvent.IsRepeat())
 	{
 		FPointerEvent MouseEvent(
 			0,

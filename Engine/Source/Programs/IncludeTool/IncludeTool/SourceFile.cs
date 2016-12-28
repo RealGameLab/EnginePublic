@@ -1,4 +1,6 @@
-﻿using IncludeTool.Support;
+﻿// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
+
+using IncludeTool.Support;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -179,7 +181,7 @@ namespace IncludeTool
 			}
 			else
 			{
-				Markup = PreprocessorMarkup.ParseArray(new TokenReader(Text, TextLocation.Origin));
+				Markup = PreprocessorMarkup.ParseArray(Text);
 			}
 
 			// Find the markup range which excludes header guards

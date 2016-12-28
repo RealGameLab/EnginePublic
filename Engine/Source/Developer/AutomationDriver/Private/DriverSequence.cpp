@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "DriverSequence.h"
 #include "IStepExecutor.h"
@@ -19,6 +19,7 @@
 #include "Misc/Timespan.h"
 #include "InputCoreTypes.h"
 #include "GenericApplicationMessageHandler.h"
+#include "Framework/Application/SlateApplication.h"
 
 
 class FStep
@@ -1362,6 +1363,9 @@ class FAsyncDriverSequence
 {
 public:
 
+	virtual ~FAsyncDriverSequence()
+	{ }
+
 	virtual IAsyncActionSequence& Actions()
 	{
 		return *ActionSequence;
@@ -1865,6 +1869,9 @@ class FDriverSequence
 	: public IDriverSequence
 {
 public:
+
+	virtual ~FDriverSequence()
+	{ }
 
 	virtual IActionSequence& Actions()
 	{

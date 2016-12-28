@@ -1,12 +1,15 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "LevelSequence.h"
 #include "Engine/EngineTypes.h"
 #include "HAL/IConsoleManager.h"
 #include "Components/ActorComponent.h"
 #include "GameFramework/Actor.h"
+#include "Engine/BlueprintGeneratedClass.h"
 #include "Engine/Engine.h"
 #include "MovieScene.h"
+#include "UObject/Package.h"
+#include "UObject/UObjectHash.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogLevelSequence, Log, All);
 
@@ -165,6 +168,11 @@ UObject* ULevelSequence::GetParentObject(UObject* Object) const
 bool ULevelSequence::AllowsSpawnableObjects() const
 {
 	return true;
+}
+
+bool ULevelSequence::CanRebindPossessable(const FMovieScenePossessable& InPossessable) const
+{
+	return !InPossessable.GetParent().IsValid();
 }
 
 void ULevelSequence::UnbindPossessableObjects(const FGuid& ObjectId)

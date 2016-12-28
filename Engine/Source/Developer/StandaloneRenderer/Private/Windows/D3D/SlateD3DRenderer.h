@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -64,6 +64,9 @@ public:
 	virtual FSlateUpdatableTexture* CreateUpdatableTexture(uint32 Width, uint32 Height) override;
 	virtual void ReleaseUpdatableTexture(FSlateUpdatableTexture* Texture) override;
 	virtual ISlateAtlasProvider* GetTextureAtlasProvider() override;
+	virtual int32 RegisterCurrentScene(FSceneInterface* Scene) override;
+	virtual int32 GetCurrentSceneIndex() const override;
+	virtual void ClearScenes() override;
 	
 	bool CreateDevice();
 	void CreateDepthStencilBuffer( FSlateD3DViewport& Viewport );

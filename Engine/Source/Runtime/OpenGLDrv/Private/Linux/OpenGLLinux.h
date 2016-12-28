@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	OpenGLWindows.h: Manual loading of OpenGL functions from DLL.
@@ -14,9 +14,11 @@
 	#error "OpenGLLinux.h included for a platform other than Linux."
 #endif
 
+THIRD_PARTY_INCLUDES_START
 	#include <GL/glcorearb.h>
 	#include <GL/glext.h>
 	#include "SDL.h"
+THIRD_PARTY_INCLUDES_END
 
 /** List all OpenGL entry points used by Unreal. */
 #define ENUM_GL_ENTRYPOINTS(EnumMacro) \

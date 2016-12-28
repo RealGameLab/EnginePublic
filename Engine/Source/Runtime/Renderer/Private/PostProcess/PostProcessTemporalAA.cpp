@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	PostProcessTemporalAA.cpp: Post process MotionBlur implementation.
@@ -33,6 +33,12 @@ static TAutoConsoleVariable<int32> CVarTemporalAAPauseCorrect(
 	1,
 	TEXT("Correct temporal AA in pause. This holds onto render targets longer preventing reuse and consumes more memory."),
 	ECVF_RenderThreadSafe);
+
+static TAutoConsoleVariable<float> CVarTemporalAACurrentFrameWeight(
+	TEXT("r.TemporalAACurrentFrameWeight"),
+	.04f,
+	TEXT("Weight of current frame's contribution to the history.  Low values cause blurriness and ghosting, high values fail to hide jittering."),
+	ECVF_Scalability | ECVF_RenderThreadSafe);
 
 static float CatmullRom( float x )
 {
@@ -70,6 +76,7 @@ public:
 	FShaderParameter PlusWeights;
 	FShaderParameter DitherScale;
 	FShaderParameter VelocityScaling;
+	FShaderParameter CurrentFrameWeight;
 
 	/** Initialization constructor. */
 	FPostProcessTemporalAAPS(const ShaderMetaType::CompiledShaderInitializerType& Initializer)
@@ -81,13 +88,14 @@ public:
 		PlusWeights.Bind(Initializer.ParameterMap, TEXT("PlusWeights"));
 		DitherScale.Bind(Initializer.ParameterMap, TEXT("DitherScale"));
 		VelocityScaling.Bind(Initializer.ParameterMap, TEXT("VelocityScaling"));
+		CurrentFrameWeight.Bind(Initializer.ParameterMap, TEXT("CurrentFrameWeight"));
 	}
 
 	// FShader interface.
 	virtual bool Serialize(FArchive& Ar) override
 	{
 		bool bShaderHasOutdatedParameters = FGlobalShader::Serialize(Ar);
-		Ar << PostprocessParameter << DeferredParameters << SampleWeights << PlusWeights << DitherScale << VelocityScaling;
+		Ar << PostprocessParameter << DeferredParameters << SampleWeights << PlusWeights << DitherScale << VelocityScaling << CurrentFrameWeight;
 		return bShaderHasOutdatedParameters;
 	}
 
@@ -179,6 +187,10 @@ public:
 
 		const bool bIgnoreVelocity = (ViewState && ViewState->bSequencerIsPaused);
 		SetShaderValue(Context.RHICmdList, ShaderRHI, VelocityScaling, bIgnoreVelocity ? 0.0f : 1.0f);
+
+		SetShaderValue(Context.RHICmdList, ShaderRHI, CurrentFrameWeight, CVarTemporalAACurrentFrameWeight.GetValueOnRenderThread());
+
+		SetUniformBufferParameter(Context.RHICmdList, ShaderRHI, GetUniformBufferParameter<FCameraMotionParameters>(), CreateCameraMotionParametersUniformBuffer(Context.View));
 	}
 };
 
@@ -300,6 +312,9 @@ void FRCPassPostProcessDOFTemporalAA::Process(FRenderingCompositePassContext& Co
 
 	const FSceneRenderTargetItem& DestRenderTarget = PassOutputs[0].RequestSurface(Context);
 
+	// Inform MultiGPU systems that we're starting to update the texture
+	Context.RHICmdList.BeginUpdateMultiFrameResource(DestRenderTarget.ShaderResourceTexture);
+
 	SetRenderTarget(Context.RHICmdList, DestRenderTarget.TargetableTexture, FTextureRHIRef());
 
 	// is optimized away if possible (RT size=view size, )
@@ -339,6 +354,10 @@ void FRCPassPostProcessDOFTemporalAA::Process(FRenderingCompositePassContext& Co
 	Context.RHICmdList.CopyToResolveTarget(DestRenderTarget.TargetableTexture, DestRenderTarget.ShaderResourceTexture, false, FResolveParams());
 
 	ViewState->DOFHistoryRT = PassOutputs[0].PooledRenderTarget;
+
+	// Inform MultiGPU systems that we've finished with this texture for this frame
+	Context.RHICmdList.EndUpdateMultiFrameResource(DestRenderTarget.ShaderResourceTexture);
+
 	check( ViewState->DOFHistoryRT );
 }
 
@@ -382,6 +401,9 @@ void FRCPassPostProcessDOFTemporalAANear::Process(FRenderingCompositePassContext
 
 	const FSceneRenderTargetItem& DestRenderTarget = PassOutputs[0].RequestSurface(Context);
 
+	// Inform MultiGPU systems that we're starting to update this texture for this frame
+	Context.RHICmdList.BeginUpdateMultiFrameResource(DestRenderTarget.ShaderResourceTexture);
+
 	SetRenderTarget(Context.RHICmdList, DestRenderTarget.TargetableTexture, FTextureRHIRef());
 
 	// is optimized away if possible (RT size=view size, )
@@ -421,6 +443,10 @@ void FRCPassPostProcessDOFTemporalAANear::Process(FRenderingCompositePassContext
 	Context.RHICmdList.CopyToResolveTarget(DestRenderTarget.TargetableTexture, DestRenderTarget.ShaderResourceTexture, false, FResolveParams());
 
 	ViewState->DOFHistoryRT2 = PassOutputs[0].PooledRenderTarget;
+
+	// Inform MultiGPU systems that we've finished with this texture for this frame
+	Context.RHICmdList.EndUpdateMultiFrameResource(DestRenderTarget.ShaderResourceTexture);
+
 	check( ViewState->DOFHistoryRT2 );
 }
 
@@ -543,6 +569,9 @@ void FRCPassPostProcessTemporalAA::Process(FRenderingCompositePassContext& Conte
 
 	const FSceneRenderTargetItem& DestRenderTarget = PassOutputs[0].RequestSurface(Context);
 
+	// Inform MultiGPU systems that we're starting to update this resource
+	Context.RHICmdList.BeginUpdateMultiFrameResource(DestRenderTarget.ShaderResourceTexture);
+
 	//Context.SetRenderTarget(RHICmdList, DestRenderTarget.TargetableTexture, FTextureRHIRef());
 	SetRenderTarget(Context.RHICmdList, DestRenderTarget.TargetableTexture, SceneContext.GetSceneDepthTexture(), ESimpleRenderTargetMode::EUninitializedColorExistingDepth, FExclusiveDepthStencil::DepthRead_StencilWrite);
 
@@ -613,7 +642,12 @@ void FRCPassPostProcessTemporalAA::Process(FRenderingCompositePassContext& Conte
 		{	
 			// Normal temporal feedback
 			// Draw to pixels where stencil == 0
-			Context.RHICmdList.SetDepthStencilState(TStaticDepthStencilState<false,CF_Always,true,CF_Equal,SO_Keep,SO_Keep,SO_Keep>::GetRHI(), 0);
+			Context.RHICmdList.SetDepthStencilState(TStaticDepthStencilState<
+				false, CF_Always,
+				true, CF_Equal, SO_Keep, SO_Keep, SO_Keep,
+				false, CF_Always, SO_Keep, SO_Keep, SO_Keep,
+				STENCIL_TEMPORAL_RESPONSIVE_AA_MASK, STENCIL_TEMPORAL_RESPONSIVE_AA_MASK
+				>::GetRHI(), 0);
 	
 			TShaderMapRef< FPostProcessTonemapVS >			VertexShader(Context.GetShaderMap());
 			if (bUseFast)
@@ -657,7 +691,12 @@ void FRCPassPostProcessTemporalAA::Process(FRenderingCompositePassContext& Conte
 	
 		{	// Responsive feedback for tagged pixels
 			// Draw to pixels where stencil != 0
-			Context.RHICmdList.SetDepthStencilState(TStaticDepthStencilState<false,CF_Always,true,CF_NotEqual,SO_Keep,SO_Keep,SO_Keep>::GetRHI(), 0);
+			Context.RHICmdList.SetDepthStencilState(TStaticDepthStencilState<
+				false, CF_Always,
+				true, CF_NotEqual, SO_Keep, SO_Keep, SO_Zero,
+				false, CF_Always, SO_Keep, SO_Keep, SO_Keep,
+				STENCIL_TEMPORAL_RESPONSIVE_AA_MASK, STENCIL_TEMPORAL_RESPONSIVE_AA_MASK
+				>::GetRHI(), 0);
 			
 			TShaderMapRef< FPostProcessTonemapVS >			VertexShader(Context.GetShaderMap());
 			if(bUseFast)
@@ -701,6 +740,9 @@ void FRCPassPostProcessTemporalAA::Process(FRenderingCompositePassContext& Conte
 	}
 
 	Context.RHICmdList.CopyToResolveTarget(DestRenderTarget.TargetableTexture, DestRenderTarget.ShaderResourceTexture, false, FResolveParams());
+
+	// Inform MultiGPU systems that we've finished with this texture for this frame
+	Context.RHICmdList.EndUpdateMultiFrameResource(DestRenderTarget.ShaderResourceTexture);
 
 	if( CVarTemporalAAPauseCorrect.GetValueOnRenderThread() )
 	{

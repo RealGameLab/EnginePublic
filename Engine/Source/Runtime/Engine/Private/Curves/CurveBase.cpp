@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Curves/CurveBase.h"
 #include "Serialization/Csv/CsvParser.h"
@@ -60,6 +60,14 @@ void UCurveBase::GetValueRange(float& MinValue, float& MaxValue) const
 void UCurveBase::ModifyOwner() 
 {
 	Modify(true);
+}
+
+TArray<const UObject*> UCurveBase::GetOwners() const
+{
+	TArray<const UObject*> Owners;
+	Owners.Add(this);		// CurveBase owns its own curve
+
+	return Owners;
 }
 
 

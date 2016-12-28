@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "CoreMinimal.h"
 #include "HAL/FileManager.h"
@@ -248,7 +248,7 @@ void FFileTransferRunnable::ReadAndSetHash(FProfilerServiceFileChunk* FileChunk,
 
 	// Limit transfer per second, otherwise we will probably hang the message bus.
 	static int64 TotalReadBytes = 0;
-#if	_DEBUG
+#ifdef	_DEBUG
 	static const int64 NumBytesPerTick = 128 * 1024;
 #else
 	static const int64 NumBytesPerTick = 256 * 1024;

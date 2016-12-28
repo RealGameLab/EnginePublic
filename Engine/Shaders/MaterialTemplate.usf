@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /**
  * MaterialTemplate.usf: Filled in by FHLSLMaterialTranslator::GetMaterialShaderCode for each material being compiled.
@@ -726,13 +726,9 @@ MaterialFloat2 GetParticleMacroUV(FMaterialPixelParameters Parameters)
 	return (Parameters.ScreenPosition.xy / Parameters.ScreenPosition.w - Parameters.Particle.MacroUV.xy) * Parameters.Particle.MacroUV.zw + MaterialFloat2(.5, .5);
 }
 
-#ifndef MOBILE_EMULATION
-#define MOBILE_EMULATION ((FEATURE_LEVEL == FEATURE_LEVEL_ES2 || FEATURE_LEVEL == FEATURE_LEVEL_ES3_1) && (!(COMPILER_GLSL_ES2||COMPILER_GLSL_ES3_1) && USE_DEVELOPMENT_SHADERS && (COMPILER_METAL && MAC)))
-#endif
-
 MaterialFloat4 ProcessMaterialColorTextureLookup(MaterialFloat4 TextureValue)
 {
-#if (ES2_PROFILE || ES3_1_PROFILE)
+#if (ES2_PROFILE || ES3_1_PROFILE) && !METAL_PROFILE // Metal supports sRGB textures
 	#if MOBILE_EMULATION
 	if( View.MobilePreviewMode > 0.5f)
 	{
@@ -754,7 +750,7 @@ MaterialFloat4 ProcessMaterialLinearColorTextureLookup(MaterialFloat4 TextureVal
 
 MaterialFloat ProcessMaterialGreyscaleTextureLookup(MaterialFloat TextureValue)
 {
-#if (ES2_PROFILE || ES3_1_PROFILE)
+#if (ES2_PROFILE || ES3_1_PROFILE) && !METAL_PROFILE // Metal supports R8 sRGB
 	#if MOBILE_EMULATION
 	if( View.MobilePreviewMode > 0.5f )
 	{
@@ -1131,6 +1127,17 @@ MaterialFloat4 MobileSceneTextureLookup(inout FMaterialPixelParameters Parameter
 		Parameters.BackupSceneColorAlpha = Input0.a;
 		return Input0;
 #endif// POST_PROCESS_MATERIAL	
+	}
+	// PPI_CustomStencil
+	else if (SceneTextureId == 24)
+	{
+		#if NEEDTOSWITCHVERTICLEAXIS
+		UV.y = 1.0 - UV.y; 
+		#endif
+
+		MaterialFloat Stencil = Texture2DSample(MobileCustomStencilTexture, MobileCustomStencilTextureSampler, UV).r*255.0;
+		Stencil = floor(Stencil + 0.5);
+		return MaterialFloat4(Stencil.rrr, 0.f);
 	}
 #endif// FEATURE_LEVEL
 
@@ -1707,6 +1714,41 @@ void GetMaterialCoverageAndClipping(FMaterialPixelParameters Parameters, FPixelM
 	#endif
 #endif
 }
+
+#define MATERIALBLENDING_MASKED_USING_COVERAGE (FORWARD_SHADING && MATERIALBLENDING_MASKED && SUPPORTS_PIXEL_COVERAGE)
+#if MATERIALBLENDING_MASKED_USING_COVERAGE
+
+uint GetDerivativeCoverageFromMask(float MaterialMask)
+{
+	uint Coverage = 0x0;
+	if (MaterialMask > 0.01) Coverage = 0x8;
+	if (MaterialMask > 0.25) Coverage = 0x9;
+	if (MaterialMask > 0.50) Coverage = 0xD;
+	if (MaterialMask > 0.75) Coverage = 0xF;
+	return Coverage;
+}
+
+// Returns the new pixel coverage according the material's mask and the current pixel's mask.
+uint DiscardMaterialWithPixelCoverage(FMaterialPixelParameters MaterialParameters, FPixelMaterialInputs PixelMaterialInputs)
+{
+	ClipLODTransition(MaterialParameters);
+	float OriginalMask = GetMaterialMaskInputRaw(PixelMaterialInputs);
+	float MaskClip = GetMaterialOpacityMaskClipValue();
+
+	if (View.NumSceneColorMSAASamples > 1)
+	{
+		float Mask = (OriginalMask - MaskClip) / (1.0 - MaskClip);
+		uint CurrentPixelCoverage = GetDerivativeCoverageFromMask(Mask);
+		// Discard pixel shader if all sample are masked to avoid computing other material inputs.
+		clip(float(CurrentPixelCoverage) - 0.5);
+		return CurrentPixelCoverage;
+	}
+	clip(OriginalMask - MaskClip);
+	return 0xF;
+}
+
+#endif // MATERIALBLENDING_MASKED_USING_COVERAGE
+
 
 	#define FrontFaceSemantic SV_IsFrontFace
 	#define FIsFrontFace bool

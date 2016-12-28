@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -20,6 +20,11 @@ class MEDIAASSETS_API UMediaSoundWave
 
 public:
 
+	/**
+	 * Get the event delegate that is invoked when this asset is being destroyed.
+	 *
+	 * @return The delegate.
+	 */
 	DECLARE_EVENT_OneParam(UMediaSoundWave, FOnBeginDestroy, UMediaSoundWave& /*DestroyedSoundWave*/)
 	FOnBeginDestroy& OnBeginDestroy()
 	{
@@ -72,7 +77,7 @@ protected:
 
 private:
 
-	/** An event delegate that is invoked when this media texture is being destroyed. */
+	/** An event delegate that is invoked when this asset is being destroyed. */
 	FOnBeginDestroy BeginDestroyEvent;
 
 	/** Critical section for synchronizing access to QueuedAudio. */

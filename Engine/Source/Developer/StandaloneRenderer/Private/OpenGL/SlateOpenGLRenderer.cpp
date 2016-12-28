@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "OpenGL/SlateOpenGLRenderer.h"
 #include "Fonts/FontTypes.h"
@@ -281,4 +281,22 @@ ISlateAtlasProvider* FSlateOpenGLRenderer::GetTextureAtlasProvider()
 	}
 
 	return nullptr;
+}
+
+int32 FSlateOpenGLRenderer::RegisterCurrentScene(FSceneInterface* Scene) 
+{
+	// This is a no-op
+	return -1;
+}
+
+int32 FSlateOpenGLRenderer::GetCurrentSceneIndex() const
+{
+	// This is a no-op
+	return -1;
+}
+
+
+void FSlateOpenGLRenderer::ClearScenes() 
+{
+	// This is a no-op
 }

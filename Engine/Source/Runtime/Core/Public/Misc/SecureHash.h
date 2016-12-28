@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -99,7 +99,7 @@ private:
 
 struct FMD5Hash;
 
-namespace LexicalConversion
+namespace Lex
 {
 	CORE_API FString ToString(const FMD5Hash& Hash);
 	CORE_API void FromString(FMD5Hash& Hash, const TCHAR* Buffer);
@@ -159,8 +159,8 @@ private:
 	/** The bytes this hash comprises */
 	uint8 Bytes[16];
 
-	friend FString LexicalConversion::ToString(const FMD5Hash&);
-	friend void LexicalConversion::FromString(FMD5Hash& Hash, const TCHAR*);
+	friend FString Lex::ToString(const FMD5Hash&);
+	friend void Lex::FromString(FMD5Hash& Hash, const TCHAR*);
 };
 
 /*-----------------------------------------------------------------------------

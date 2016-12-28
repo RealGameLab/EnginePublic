@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Customizations/PlatformMediaSourceCustomization.h"
 #include "MediaSource.h"
@@ -36,16 +36,18 @@ void FPlatformMediaSourceCustomization::CustomizeDetails(IDetailLayoutBuilder& D
 		{
 			IDetailPropertyRow& PlatformMediaSourcesRow = SourcesCategory.AddProperty(PlatformMediaSourcesProperty);
 
-			PlatformMediaSourcesRow.CustomWidget()
-				.NameContent()
-				[
-					PlatformMediaSourcesProperty->CreatePropertyNameWidget()
-				]
-				.ValueContent()
-				.MaxDesiredWidth(0.0f)
-				[
-					MakePlatformMediaSourcesValueWidget()
-				];
+			PlatformMediaSourcesRow
+				.ShowPropertyButtons(false)
+				.CustomWidget()
+					.NameContent()
+					[
+						PlatformMediaSourcesProperty->CreatePropertyNameWidget()
+					]
+					.ValueContent()
+					.MaxDesiredWidth(0.0f)
+					[
+						MakePlatformMediaSourcesValueWidget()
+					];
 		}
 	}
 }

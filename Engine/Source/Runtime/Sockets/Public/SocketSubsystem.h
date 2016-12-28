@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -81,6 +81,15 @@ public:
 	 * @return the new socket or NULL if failed
 	 */
 	virtual class FSocket* CreateSocket(const FName& SocketType, const FString& SocketDescription, bool bForceUDP = false) = 0;
+
+	/**
+	* Creates a resolve info cached struct to hold the resolved address
+	*
+	* @Param Addr address to resolve for the socket subsystem
+	*
+	* @return the new resolved address or NULL if failed
+	*/
+	virtual class FResolveInfoCached* CreateResolveInfoCached(TSharedPtr<FInternetAddr> Addr) const;
 
 	/**
 	 * Cleans up a socket class

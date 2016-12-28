@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SMaterialPalette.h"
 #include "Modules/ModuleManager.h"
@@ -90,6 +90,11 @@ TSharedRef<SWidget> SMaterialPaletteItem::CreateHotkeyDisplayWidget(const FSlate
 	return SNew(STextBlock)
 		.Text(HotkeyText)
 		.Font(NameFont);
+}
+
+FText SMaterialPaletteItem::GetItemTooltip() const
+{
+	return FText::FromString(ActionPtr.Pin()->GetTooltipDescription());
 }
 
 //////////////////////////////////////////////////////////////////////////

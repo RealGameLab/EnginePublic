@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -56,6 +56,16 @@ public:
 	virtual ~FSocketBSDIPv6()
 	{
 		FSocketBSDIPv6::Close();
+	}
+
+	/**
+	* Gets the Socket for anyone who knows they have an FSocketBSD.
+	*
+	* @return The native socket.
+	*/
+	SOCKET GetNativeSocket()
+	{
+		return Socket;
 	}
 
 

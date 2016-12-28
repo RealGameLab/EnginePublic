@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "EdGraph/EdGraphPin.h"
 #include "UObject/BlueprintsObjectVersion.h"
@@ -151,6 +151,27 @@ bool FEdGraphPinType::Serialize(FArchive& Ar)
 	}
 
 	return true;
+}
+
+FEdGraphPinType FEdGraphPinType::GetPinTypeForTerminalType( const FEdGraphTerminalType& TerminalType )
+{
+	FEdGraphPinType TerminalTypeAsPin;
+	TerminalTypeAsPin.PinCategory = TerminalType.TerminalCategory;
+	TerminalTypeAsPin.PinSubCategory = TerminalType.TerminalSubCategory;
+	TerminalTypeAsPin.PinSubCategoryObject = TerminalType.TerminalSubCategoryObject;
+
+	return TerminalTypeAsPin;
+}
+
+FEdGraphPinType FEdGraphPinType::GetTerminalTypeForContainer( const FEdGraphPinType& ContainerType )
+{
+	ensure(ContainerType.IsContainer());
+	
+	FEdGraphPinType TerminalType = ContainerType;
+	TerminalType.bIsArray = false;
+	TerminalType.bIsMap = false;
+	TerminalType.bIsSet = false;
+	return TerminalType;
 }
 
 /////////////////////////////////////////////////////

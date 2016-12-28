@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Windows/WindowsPlatformStackWalk.h"
 #include "HAL/PlatformMemory.h"
@@ -818,12 +818,14 @@ bool FWindowsPlatformStackWalk::InitStackWalking()
 	{
 		// Refresh and reload symbols
 		SymRefreshModuleList( GetCurrentProcess() );
+
+		GNeedToRefreshSymbols = false;
+
 		if (!FPlatformProperties::IsMonolithicBuild() && FPlatformStackWalk::WantsDetailedCallstacksInNonMonolithicBuilds())
 		{
 			const FString RemoteStorage = GetRemoteStorage( GetDownstreamStorage() );
 			LoadProcessModules( RemoteStorage );
 		}
-		GNeedToRefreshSymbols = false;
 	}
 #endif
 

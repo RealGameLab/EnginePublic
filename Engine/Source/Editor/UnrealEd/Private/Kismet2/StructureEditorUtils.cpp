@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Kismet2/StructureEditorUtils.h"
 #include "Misc/MessageDialog.h"
@@ -231,7 +231,11 @@ struct FMemberVariableNameHelper
 		FString Result;
 		if (!NameBase.IsEmpty())
 		{
-			if (ensure(FName::IsValidXName(NameBase, INVALID_OBJECTNAME_CHARACTERS)))
+			if (!FName::IsValidXName(NameBase, INVALID_OBJECTNAME_CHARACTERS))
+			{
+				Result = MakeObjectNameFromDisplayLabel(NameBase, NAME_None).GetPlainNameString();
+			}
+			else
 			{
 				Result = NameBase;
 			}
@@ -342,7 +346,6 @@ bool FStructureEditorUtils::RenameVariable(UUserDefinedStruct* Struct, FGuid Var
 		auto VarDesc = GetVarDescByGuid(Struct, VarGuid);
 		if (VarDesc 
 			&& !NewDisplayNameStr.IsEmpty()
-			&& FName::IsValidXName(NewDisplayNameStr, INVALID_OBJECTNAME_CHARACTERS) 
 			&& IsUniqueVariableDisplayName(Struct, NewDisplayNameStr))
 		{
 			const FScopedTransaction Transaction(LOCTEXT("RenameVariable", "Rename Variable"));

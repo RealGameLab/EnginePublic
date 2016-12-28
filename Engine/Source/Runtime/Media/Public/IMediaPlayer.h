@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -153,6 +153,22 @@ public:
 	 * @see Close, IsReady, OnOpen, OnOpenFailed
 	 */
 	virtual bool Open(const TSharedRef<FArchive, ESPMode::ThreadSafe>& Archive, const FString& OriginalUrl, const IMediaOptions& Options) = 0;
+
+	/**
+	 * Tick the media player logic.
+	 *
+	 * @param DeltaTime Time since last tick.
+	 * @see TickVideo
+	 */
+	virtual void TickPlayer(float DeltaTime) = 0;
+
+	/**
+	 * Tick the media player's video code.
+	 *
+	 * @param DeltaTime Time since last tick.
+	 * @see TickPlayer
+	 */
+	virtual void TickVideo(float DeltaTime) = 0;
 
 public:
 

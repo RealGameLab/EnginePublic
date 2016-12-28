@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "AI/Navigation/RecastNavMeshGenerator.h"
 #include "AI/Navigation/NavRelevantInterface.h"
@@ -704,15 +704,15 @@ FORCEINLINE_DEBUGGABLE void ExportRigidBodyConvexElements(UBodySetup& BodySetup,
 		ShapeBuffer.Add(VertexBuffer.Num() / 3);
 
 		// Get verts/triangles from this hull.
-		if (!ConvexElem->ConvexMesh && ConvexElem->ConvexMeshNegX)
+		if (!ConvexElem->GetConvexMesh() && ConvexElem->GetMirroredConvexMesh())
 		{
 			// If there is only a NegX mesh (e.g. a mirrored volume), use it
-			ExportPxConvexMesh(ConvexElem->ConvexMeshNegX, NegXScale * ConvexElem->Transform * LocalToWorld, VertexBuffer, IndexBuffer, UnrealBounds);
+			ExportPxConvexMesh(ConvexElem->GetMirroredConvexMesh(), NegXScale * LocalToWorld, VertexBuffer, IndexBuffer, UnrealBounds);
 		}
 		else
 		{
 			// Otherwise use the regular mesh in the case that both exist
-			ExportPxConvexMesh(ConvexElem->ConvexMesh, ConvexElem->Transform * LocalToWorld, VertexBuffer, IndexBuffer, UnrealBounds);
+			ExportPxConvexMesh(ConvexElem->GetConvexMesh(), LocalToWorld, VertexBuffer, IndexBuffer, UnrealBounds);
 		}
 	}
 #endif // WITH_PHYSX
@@ -2542,7 +2542,7 @@ bool FRecastTileGenerator::GenerateNavigationData(FNavMeshBuildContext& BuildCon
 
 	for (int32 iLayer = 0; iLayer < CompressedLayers.Num(); iLayer++)
 	{
-		if (DirtyLayers[iLayer] == false)
+		if (DirtyLayers[iLayer] == false || !CompressedLayers[iLayer].IsValid())
 		{
 			// skip layers not marked for rebuild
 			continue;

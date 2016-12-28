@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SAnimationOutlinerTreeNode.h"
 #include "Fonts/SlateFontInfo.h"
@@ -232,6 +232,7 @@ void SAnimationOutlinerTreeNode::Construct( const FArguments& InArgs, TSharedRef
 				.VAlign(VAlign_Fill)
 				.HasDownArrow(false)
 				.IsFocusable(false)
+				.IsEnabled(!DisplayNode->GetSequencer().IsReadOnly())
 				.ButtonStyle(FEditorStyle::Get(), "Sequencer.AnimationOutliner.ColorStrip")
 				.OnGetMenuContent(this, &SAnimationOutlinerTreeNode::OnGetColorPicker)
 				.OnMenuOpenChanged_Lambda([](bool bIsOpen){
@@ -438,7 +439,7 @@ FText SAnimationOutlinerTreeNode::GetDisplayName() const
 
 bool SAnimationOutlinerTreeNode::HandleNodeLabelCanEdit() const
 {
-	return DisplayNode->CanRenameNode();
+	return !DisplayNode->GetSequencer().IsReadOnly() && DisplayNode->CanRenameNode();
 }
 
 

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #include "Sound/SoundEffectSource.h"
@@ -8,12 +8,7 @@ USoundEffectSourcePreset::USoundEffectSourcePreset(const FObjectInitializer& Obj
 {
 }
 
-USoundEffectSource::USoundEffectSource(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
-{
-}
-
-void USoundEffectSource::ProcessAudio(FSoundEffectSourceInputData& InData, FSoundEffectSourceOutputData& OutData)
+void FSoundEffectSource::ProcessAudio(FSoundEffectSourceInputData& InData, FSoundEffectSourceOutputData& OutData)
 {
 	bIsRunning = true;
 

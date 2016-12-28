@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "AISystem.h"
 #include "Modules/ModuleManager.h"
@@ -226,7 +226,7 @@ UAISystem::FBlackboardDataToComponentsIterator UAISystem::CreateBlackboardDataTo
 
 void UAISystem::ConditionalLoadDebuggerPlugin()
 {
-#if ENABLED_GAMEPLAY_DEBUGGER
+#if defined(ENABLED_GAMEPLAY_DEBUGGER) && ENABLED_GAMEPLAY_DEBUGGER
 	if (bEnableDebuggerPlugin)
 	{
 		LoadDebuggerPlugin();

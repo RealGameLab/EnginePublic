@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -85,6 +85,9 @@ public:
 
 	/** Handle adding a new virtual bone to the skeleton */
 	bool HandleAddVirtualBone(const FName SourceBoneName, const FName TargetBoneName);
+
+	/** Handle adding a new virtual bone to the skeleton */
+	bool HandleAddVirtualBone(const FName SourceBoneName, const FName TargetBoneName, FName& NewVirtualBoneName);
 
 	/** Function to customize a socket - this essentially copies a socket from the skeleton to the mesh */
 	void HandleCustomizeSocket(USkeletalMeshSocket* InSocketToCustomize, USkeletalMesh* InSkeletalMesh);

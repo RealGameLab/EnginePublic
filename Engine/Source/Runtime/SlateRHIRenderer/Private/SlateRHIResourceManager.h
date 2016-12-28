@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -22,6 +22,7 @@ class FSlateUTextureResource;
 class ILayoutCache;
 class ISlateStyle;
 class UTexture;
+class FSceneInterface;
 
 /** 
  * Lookup key for materials.  Sometimes the same material is used with different masks so there must be
@@ -242,6 +243,11 @@ public:
 	 */
 	void ReloadTextures();
 
+	int32 GetSceneCount();
+	FSceneInterface* GetSceneAt(int32 Index);
+	void AddSceneAt(FSceneInterface* Scene, int32 Index);
+	void ClearScenes();
+
 private:
 	void ReleaseCachedBuffer(FRHICommandListImmediate& RHICmdList, FCachedRenderBuffers* PooledBuffer);
 
@@ -352,5 +358,8 @@ private:
 	 * to be deleted after the RHI thread is done with them.
 	 */
 	TArray<FCachedRenderBuffers*> PooledBuffersPendingRelease;
+
+
+	TArray<FSceneInterface*> ActiveScenes;
 };
 

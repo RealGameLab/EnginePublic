@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -61,6 +61,7 @@ MONOLITHIC_HEADER_BOILERPLATE()
 #include "Classes/Exporters/AnimSequenceExporterFBX.h"
 #include "Classes/Commandlets/AudioTestCommandlet.h"
 #include "Classes/Preferences/CascadeOptions.h"
+#include "Classes/Settings/ClassViewerSettings.h"
 #include "Classes/Commandlets/CompressAnimationsCommandlet.h"
 #include "Classes/Settings/ContentBrowserSettings.h"
 #include "Classes/Commandlets/CookCommandlet.h"

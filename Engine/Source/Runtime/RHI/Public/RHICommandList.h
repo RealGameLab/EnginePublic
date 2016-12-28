@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	RHICommandList.h: RHI Command List definitions for queueing up & executing later.
@@ -416,6 +416,46 @@ struct FRHICommand : public FRHICommandBase
 		ThisCmd->Execute(CmdList);
 		ThisCmd->~TCmd();
 	}
+};
+
+struct  FRHICommandBeginUpdateMultiFrameResource : public FRHICommand<FRHICommandBeginUpdateMultiFrameResource>
+{
+	FTextureRHIParamRef Texture;
+	FORCEINLINE_DEBUGGABLE FRHICommandBeginUpdateMultiFrameResource(FTextureRHIParamRef InTexture)
+		: Texture(InTexture)
+	{
+	}
+	RHI_API void Execute(FRHICommandListBase& CmdList);
+};
+
+struct  FRHICommandEndUpdateMultiFrameResource : public FRHICommand<FRHICommandEndUpdateMultiFrameResource>
+{
+	FTextureRHIParamRef Texture;
+	FORCEINLINE_DEBUGGABLE FRHICommandEndUpdateMultiFrameResource(FTextureRHIParamRef InTexture)
+		: Texture(InTexture)
+	{
+	}
+	RHI_API void Execute(FRHICommandListBase& CmdList);
+};
+
+struct  FRHICommandBeginUpdateMultiFrameUAV : public FRHICommand<FRHICommandBeginUpdateMultiFrameResource>
+{
+	FUnorderedAccessViewRHIParamRef UAV;
+	FORCEINLINE_DEBUGGABLE FRHICommandBeginUpdateMultiFrameUAV(FUnorderedAccessViewRHIParamRef InUAV)
+		: UAV(InUAV)
+	{
+	}
+	RHI_API void Execute(FRHICommandListBase& CmdList);
+};
+
+struct  FRHICommandEndUpdateMultiFrameUAV : public FRHICommand<FRHICommandEndUpdateMultiFrameResource>
+{
+	FUnorderedAccessViewRHIParamRef UAV;
+	FORCEINLINE_DEBUGGABLE FRHICommandEndUpdateMultiFrameUAV(FUnorderedAccessViewRHIParamRef InUAV)
+		: UAV(InUAV)
+	{
+	}
+	RHI_API void Execute(FRHICommandListBase& CmdList);
 };
 
 struct FRHICommandSetRasterizerState : public FRHICommand<FRHICommandSetRasterizerState>
@@ -1592,6 +1632,46 @@ public:
 			Result.WorkArea = &Cmd->WorkArea;
 		}
 		return Result;
+	}
+
+	FORCEINLINE_DEBUGGABLE void BeginUpdateMultiFrameResource( FTextureRHIParamRef Texture)
+	{
+		if (Bypass())
+		{
+			CMD_CONTEXT(RHIBeginUpdateMultiFrameResource)( Texture);
+			return;
+		}
+		new (AllocCommand<FRHICommandBeginUpdateMultiFrameResource>()) FRHICommandBeginUpdateMultiFrameResource( Texture);
+	}
+
+	FORCEINLINE_DEBUGGABLE void EndUpdateMultiFrameResource(FTextureRHIParamRef Texture)
+	{
+		if (Bypass())
+		{
+			CMD_CONTEXT(RHIEndUpdateMultiFrameResource)(Texture);
+			return;
+		}
+		new (AllocCommand<FRHICommandEndUpdateMultiFrameResource>()) FRHICommandEndUpdateMultiFrameResource(Texture);
+	}
+
+	FORCEINLINE_DEBUGGABLE void BeginUpdateMultiFrameResource(FUnorderedAccessViewRHIParamRef UAV)
+	{
+		if (Bypass())
+		{
+			CMD_CONTEXT(RHIBeginUpdateMultiFrameResource)(UAV);
+			return;
+		}
+		new (AllocCommand<FRHICommandBeginUpdateMultiFrameUAV>()) FRHICommandBeginUpdateMultiFrameUAV(UAV);
+	}
+
+	FORCEINLINE_DEBUGGABLE void EndUpdateMultiFrameResource(FUnorderedAccessViewRHIParamRef UAV)
+	{
+		if (Bypass())
+		{
+			CMD_CONTEXT(RHIEndUpdateMultiFrameResource)(UAV);
+			return;
+		}
+		new (AllocCommand<FRHICommandEndUpdateMultiFrameUAV>()) FRHICommandEndUpdateMultiFrameUAV(UAV);
 	}
 
 	FORCEINLINE_DEBUGGABLE void SetLocalBoundShaderState(FLocalBoundShaderState LocalBoundShaderState)

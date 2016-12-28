@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	IOSAudioDevice.h: Unreal IOSAudio audio interface object.
@@ -228,6 +228,9 @@ private:
 
 	// Used to support adpcm streaming
 	virtual bool HasCompressedAudioInfoClass(USoundWave* SoundWave) override { return true; }
+
+	virtual bool SupportsRealtimeDecompression() const override { return true; }
+	
 	virtual class ICompressedAudioInfo* CreateCompressedAudioInfo(USoundWave* SoundWave) override;
 
 	void HandleError(const TCHAR* InLogOutput, bool bTeardown = false);

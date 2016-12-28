@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 #pragma  once
 
 #include "CoreMinimal.h"
@@ -7,12 +7,14 @@
 #include "UObject/UnrealType.h"
 #include "IBlueprintCompilerCppBackendModule.h"
 #include "BlueprintCompilerCppBackendGatherDependencies.h"
+#include "Engine/Blueprint.h" // for FCompilerNativizationOptions
 
 class USCS_Node;
 class UUserDefinedEnum;
 class UUserDefinedStruct;
 struct FNonativeComponentData;
 enum class ENativizedTermUsage : uint8;
+struct FEmitterLocalContext;
 
 struct FCodeText
 {
@@ -33,6 +35,26 @@ struct FCodeText
 	{
 		Result += FString::Printf(TEXT("%s%s\n"), *Indent, *Line);
 	}
+};
+
+/** 
+ * A helper struct that adds indented {} scope to the specified context. 
+ * Additionally, manages locals that were added via FEmitHelper::GenerateGetPropertyByName()
+ * and removes them from the cache on destruction, so we don't try to use the
+ * variables outside of the scope.
+ */
+struct FScopeBlock
+{
+public:
+	 FScopeBlock(FEmitterLocalContext& Context);
+	~FScopeBlock();
+
+	void TrackLocalAccessorDecl(const UProperty* Property);
+
+private:
+	FEmitterLocalContext& Context;
+	FScopeBlock*  OuterScopeBlock;
+	TArray<const UProperty*> LocalAccessorDecls;
 };
 
 struct FEmitterLocalContext
@@ -66,6 +88,8 @@ struct FEmitterLocalContext
 	//ConstructorOnly Local Names
 	TMap<UObject*, FString> CommonSubobjectsMap;
 
+	// used to track the innermost FScopeBlock on the stack, so GenerateGetPropertyByName() can register added locals
+	FScopeBlock* ActiveScopeBlock;
 
 private:
 	int32 LocalNameIndexMax;
@@ -88,6 +112,7 @@ public:
 
 	FEmitterLocalContext(const FGatherConvertedClassDependencies& InDependencies)
 		: CurrentCodeType(EGeneratedCodeType::Regular)
+		, ActiveScopeBlock(nullptr)
 		, LocalNameIndexMax(0)
 		, DefaultTarget(&Body)
 		, Dependencies(InDependencies)
@@ -314,7 +339,7 @@ struct FEmitDefaultValueHelper
 	static bool SpecialStructureConstructor(const UStruct* Struct, const uint8* ValuePtr, FString* OutResult);
 
 	// Add static initialization functions. Must be called after Context.UsedObjectInCurrentClass is fully filled
-	static void AddStaticFunctionsForDependencies(FEmitterLocalContext& Context, TSharedPtr<FGatherConvertedClassDependencies> ParentDependencies);
+	static void AddStaticFunctionsForDependencies(FEmitterLocalContext& Context, TSharedPtr<FGatherConvertedClassDependencies> ParentDependencies, FCompilerNativizationOptions NativizationOptions);
 
 	static void AddRegisterHelper(FEmitterLocalContext& Context);
 private:

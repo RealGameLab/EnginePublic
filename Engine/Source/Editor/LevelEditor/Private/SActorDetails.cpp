@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SActorDetails.h"
 #include "Widgets/SBoxPanel.h"
@@ -80,7 +80,7 @@ public:
 	}
 };
 
-void SActorDetails::Construct(const FArguments& InArgs, const FName TabIdentifier, TSharedPtr<FUICommandList> InCommandList)
+void SActorDetails::Construct(const FArguments& InArgs, const FName TabIdentifier, TSharedPtr<FUICommandList> InCommandList, TSharedPtr<FTabManager> InTabManager)
 {
 	bSelectionGuard = false;
 	bShowingRootActorNodeSelected = false;
@@ -102,6 +102,7 @@ void SActorDetails::Construct(const FArguments& InArgs, const FName TabIdentifie
 	DetailsViewArgs.bCustomFilterAreaLocation = true;
 	DetailsViewArgs.DefaultsOnlyVisibility = FDetailsViewArgs::EEditDefaultsOnlyNodeVisibility::Hide;
 	DetailsViewArgs.HostCommandList = InCommandList;
+	DetailsViewArgs.HostTabManager = InTabManager;
 	DetailsView = PropPlugin.CreateDetailView(DetailsViewArgs);
 
 	auto IsPropertyVisible = [](const FPropertyAndParent& PropertyAndParent)
@@ -207,7 +208,7 @@ SActorDetails::~SActorDetails()
 	USelection::SelectionChangedEvent.RemoveAll(this);
 	RemoveBPComponentCompileEventDelegate();
 
-	auto LevelEditor = FModuleManager::GetModulePtr<FLevelEditorModule>("LevelEditor");
+	FLevelEditorModule* LevelEditor = FModuleManager::GetModulePtr<FLevelEditorModule>("LevelEditor");
 	if (LevelEditor != nullptr)
 	{
 		LevelEditor->OnComponentsEdited().RemoveAll(this);
@@ -224,7 +225,7 @@ void SActorDetails::SetObjects(const TArray<UObject*>& InObjects, bool bForceRef
 
 		if(InObjects.Num() == 1 && FKismetEditorUtilities::CanCreateBlueprintOfClass(InObjects[0]->GetClass()))
 		{
-			auto Actor = GetSelectedActorInEditor();
+			AActor* Actor = GetSelectedActorInEditor();
 			if(Actor)
 			{
 				LockedActorSelection = Actor;
@@ -264,7 +265,7 @@ void SActorDetails::PostUndo(bool bSuccess)
 	SCSEditor->UpdateTree();
 	UpdateComponentTreeFromEditorSelection();
 
-	auto SelectedActor = GetSelectedActorInEditor();
+	AActor* SelectedActor = GetSelectedActorInEditor();
 	if (SelectedActor)
 	{
 		GUnrealEd->SetActorSelectionFlags(SelectedActor);
@@ -293,7 +294,7 @@ void SActorDetails::OnEditorSelectionChanged(UObject* Object)
 	if(!bSelectionGuard && SCSEditor.IsValid())
 	{
 		// Make sure the selection set that changed is relevant to us
-		auto Selection = Cast<USelection>(Object);
+		USelection* Selection = Cast<USelection>(Object);
 		if(Selection == GEditor->GetSelectedComponents() || Selection == GEditor->GetSelectedActors())
 		{
 			UpdateComponentTreeFromEditorSelection();
@@ -303,7 +304,7 @@ void SActorDetails::OnEditorSelectionChanged(UObject* Object)
 				// Ensure the selection flags are up to date for the components in the selected actor
 				for(FSelectionIterator It(GEditor->GetSelectedActorIterator()); It; ++It)
 				{
-					auto Actor = CastChecked<AActor>(*It);
+					AActor* Actor = CastChecked<AActor>(*It);
 					GUnrealEd->SetActorSelectionFlags(Actor);
 				}
 			}
@@ -365,7 +366,7 @@ void SActorDetails::OnSCSEditorTreeViewSelectionChanged(const TArray<FSCSEditorT
 			// Determine if the root actor node is among the selected nodes and Count number of components selected
 			bool bActorNodeSelected = false;
 			int NumSelectedComponentNodes = 0;
-			for (auto& SelectedNode : SelectedNodes)
+			for (const FSCSEditorTreeNodePtrType& SelectedNode : SelectedNodes)
 			{
 				if (SelectedNode.IsValid())
 				{
@@ -394,7 +395,7 @@ void SActorDetails::OnSCSEditorTreeViewSelectionChanged(const TArray<FSCSEditorT
 				{
 					const bool bSingleComponentSelection = SelectedNodes.Num() == 1;
 
-					for (auto& SelectedNode : SelectedNodes)
+					for (const FSCSEditorTreeNodePtrType& SelectedNode : SelectedNodes)
 					{
 						UActorComponent* ComponentInstance = SelectedNode->FindComponentInstanceInActor(Actor);
 						if (ComponentInstance)
@@ -438,7 +439,7 @@ void SActorDetails::OnSCSEditorTreeViewSelectionChanged(const TArray<FSCSEditorT
 				if (!bComponentSelectionChanged)
 				{
 					// Check to see if any of the selected nodes aren't already selected in the world
-					for (auto& SelectedNode : SelectedNodes)
+					for (const FSCSEditorTreeNodePtrType& SelectedNode : SelectedNodes)
 					{
 						if (SelectedNode.IsValid() && SelectedNode->GetNodeType() == FSCSEditorTreeNode::ComponentNode)
 						{
@@ -479,7 +480,7 @@ void SActorDetails::OnSCSEditorTreeViewSelectionChanged(const TArray<FSCSEditorT
 					{
 						const bool bSingleComponentSelection = SelectedNodes.Num() == 1;
 
-						for (auto& SelectedNode : SelectedNodes)
+						for (const FSCSEditorTreeNodePtrType& SelectedNode : SelectedNodes)
 						{
 							if (SelectedNode.IsValid())
 							{
@@ -501,7 +502,7 @@ void SActorDetails::OnSCSEditorTreeViewSelectionChanged(const TArray<FSCSEditorT
 										}
 									}
 									// Ensure the selection override is bound for this component (including any attached editor-only children)
-									auto SceneComponent = Cast<USceneComponent>(ComponentInstance);
+									USceneComponent* SceneComponent = Cast<USceneComponent>(ComponentInstance);
 									if (SceneComponent)
 									{
 										FComponentEditorUtils::BindComponentSelectionOverride(SceneComponent, true);
@@ -547,7 +548,7 @@ void SActorDetails::UpdateComponentTreeFromEditorSelection()
 		// Enable the selection guard to prevent OnTreeSelectionChanged() from altering the editor's component selection
 		TGuardValue<bool> SelectionGuard(bSelectionGuard, true);
 
-		auto& SCSTreeWidget = SCSEditor->SCSTreeWidget;
+		TSharedPtr<SSCSTreeType>& SCSTreeWidget = SCSEditor->SCSTreeWidget;
 		TArray<UObject*> DetailsObjects;
 
 		// Update the tree selection to match the level editor component selection
@@ -556,13 +557,13 @@ void SActorDetails::UpdateComponentTreeFromEditorSelection()
 		{
 			UActorComponent* Component = CastChecked<UActorComponent>(*It);
 
-			auto SCSTreeNode = SCSEditor->GetNodeFromActorComponent(Component, false);
+			FSCSEditorTreeNodePtrType SCSTreeNode = SCSEditor->GetNodeFromActorComponent(Component, false);
 			if (SCSTreeNode.IsValid() && SCSTreeNode->GetComponentTemplate())
 			{
 				SCSTreeWidget->RequestScrollIntoView(SCSTreeNode);
 				SCSTreeWidget->SetItemSelection(SCSTreeNode, true);
 
-				auto ComponentTemplate = SCSTreeNode->GetComponentTemplate();
+				UActorComponent* ComponentTemplate = SCSTreeNode->GetComponentTemplate();
 				check(Component == ComponentTemplate);
 				DetailsObjects.Add(Component);
 			}
@@ -582,8 +583,7 @@ void SActorDetails::UpdateComponentTreeFromEditorSelection()
 bool SActorDetails::IsPropertyReadOnly(const FPropertyAndParent& PropertyAndParent) const
 {
 	bool bIsReadOnly = false;
-	const TArray<FSCSEditorTreeNodePtrType> SelectedNodes = SCSEditor->GetSelectedNodes();
-	for (const auto& Node : SelectedNodes)
+	for (const FSCSEditorTreeNodePtrType& Node : SCSEditor->GetSelectedNodes())
 	{
 		UActorComponent* Component = Node->GetComponentTemplate();
 		if (Component && Component->CreationMethod == EComponentCreationMethod::SimpleConstructionScript)
@@ -609,8 +609,7 @@ bool SActorDetails::IsPropertyEditingEnabled() const
 	}
 
 	bool bIsEditable = true;
-	const TArray<FSCSEditorTreeNodePtrType> SelectedNodes = SCSEditor->GetSelectedNodes();
-	for (const auto& Node : SelectedNodes)
+	for (const FSCSEditorTreeNodePtrType& Node : SCSEditor->GetSelectedNodes())
 	{
 		bIsEditable = Node->CanEditDefaults() || Node->GetNodeType() == FSCSEditorTreeNode::ENodeType::RootActorNode;
 		if (!bIsEditable)
@@ -659,7 +658,7 @@ EVisibility SActorDetails::GetUCSComponentWarningVisibility() const
 	bool bIsUneditableBlueprintComponent = false;
 
 	// Check to see if any selected components are inherited from blueprint
-	for (const auto& Node : SCSEditor->GetSelectedNodes())
+	for (const FSCSEditorTreeNodePtrType& Node : SCSEditor->GetSelectedNodes())
 	{
 		if (!Node->IsNative())
 		{
@@ -704,7 +703,7 @@ EVisibility SActorDetails::GetInheritedBlueprintComponentWarningVisibility() con
 	bool bIsUneditableBlueprintComponent = false;
 
 	// Check to see if any selected components are inherited from blueprint
-	for (const auto& Node : SCSEditor->GetSelectedNodes())
+	for (const FSCSEditorTreeNodePtrType& Node : SCSEditor->GetSelectedNodes())
 	{
 		if (!Node->IsNative())
 		{
@@ -730,7 +729,7 @@ EVisibility SActorDetails::GetInheritedBlueprintComponentWarningVisibility() con
 EVisibility SActorDetails::GetNativeComponentWarningVisibility() const
 {
 	bool bIsUneditableNative = false;
-	for (const auto& Node : SCSEditor->GetSelectedNodes())
+	for (const FSCSEditorTreeNodePtrType& Node : SCSEditor->GetSelectedNodes())
 	{
 		// Check to see if the component is native and not editable
 		if (Node->IsNative() && !Node->CanEditDefaults() && !NotEditableSetByBlueprint(Node->GetComponentTemplate()))

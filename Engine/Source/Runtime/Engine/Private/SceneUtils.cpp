@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SceneUtils.h"
 
@@ -28,6 +28,10 @@ static TAutoConsoleVariable<int> CVarGPUStatsMaxQueriesPerFrame(
 
 
 DECLARE_FLOAT_COUNTER_STAT(TEXT("[TOTAL]"), Stat_GPU_Total, STATGROUP_GPU);
+
+#else //HAS_GPU_STATS
+
+#define RENDER_QUERY_POOLING_ENABLED 0
 
 #endif //HAS_GPU_STATS
 

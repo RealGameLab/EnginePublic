@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -35,6 +35,7 @@ class USkeletalMesh;
 class USkeletalMeshComponent;
 class USplineMeshComponent;
 class UStaticMeshComponent;
+class FColorVertexBuffer;
 struct FAnimControlTrackKey;
 struct FExpressionInput;
 struct FRichCurve;

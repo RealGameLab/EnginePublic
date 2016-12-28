@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "AutomationTest.h"
 #include "AutomationDriverCommon.h"
@@ -7,6 +7,7 @@
 #include "AutomationDriverSpecSuiteViewModel.h"
 #include "Ticker.h"
 #include "Async.h"
+#include "Framework/Application/SlateApplication.h"
 
 #define TEST_TRUE(expression) \
 	EPIC_TEST_BOOLEAN_(TEXT(#expression), expression, true)
@@ -903,6 +904,7 @@ void FAutomationDriverSpec::Define()
 		{
 			It("should return true if the element is currently visible in the SWidget DOM being displayed", EAsyncExecution::ThreadPool, [this]()
 			{
+				Driver->Wait(Until::ElementIsVisible(By::Id("Piano"), FWaitTimeout::InSeconds(1)));
 				TEST_TRUE(Driver->FindElement(By::Id("Piano"))->IsVisible());
 			});
 

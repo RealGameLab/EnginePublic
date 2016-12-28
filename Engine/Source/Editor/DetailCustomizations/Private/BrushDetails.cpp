@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "BrushDetails.h"
 #include "Layout/Visibility.h"
@@ -207,7 +207,7 @@ void FBrushDetails::CustomizeDetails( IDetailLayoutBuilder& DetailLayout )
 		BrushBuilderObject->SetFlags( RF_Transactional );
 	}
 
-	IDetailCategoryBuilder& BrushBuilderCategory = DetailLayout.EditCategory( "BrushSettings", FText::GetEmpty(), ECategoryPriority::Important );
+	IDetailCategoryBuilder& BrushBuilderCategory = DetailLayout.EditCategory( "BrushSettings", FText::GetEmpty() );
 
 	BrushBuilderCategory.AddProperty( GET_MEMBER_NAME_CHECKED(ABrush, BrushType) );
 	BrushBuilderCategory.AddCustomRow( LOCTEXT("BrushShape", "Brush Shape") )

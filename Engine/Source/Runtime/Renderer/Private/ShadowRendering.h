@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	ShadowRendering.h: Shadow rendering definitions.
@@ -1706,7 +1706,7 @@ public:
 			: GBlackTextureCube->TextureRHI.GetReference();
         if (!ShadowDepthTextureValue)
         {
-            ShadowDepthTextureValue = GBlackTextureCube->TextureRHI.GetReference();
+            ShadowDepthTextureValue = GBlackTextureDepthCube->TextureRHI.GetReference();
         }
 
 		SetTextureParameter(

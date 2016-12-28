@@ -1,7 +1,7 @@
 @echo off
 
 rem ## Unreal Engine 4 utility script
-rem ## Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+rem ## Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 rem ##
 rem ## This script determines the path to MSBuild necessary to compile C# tools for the current version of the engine.
 rem ## The discovered path is set to the MSBUILD_EXE environment variable on success.
@@ -58,7 +58,7 @@ for /f "tokens=2,*" %%A in ('REG.exe query HKLM\SOFTWARE\%1 /v %2 2^>Nul') do (
 		exit /B 0
 	)
 )
-for /f "tokens=2,*" %%A in ('REG.exe query HKLM\SOFTWARE\Wow6432Node\%1 /v %2 2^>Nul') do (
+for /f "tokens=2,*" %%A in ('REG.exe query HKCU\SOFTWARE\Wow6432Node\%1 /v %2 2^>Nul') do (
 	if exist "%%B%%3" (
 		set MSBUILD_EXE="%%B%3"
 		exit /B 0

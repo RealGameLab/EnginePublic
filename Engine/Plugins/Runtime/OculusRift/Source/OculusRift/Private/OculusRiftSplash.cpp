@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "OculusRiftSplash.h"
 #include "OculusRiftHMD.h"
@@ -64,7 +64,7 @@ FOculusRiftSplash::FOculusRiftSplash(FOculusRiftHMD* InPlugin) :
 		{
 			AddSplash(SplashDesc);
 		}
-		num = LexicalConversion::ToString(i);
+		num = Lex::ToString(i);
 	}
 }
 

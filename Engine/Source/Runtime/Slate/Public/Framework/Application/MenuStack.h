@@ -1,11 +1,10 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Input/PopupMethodReply.h"
 #include "Framework/Application/IMenu.h"
-#include "Runtime/Slate/Private/Framework/Application/Menu.h"
 #include "Layout/SlateRect.h"
 #include "Widgets/SWidget.h"
 #include "Types/SlateStructs.h"
@@ -14,6 +13,7 @@
 
 class FWidgetPath;
 class SMenuPanel;
+class FMenuBase;
 
 typedef TArray<TSharedPtr<SWindow>> FMenuWindowList;	// deprecated
 

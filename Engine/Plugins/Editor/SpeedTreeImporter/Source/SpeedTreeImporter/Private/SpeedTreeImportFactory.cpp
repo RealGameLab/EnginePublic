@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SpeedTreeImportFactory.h"
 #include "Misc/FileHelper.h"
@@ -1067,7 +1067,7 @@ static void MakeBodyFromCollisionObjects(UStaticMesh* StaticMesh, const SpeedTre
 
 	StaticMesh->BodySetup->ClearPhysicsMeshes();
 	StaticMesh->BodySetup->InvalidatePhysicsData();
-	RefreshCollisionChange(StaticMesh);
+	RefreshCollisionChange(*StaticMesh);
 }
 
 

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #include "SAnimViewportToolBar.h"
@@ -685,6 +685,7 @@ void SAnimViewportToolBar::FillShowClothingMenu(FMenuBuilder& MenuBuilder) const
 		MenuBuilder.AddMenuEntry(Actions.ShowClothMaxDistances);
 		MenuBuilder.AddMenuEntry(Actions.ShowClothBackstop);
 		MenuBuilder.AddMenuEntry(Actions.ShowClothFixedVertices);
+		MenuBuilder.AddMenuEntry(Actions.PauseClothWithAnim);
 	}
 	MenuBuilder.EndSection();
 

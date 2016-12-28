@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "EdGraph/EdGraphNode.h"
 #include "UObject/BlueprintsObjectVersion.h"
@@ -507,6 +507,23 @@ FText UEdGraphNode::GetPinDisplayName(const UEdGraphPin* Pin) const
 int32 UEdGraphNode::GetPinIndex(UEdGraphPin* Pin) const
 {
 	return Pins.Find(Pin);
+}
+
+bool UEdGraphNode::ShouldDrawNodeAsControlPointOnly(int32& OutInputPinIndex, int32& OutOutputPinIndex) const
+{
+	OutInputPinIndex = -1;
+	OutOutputPinIndex = -1; 
+	return false;
+}
+
+
+UEdGraphPin* UEdGraphNode::GetPinAt(int32 index) const
+{
+	if (Pins.Num() > index)
+	{
+		return Pins[index];
+	}
+	return nullptr;
 }
 
 void UEdGraphNode::AddSearchMetaDataInfo(TArray<struct FSearchTagDataPair>& OutTaggedMetaData) const

@@ -1,5 +1,10 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 #pragma once
+
+#include "CoreMinimal.h"
+#include "Types/SlateEnums.h"
+#include "Input/Reply.h"
+#include "Layout/Visibility.h"
 
 enum class EPianoKey : uint8
 {
@@ -133,6 +138,9 @@ struct FDocumentInfo
 class IAutomationDriverSpecSuiteViewModel
 {
 public:
+
+	virtual ~IAutomationDriverSpecSuiteViewModel()
+	{ }
 
 	/** @return The current value of the form text element */
 	virtual FText GetFormText(EFormElement Element) const = 0;

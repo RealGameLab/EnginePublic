@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "LevelEditorContextMenu.h"
 #include "Misc/Attribute.h"
@@ -386,6 +386,11 @@ void FLevelEditorContextMenu::FillMenu( FMenuBuilder& MenuBuilder, TWeakPtr<SLev
 		if (ContextType == LevelEditorMenuContext::Viewport)
 		{
 			LevelEditorCreateActorMenu::FillAddReplaceViewportContextMenuSections(MenuBuilder);
+
+			MenuBuilder.AddMenuEntry(FLevelEditorCommands::Get().OpenMergeActor,
+					NAME_None,
+					LOCTEXT("OpenMergeActor", "Merge Actors"),
+					LOCTEXT("OpenMergeActor_ToolTip", "Click to open the Merge Actor panel"));
 		}
 
 		if (GEditor->PlayWorld != NULL)

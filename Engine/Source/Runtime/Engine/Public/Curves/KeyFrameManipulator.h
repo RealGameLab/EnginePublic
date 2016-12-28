@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -36,11 +36,6 @@ public:
 
 	TKeyFrameManipulator(const TKeyFrameManipulator&) = default;
 	TKeyFrameManipulator& operator=(const TKeyFrameManipulator&) = default;
-
-#if PLATFORM_COMPILER_HAS_DEFAULTED_CONSTRUCTORS
-	TKeyFrameManipulator(TKeyFrameManipulator&&) = default;
-	TKeyFrameManipulator& operator=(TKeyFrameManipulator&&) = default;
-#endif
 
 private:
 
@@ -198,6 +193,14 @@ protected:
 	int32 GetIndex(FKeyHandle KeyHandle) const
 	{
 		return KeyHandleLUT->GetIndex(KeyHandle);
+	}
+	
+	/**
+	 * Get the handle that corresponds to the specified index
+	 */
+	FKeyHandle GetKeyHandleFromIndex(int32 Index) const
+	{
+		return KeyTimes->IsValidIndex(Index) ? KeyHandleLUT->FindOrAddKeyHandle(Index) : FKeyHandle();
 	}
 
 	/**

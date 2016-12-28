@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "BlueprintNativeCodeGenManifest.h"
 #include "UObject/Package.h"
@@ -400,7 +400,8 @@ FBlueprintNativeCodeGenManifest::FBlueprintNativeCodeGenManifest()
 }
 
 //------------------------------------------------------------------------------
-FBlueprintNativeCodeGenManifest::FBlueprintNativeCodeGenManifest(const FString& InPluginName, const FString& InOutputDir)
+FBlueprintNativeCodeGenManifest::FBlueprintNativeCodeGenManifest(const FString& InPluginName, const FString& InOutputDir, FCompilerNativizationOptions InCompilerNativizationOptions)
+	: NativizationOptions(InCompilerNativizationOptions)
 {
 	using namespace BlueprintNativeCodeGenManifestImpl;
 	

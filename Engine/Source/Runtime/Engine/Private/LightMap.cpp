@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	LightMap.cpp: Light-map implementation.
@@ -15,6 +15,8 @@
 #include "UObject/Package.h"
 #include "GameFramework/WorldSettings.h"
 #include "Engine/MapBuildDataRegistry.h"
+
+#define VISUALIZE_PACKING 0
 
 DEFINE_LOG_CATEGORY_STATIC(LogLightMap, Log, All);
 

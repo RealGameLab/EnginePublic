@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "AutomationDriver.h"
 #include "IApplicationElement.h"
@@ -11,6 +11,7 @@
 #include "WaitUntil.h"
 
 #include "Async.h"
+#include "Framework/Application/SlateApplication.h"
 
 FAsyncAutomationDriver::~FAsyncAutomationDriver()
 {
@@ -274,6 +275,10 @@ TSharedRef<FAsyncAutomationDriver, ESPMode::ThreadSafe> FAsyncAutomationDriverFa
 }
 
 
+FAutomationDriver::~FAutomationDriver()
+{
+
+}
 
 bool FAutomationDriver::Wait(FTimespan Timespan)
 {

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Transport/UdpMessageProcessor.h"
 #include "Serialization/ArrayWriter.h"
@@ -54,6 +54,7 @@ FUdpMessageProcessor::~FUdpMessageProcessor()
 	// shut down worker thread
 	Thread->Kill(true);
 	delete Thread;
+	Thread = nullptr;
 
 	// remove all transport nodes
 	if (NodeLostDelegate.IsBound())

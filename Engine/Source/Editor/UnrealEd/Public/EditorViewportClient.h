@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -1513,6 +1513,14 @@ private:
 
 	/** If true, the viewport widget should be invalidated on the next tick (needed to ensure thread safety) */
 	bool bShouldInvalidateViewportWidget;
+
+	/*
+	 * When we drag the manipulator(no camera movement involve) in absolute we need a view to compute the delta
+	 * We want to use the view when the user start dragging and use the same view until the displacement is done.
+	 * Using the same view allow us to move the camera and not disrupt the movement continuity.
+	 */
+	FSceneView* DragStartView;
+	FSceneViewFamily *DragStartViewFamily;
 };
 
 

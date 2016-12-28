@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Transport/TcpMessageTransport.h"
 #include "HAL/RunnableThread.h"
@@ -275,13 +275,13 @@ void FTcpMessageTransport::HandleConnectionStateChanged(TSharedPtr<FTcpMessageTr
 	{
 		NodeConnectionMapUpdates.Enqueue(FNodeConnectionMapUpdate(true, NodeId, TWeakPtr<FTcpMessageTransportConnection>(Connection)));
 		NodeDiscoveredDelegate.ExecuteIfBound(NodeId);
-		UE_LOG(LogTcpMessaging, Warning, TEXT("Discovered node '%s' on connection '%s'..."), *NodeId.ToString(), *RemoteEndpoint.ToString());
+		UE_LOG(LogTcpMessaging, Verbose, TEXT("Discovered node '%s' on connection '%s'..."), *NodeId.ToString(), *RemoteEndpoint.ToString());
 	}
 	else
 	{
 		if (NodeId.IsValid())
 		{
-			UE_LOG(LogTcpMessaging, Warning, TEXT("Lost node '%s' on connection '%s'..."), *NodeId.ToString(), *RemoteEndpoint.ToString());
+			UE_LOG(LogTcpMessaging, Verbose, TEXT("Lost node '%s' on connection '%s'..."), *NodeId.ToString(), *RemoteEndpoint.ToString());
 			NodeConnectionMapUpdates.Enqueue(FNodeConnectionMapUpdate(false, NodeId, TWeakPtr<FTcpMessageTransportConnection>(Connection)));
 			NodeLostDelegate.ExecuteIfBound(NodeId);
 		}

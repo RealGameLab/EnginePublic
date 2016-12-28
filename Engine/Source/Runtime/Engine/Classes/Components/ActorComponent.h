@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -199,7 +199,7 @@ public:
 	uint32 bWantsInitializeComponent:1;
 
 	/** If true, we call the virtual BeginPlay */
-	DEPRECATED(4.14, "bWantsBeginPlay was inconsistently enforced and is now unused")
+	DEPRECATED(4.14, "bWantsBeginPlay was inconsistently enforced and is now unused. BeginPlay will now always be called for Actor Components.")
 	uint32 bWantsBeginPlay:1;
 
 	/** If true, the component will be excluded from non-editor builds */
@@ -613,6 +613,9 @@ private:
 
 public:
 
+	/** Overridable check for a component to indicate to its Owner that it should prevent the Actor from auto destroying when finished */
+	virtual bool IsReadyForOwnerToAutoDestroy() const { return true; }
+
 	/**
 	 * Returns whether the component's owner is selected.
 	 */
@@ -850,6 +853,11 @@ private:
 	virtual void Tick( float DeltaTime ) final { check(0); }
 
 #endif
+
+public:
+
+	/** Prefix used to identify template component instances */
+	static const FString ComponentTemplateNameSuffix;
 };
 
 //////////////////////////////////////////////////////////////////////////

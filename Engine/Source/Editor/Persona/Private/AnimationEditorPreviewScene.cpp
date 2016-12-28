@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "AnimationEditorPreviewScene.h"
 #include "Framework/Notifications/NotificationManager.h"
@@ -120,6 +120,8 @@ void FAnimationEditorPreviewScene::SetPreviewMesh(USkeletalMesh* NewPreviewMesh)
 
 void FAnimationEditorPreviewScene::SetPreviewMeshInternal(USkeletalMesh* NewPreviewMesh)
 {
+	USkeletalMesh* OldPreviewMesh = SkeletalMeshComponent->SkeletalMesh;
+
 	ValidatePreviewAttachedAssets(NewPreviewMesh);
 
 	if (NewPreviewMesh != SkeletalMeshComponent->SkeletalMesh)
@@ -183,7 +185,7 @@ void FAnimationEditorPreviewScene::SetPreviewMeshInternal(USkeletalMesh* NewPrev
 		SourceBlueprint->SetObjectBeingDebugged(SkeletalMeshComponent->GetAnimInstance());
 	}
 
-	OnPreviewMeshChanged.Broadcast(NewPreviewMesh);
+	OnPreviewMeshChanged.Broadcast(OldPreviewMesh, NewPreviewMesh);
 }
 
 void FAnimationEditorPreviewScene::ValidatePreviewAttachedAssets(USkeletalMesh* PreviewSkeletalMesh)

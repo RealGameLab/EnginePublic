@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	EditorBuildUtils.cpp: Utilities for building in the editor
@@ -38,6 +38,7 @@
 #include "ActorEditorUtils.h"
 #include "MaterialUtilities.h"
 #include "UnrealEngine.h"
+#include "DebugViewModeHelpers.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogEditorBuildUtils, Log, All);
 

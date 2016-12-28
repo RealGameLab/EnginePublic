@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #include "SMorphTargetViewer.h"
@@ -361,7 +361,7 @@ void SMorphTargetViewer::Construct(const FArguments& InArgs, const TSharedRef<IP
 	CreateMorphTargetList();
 }
 
-void SMorphTargetViewer::OnPreviewMeshChanged(class USkeletalMesh* NewPreviewMesh)
+void SMorphTargetViewer::OnPreviewMeshChanged(class USkeletalMesh* OldPreviewMesh, class USkeletalMesh* NewPreviewMesh)
 {
 	SkeletalMesh = NewPreviewMesh;
 	CreateMorphTargetList( NameFilterBox->GetText().ToString() );

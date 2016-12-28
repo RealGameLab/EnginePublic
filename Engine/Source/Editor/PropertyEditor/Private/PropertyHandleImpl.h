@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -470,10 +470,15 @@ public:
 	virtual void NotifyPostChange() override;
 	virtual void NotifyFinishedChangingProperties() override;
 	virtual void AddRestriction( TSharedRef<const FPropertyRestriction> Restriction )override;
+	virtual bool IsHidden(const FString& Value) const override;
+	virtual bool IsHidden(const FString& Value, TArray<FText>& OutReasons) const override;
+	virtual bool IsDisabled(const FString& Value) const override;
+	virtual bool IsDisabled(const FString& Value, TArray<FText>& OutReasons) const override;
 	virtual bool IsRestricted(const FString& Value) const override;
 	virtual bool IsRestricted(const FString& Value, TArray<FText>& OutReasons) const override;
 	virtual bool GenerateRestrictionToolTip(const FString& Value, FText& OutTooltip) const override;
 	virtual void SetIgnoreValidation(bool bInIgnore) override;
+	virtual TArray<TSharedPtr<IPropertyHandle>> AddChildStructure( TSharedRef<FStructOnScope> ChildStructure ) override;
 
 	TSharedPtr<FPropertyNode> GetPropertyNode() const;
 protected:
@@ -661,7 +666,7 @@ public:
 	virtual FPropertyAccess::Result GetNumElements(uint32& OutNumElements) override;
 	virtual void SetOnNumElementsChanged(FSimpleDelegate& InOnNumElementsChanged) override;
 	virtual bool HasDocumentation() override { return true; }
-	virtual FString GetDocumentationLink() override { return FString("Programming/UnrealArchitecture/Reference/Properties/"); }	// @todo: needs a better documentation page
+	virtual FString GetDocumentationLink() override { return FString("Engine/UI/LevelEditor/Details/Properties/Set/"); }	// @todo: needs a better documentation page
 	virtual FString GetDocumentationExcerptName() override { return FString("Sets"); }
 private:
 	/**
@@ -685,7 +690,7 @@ public:
 	virtual FPropertyAccess::Result GetNumElements(uint32& OutNumElements) override;
 	virtual void SetOnNumElementsChanged(FSimpleDelegate& InOnNumElementsChanged) override;
 	virtual bool HasDocumentation() override { return true; }
-	virtual FString GetDocumentationLink() override { return FString("Programming/UnrealArchitecture/TMap"); }
+	virtual FString GetDocumentationLink() override { return FString("Engine/UI/LevelEditor/Details/Properties/Map/"); }
 	virtual FString GetDocumentationExcerptName() override { return FString("Maps"); }
 private:
 	/**

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SCompositeFontEditor.h"
 #include "Fonts/FontCache.h"
@@ -809,8 +809,12 @@ void STypefaceEntryEditor::OnTypefaceEntryFontPathPicked(const FString& InNewFon
 	{
 		UFontFace* TempFontFace = NewObject<UFontFace>();
 		TempFontFace->SourceFilename = InNewFontFilename;
-		if (FFileHelper::LoadFileToArray(TempFontFace->FontFaceData, *TempFontFace->SourceFilename))
+
+		TArray<uint8> TempFontFaceData;
+		if (FFileHelper::LoadFileToArray(TempFontFaceData, *TempFontFace->SourceFilename))
 		{
+			TempFontFace->FontFaceData->SetData(MoveTemp(TempFontFaceData));
+
 			UFontFace* NewFontFaceAsset = SaveFontFaceAsAsset(TempFontFace, *FPaths::GetBaseFilename(TempFontFace->SourceFilename));
 			if (NewFontFaceAsset)
 			{

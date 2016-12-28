@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -32,6 +32,9 @@ public:
 #if WITH_EDITOR
 	virtual const FText GetPaletteCategory() override;
 #endif
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Interaction)
+	bool bIsFocusable;
 
 protected:
 	TSharedRef<SWidget> HandleGenerateWidget(UObject* Item) const;

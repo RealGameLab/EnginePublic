@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "EdGraphSchema_K2.h"
 #include "Modules/ModuleManager.h"
@@ -1332,26 +1332,50 @@ bool UEdGraphSchema_K2::PinDefaultValueIsEditable(const UEdGraphPin& InGraphPin)
 
 void UEdGraphSchema_K2::SelectAllNodesInDirection(TEnumAsByte<enum EEdGraphPinDirection> InDirection, UEdGraph* Graph, UEdGraphPin* InGraphPin)
 {
-	TArray<UEdGraphPin*> AllPins = InGraphPin->LinkedTo;
-
-	if (AllPins.Num() == 0)
+	/** Traverses the node graph out from the specified pin, logging each node that it visits along the way. */
+	struct FDirectionalNodeVisitor
 	{
-		return;
-	}
-
-	for (UEdGraphPin* Pin : AllPins)
-	{
-		UEdGraphNode* OwningNode = Pin->GetOwningNode();
-		FKismetEditorUtilities::AddToSelection(Graph, OwningNode);
-
-		TArray<UEdGraphPin*> LinkedPins = Pin->GetOwningNode()->GetAllPins();
-		for (UEdGraphPin* InputPin : LinkedPins)
+		FDirectionalNodeVisitor(UEdGraphPin* StartingPin, EEdGraphPinDirection TargetDirection)
+			: Direction(TargetDirection)
 		{
-			if (InputPin->Direction == InDirection)
+			TraversePin(StartingPin);
+		}
+
+		/** If the pin is the right direction, visits each of its attached nodes */
+		void TraversePin(UEdGraphPin* Pin)
+		{
+			if (Pin->Direction == Direction)
 			{
-				SelectAllNodesInDirection(InDirection, Graph, InputPin);
+				for (UEdGraphPin* LinkedPin : Pin->LinkedTo)
+				{
+					VisitNode(LinkedPin->GetOwningNode());
+				}
 			}
 		}
+
+		/** If the node has already been visited, does nothing. Otherwise it traverses each of its pins. */
+		void VisitNode(UEdGraphNode* Node)
+		{
+			bool bAlreadyVisited = false;
+			VisitedNodes.Add(Node, &bAlreadyVisited);
+
+			if (!bAlreadyVisited)
+			{
+				for (UEdGraphPin* Pin : Node->Pins)
+				{
+					TraversePin(Pin);
+				}
+			}
+		}
+
+		EEdGraphPinDirection Direction;
+		TSet<UEdGraphNode*>  VisitedNodes;
+	};
+
+	FDirectionalNodeVisitor NodeVisitor(InGraphPin, InDirection);
+	for (UEdGraphNode* Node : NodeVisitor.VisitedNodes)
+	{
+		FKismetEditorUtilities::AddToSelection(Graph, Node);
 	}
 }
 
@@ -2172,6 +2196,13 @@ static FText GetPinIncompatibilityReason(const UEdGraphPin* PinA, const UEdGraph
 			MessageArgs.Add(TEXT("InputType"),  UEdGraphSchema_K2::TypeToText(InputType));
 
 			MessageFormat = LOCTEXT("CannotGetClass", "'{PinAName}' and '{PinBName}' are not inherently compatible ('{InputName}' is an object type, and '{OutputName}' is a reference to an object instance).\nWe cannot use {OutputName}'s class because it is not a child of {InputType}.");
+		}
+		else if (InputType.PinCategory == UEdGraphSchema_K2::PC_Object)
+		{
+			if (bIsFatalOut != nullptr)
+			{
+				*bIsFatalOut = true;
+			}
 		}
 	}
 
@@ -3823,6 +3854,10 @@ namespace
 	{
 		bool bResult = false;
 		bool bIsNonNativeClass = false;
+		if(UClass* TargetAsClass = const_cast<UClass*>(Cast<UClass>(InTargetStruct)))
+		{
+			InTargetStruct = TargetAsClass->GetAuthoritativeClass();
+		}
 		if (UClass* SourceAsClass = const_cast<UClass*>(Cast<UClass>(InSourceStruct)))
 		{
 			if (SourceAsClass->ClassGeneratedBy)
@@ -6606,6 +6641,23 @@ int32 UEdGraphSchema_K2::GetCurrentVisualizationCacheID() const
 void UEdGraphSchema_K2::ForceVisualizationCacheClear() const
 {
 	++CurrentCacheRefreshID;
+}
+
+
+bool UEdGraphSchema_K2::SafeDeleteNodeFromGraph(UEdGraph* Graph, UEdGraphNode* NodeToDelete) const 
+{
+	UK2Node* Node = Cast<UK2Node>(NodeToDelete);
+	if (Node == nullptr || Graph == nullptr || NodeToDelete->GetGraph() != Graph)
+	{
+		return false;
+	}
+
+	UBlueprint* OwnerBlueprint = Node->GetBlueprint();
+	Graph->Modify();
+
+	FBlueprintEditorUtils::RemoveNode(OwnerBlueprint, Node, /*bDontRecompile=*/ true);
+	FBlueprintEditorUtils::MarkBlueprintAsModified(OwnerBlueprint);
+	return true;
 }
 
 /////////////////////////////////////////////////////

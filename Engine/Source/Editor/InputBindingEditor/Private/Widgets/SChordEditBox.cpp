@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Widgets/SChordEditBox.h"
 #include "SlateOptMacros.h"
@@ -20,7 +20,6 @@
 /* SChordEditBox interface
  *****************************************************************************/
 
-BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
 void SChordEditBox::Construct( const FArguments& InArgs, TSharedPtr<FUICommandInfo> InputCommand )
 {
 	BorderImageNormal = FEditorStyle::GetBrush( "EditableTextBox.Background.Normal" );
@@ -71,12 +70,9 @@ void SChordEditBox::Construct( const FArguments& InArgs, TSharedPtr<FUICommandIn
 						.IsFocusable(false)
 						.ToolTipText(LOCTEXT("ChordEditButtonRemove_ToolTip", "Remove this binding") )
 						[
-							SNew( SBox )
-							[
-								SNew( SImage )
-								.Image( FEditorStyle::GetBrush( "Symbols.X" ) )
-								.ColorAndOpacity( FLinearColor(.7f,0,0,.75f) )
-							]
+							SNew( SImage )
+							.Image( FEditorStyle::GetBrush( "Symbols.X" ) )
+							.ColorAndOpacity( FLinearColor(.7f,0,0,.75f) )
 						]
 					]
 				]
@@ -84,7 +80,6 @@ void SChordEditBox::Construct( const FArguments& InArgs, TSharedPtr<FUICommandIn
 		]
 	];
 }
-END_SLATE_FUNCTION_BUILD_OPTIMIZATION
 
 
 const FSlateBrush* SChordEditBox::GetBorderImage() const

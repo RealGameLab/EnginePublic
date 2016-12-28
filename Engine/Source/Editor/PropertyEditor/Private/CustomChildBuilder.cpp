@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "CustomChildBuilder.h"
 #include "Modules/ModuleManager.h"
@@ -118,6 +118,11 @@ TSharedRef<SWidget> FCustomChildrenBuilder::GenerateStructValueWidget( TSharedRe
 		// Uncustomized structs have nothing for their value content
 		return SNullWidget::NullWidget;
 	}
+}
+
+IDetailCategoryBuilder& FCustomChildrenBuilder::GetParentCategory()
+{
+	return *ParentCategory.Pin();
 }
 
 FCustomChildrenBuilder& FCustomChildrenBuilder::OverrideResetChildrenToDefault(const FResetToDefaultOverride& ResetToDefault)

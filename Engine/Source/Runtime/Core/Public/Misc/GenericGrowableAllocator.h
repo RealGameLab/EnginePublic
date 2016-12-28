@@ -1,4 +1,4 @@
-// Copyright 1998-2015 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	GrowableAllocator.h: Memory allocator that allocates direct memory for pool memory
@@ -19,7 +19,6 @@
 // - Pass this over some code reviews on slack or something for maybe a better way to structure instead of Template and Pure virtual
 // - Can maybe just make virtuals in FGrowableAllocationBase ??
 /////////////
-
 
 
 struct FGrowableAllocationBase
@@ -505,11 +504,8 @@ public:
 		if (AvailableChunk == nullptr || Result == nullptr)
 		{
 			OutOfMemory(AlignedSize);
+			return nullptr;
 		}
-
-#if DEBUG_LOGS
-		FPlatformMisc::LowLevelOutputDebugStringf(TEXT("FGrowableAllocator::Malloc  %f KB %d B"), AlignedSize / 1024.f, AlignedSize);
-#endif
 
 #if !UE_BUILD_SHIPPING
 		// track per type allocation info

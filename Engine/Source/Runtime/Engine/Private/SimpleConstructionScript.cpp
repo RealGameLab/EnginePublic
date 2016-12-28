@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Engine/SimpleConstructionScript.h"
 #include "Engine/Blueprint.h"
@@ -40,6 +40,8 @@ USimpleConstructionScript::USimpleConstructionScript(const FObjectInitializer& O
 void USimpleConstructionScript::Serialize(FArchive& Ar)
 {
 	Super::Serialize(Ar);
+
+	Ar.UsingCustomVersion(FBlueprintsObjectVersion::GUID);
 
 	if(Ar.IsLoading())
 	{

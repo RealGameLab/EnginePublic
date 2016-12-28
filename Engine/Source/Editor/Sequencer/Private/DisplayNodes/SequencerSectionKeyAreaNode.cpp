@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "DisplayNodes/SequencerSectionKeyAreaNode.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
@@ -46,6 +46,7 @@ TSharedRef<SWidget> FSequencerSectionKeyAreaNode::GetCustomOutlinerContent()
 				.VAlign(VAlign_Center)
 				[
 					SNew(SBox)
+					.IsEnabled(!GetSequencer().IsReadOnly())
 					.WidthOverride(100)
 					.HAlign(HAlign_Left)
 					[

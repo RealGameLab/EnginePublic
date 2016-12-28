@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -30,6 +30,8 @@ public:
 	virtual void Shutdown() override;
 	virtual void PassLoadingScreenWindowBackToGame() const override;
 	virtual void SetupLoadingScreen(const FLoadingScreenAttributes& LoadingScreenAttributes) override;
+	virtual bool HasEarlyStartupMovie() const override;
+	virtual bool PlayEarlyStartupMovies() override;
 	virtual bool PlayMovie() override;
 	virtual void StopMovie() override;
 	virtual void WaitForMovieToFinish() override;
@@ -40,6 +42,7 @@ public:
 
 	virtual FOnPrepareLoadingScreen& OnPrepareLoadingScreen() override { return OnPrepareLoadingScreenDelegate; }
 	virtual FOnMoviePlaybackFinished& OnMoviePlaybackFinished() override { return OnMoviePlaybackFinishedDelegate; }
+	virtual FOnMovieClipFinished& OnMovieClipFinished() override { return OnMovieClipFinishedDelegate; }
 
 	/** FTickableObjectRenderThread interface */
 	virtual void Tick( float DeltaTime ) override;
@@ -117,6 +120,9 @@ private:
 	FOnPrepareLoadingScreen OnPrepareLoadingScreenDelegate;
 	
 	FOnMoviePlaybackFinished OnMoviePlaybackFinishedDelegate;
+
+	FOnMovieClipFinished OnMovieClipFinishedDelegate;
+
 
 	/** The last time a movie was started */
 	double LastPlayTime;

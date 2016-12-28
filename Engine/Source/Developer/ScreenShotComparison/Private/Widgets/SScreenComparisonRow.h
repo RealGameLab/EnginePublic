@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -48,13 +48,23 @@ private:
 	TSharedRef<SWidget> BuildAddedView();
 	TSharedRef<SWidget> BuildComparisonPreview();
 
+	bool CanAddNew() const;
 	FReply AddNew();
-	FReply RemoveOld();
-	FReply ReplaceOld();
+
+	bool CanReplace() const;
+	FReply Replace();
+
+	bool CanAddAsAlternative() const;
+	FReply AddAlternative();
+
+	FReply RemoveExistingApproved();
 
 	void GetStatus();
 
 	TSharedPtr<FSlateDynamicImageBrush> LoadScreenshot(FString ImagePath);
+	void LoadMetadata();
+
+	FReply OnImageClicked(const FGeometry& InGeometry, const FPointerEvent& InEvent, TSharedPtr<FSlateDynamicImageBrush> Image);
 
 private:
 

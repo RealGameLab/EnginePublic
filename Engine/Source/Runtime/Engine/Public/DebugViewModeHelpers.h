@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /**
  * Definition and helpers for debug view modes
@@ -8,6 +8,9 @@
 
 #include "CoreMinimal.h"
 #include "RHIDefinitions.h"
+#include "SceneTypes.h"
+
+class UMaterialInterface;
 
 /** 
  * Enumeration for different Quad Overdraw visualization mode.

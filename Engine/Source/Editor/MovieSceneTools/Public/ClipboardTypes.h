@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -8,6 +8,7 @@
 
 #if WITH_EDITOR
 
+#include "MovieSceneEventSection.h"
 #include "MovieSceneClipboard.h"
 
 namespace MovieSceneClipboard
@@ -46,6 +47,10 @@ namespace MovieSceneClipboard
 	{
 		static FName Name("Guid");
 		return Name;
+	}
+	template<> inline FName GetKeyTypeName<FEventPayload>()
+	{
+		return "EventPayload";
 	}
 }
 

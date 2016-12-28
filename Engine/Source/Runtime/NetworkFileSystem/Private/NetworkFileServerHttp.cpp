@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "NetworkFileServerHttp.h"
 #include "NetworkFileServerConnection.h"
@@ -27,11 +27,11 @@ public:
 	{
 		// Make Boundaries between payloads, add a visual marker for easier debugging.
 
-		uint32 Marker = 0xDeadBeef;
-		uint32 Size = Out.Num();
-
-		OutBuffer.Append((uint8*)&Marker,sizeof(uint32));
-		OutBuffer.Append((uint8*)&Size,sizeof(uint32));
+//		uint32 Marker = 0xDeadBeef;
+//		uint32 Size = Out.Num();
+//
+//		OutBuffer.Append((uint8*)&Marker,sizeof(uint32));
+//		OutBuffer.Append((uint8*)&Size,sizeof(uint32));
 		OutBuffer.Append(Out);
 
 		return true;
@@ -121,7 +121,7 @@ bool FNetworkFileServerHttp::IsItReadyToAcceptConnections(void) const
 }
 
 #if UE_BUILD_DEBUG
-void lws_debugLog(int level, const char *line)
+inline void lws_debugLog(int level, const char *line)
 {
 	UE_LOG(LogFileServer, Warning, TEXT(" LibWebsocket: %s"), ANSI_TO_TCHAR(line));
 }
@@ -457,6 +457,10 @@ int FNetworkFileServerHttp::CallBack_HTTP(
 		}
 		break;
 	case LWS_CALLBACK_CLOSED_HTTP:
+
+		if ( BufferInfo == NULL )
+			break;
+
 		// client went away or
 		//clean up.
 		BufferInfo->In.Empty();

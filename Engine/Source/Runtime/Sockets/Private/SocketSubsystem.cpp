@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SocketSubsystem.h"
 #include "Misc/CommandLine.h"
@@ -274,7 +274,7 @@ FResolveInfo* ISocketSubsystem::GetHostByName(const ANSICHAR* HostName)
 	// See if we have it cached or not
 	if (GetHostByNameFromCache(HostName, Addr))
 	{
-		Result = new FResolveInfoCached(*Addr);
+		Result = CreateResolveInfoCached(Addr);
 	}
 	else
 	{
@@ -363,6 +363,10 @@ void ISocketSubsystem::RemoveHostNameFromCache(const ANSICHAR* HostName)
 	HostNameCache.Remove(FString(HostName));
 }
 
+FResolveInfoCached* ISocketSubsystem::CreateResolveInfoCached(TSharedPtr<FInternetAddr> Addr) const
+{
+	return new FResolveInfoCached(*Addr);
+}
 
 /**
  * Returns a human readable string from an error code

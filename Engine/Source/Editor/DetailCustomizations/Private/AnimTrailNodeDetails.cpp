@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "AnimTrailNodeDetails.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
@@ -96,6 +96,17 @@ void FAnimTrailNodeDetails::FTrailRelaxCurveEditor::ModifyOwner()
 			TrailRelaxCurveHandle->NotifyPostChange();
 		}
 	}
+}
+
+TArray<const UObject*> FAnimTrailNodeDetails::FTrailRelaxCurveEditor::GetOwners() const
+{
+	TArray<const UObject*> Owners;
+	if (GraphNodeOwner)
+	{
+		Owners.Add(GraphNodeOwner);
+	}
+
+	return Owners;
 }
 
 void FAnimTrailNodeDetails::FTrailRelaxCurveEditor::MakeTransactional()

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	PostProcessSelectionOutline.cpp: Post processing outline effect.
@@ -170,7 +170,7 @@ class FPostProcessSelectionOutlinePS : public FGlobalShader
 			}
 		}
 
-		return IsFeatureLevelSupported(Platform, ERHIFeatureLevel::SM4);
+		return IsPCPlatform(Platform);
 	}
 
 	static void ModifyCompilationEnvironment(EShaderPlatform Platform, FShaderCompilerEnvironment& OutEnvironment)

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #pragma once
@@ -252,6 +252,9 @@ public:
 	virtual FIntPoint GetRenderTargetTextureSizeXY() const { return (RTTSize.X != 0) ? RTTSize : GetSizeXY(); }
 
 	virtual FSlateShaderResource* GetViewportRenderTargetTexture() override;
+
+	/** Get the cached viewport geometry. */
+	const FGeometry& GetCachedGeometry() const { return CachedGeometry; }
 
 private:
 	/**

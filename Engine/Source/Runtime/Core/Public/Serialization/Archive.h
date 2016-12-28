@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -21,15 +21,94 @@ template<class TEnum> class TEnumAsByte;
 //@todoio if this is off, then we should leave the package file format completely unchanged....!!!!! this is really important to fix before we merge to main
 //#define COOK_FOR_EVENT_DRIVEN_LOAD (1)
 
-#define SPLIT_COOKED_FILES (1)
+#define EVENT_DRIVEN_ASYNC_LOAD_ACTIVE_AT_RUNTIME (!GIsInitialLoad) // set to (!GIsInitialLoad) to avoid using the EDL at boot time
+#define DEVIRTUALIZE_FLinkerLoad_Serialize (!WITH_EDITORONLY_DATA)
 
-#if !defined(USE_NEW_ASYNC_IO)
-#error "USE_NEW_ASYNC_IO must be defined"
-#endif
 
-// We only use event driven loading if we have cooked for it and it is a cooked platform
-#define USE_EVENT_DRIVEN_ASYNC_LOAD (!WITH_EDITORONLY_DATA && USE_NEW_ASYNC_IO)
-#define DEVIRTUALIZE_FLinkerLoad_Serialize (USE_EVENT_DRIVEN_ASYNC_LOAD)
+/**
+ * TCheckedObjPtr
+ *
+ * Wrapper for UObject pointers, which checks that the base class is accurate, upon serializing (to prevent illegal casting)
+ */
+template<class T> class TCheckedObjPtr
+{
+	friend class FArchive;
+
+public:
+	TCheckedObjPtr()
+		: Object(nullptr)
+		, bError(false)
+	{
+	}
+
+	TCheckedObjPtr(T* InObject)
+		: Object(InObject)
+		, bError(false)
+	{
+	}
+
+	/**
+	 * Assigns a value to the object pointer
+	 *
+	 * @param InObject	The value to assign to the pointer
+	 */
+	FORCEINLINE TCheckedObjPtr& operator = (T* InObject)
+	{
+		Object = InObject;
+
+		return *this;
+	}
+
+	/**
+	 * Returns the object pointer, for accessing members of the object
+	 *
+	 * @return	Returns the object pointer
+	 */
+	FORCEINLINE T* operator -> () const
+	{
+		return Object;
+	}
+
+	/**
+	 * Retrieves a writable/serializable reference to the pointer
+	 *
+	 * @return	Returns a reference to the pointer
+	 */
+	FORCEINLINE T*& Get()
+	{
+		return Object;
+	}
+
+	/**
+	 * Whether or not the pointer is valid/non-null
+	 *
+	 * @return	Whether or not the pointer is valid
+	 */
+	FORCEINLINE bool IsValid() const
+	{
+		return Object != nullptr;
+	}
+
+	/**
+	 * Whether or not there was an error during the previous serialization.
+	 * This occurs if an object was successfully serialized, but with the wrong base class
+	 * (which net serialization may have to recover from, if there was supposed to be data serialized along with the object)
+	 *
+	 * @return	Whether or not there was an error
+	 */
+	FORCEINLINE bool IsError() const
+	{
+		return bError;
+	}
+
+protected:
+	/** The object pointer */
+	T* Object;
+
+	/** Whether or not there was an error upon serializing */
+	bool bError;
+};
+
 
 /**
  * Base class for archives that can be used for loading, saving, and garbage
@@ -88,6 +167,49 @@ public:
 	 */
 	virtual FArchive& operator<<(class UObject*& Value)
 	{
+		return *this;
+	}
+
+	/**
+	 * Serializes a UObject wrapped in a TCheckedObjPtr container, using the above operator,
+	 * and verifies the serialized object is derived from the correct base class, to prevent illegal casting.
+	 *
+	 * @param Value The value to serialize.
+	 * @return This instance.
+	 */
+	template<class T> FORCEINLINE FArchive& operator<<(TCheckedObjPtr<T>& Value)
+	{
+		Value.bError = false;
+
+		if (IsSaving())
+		{
+			UObject* SerializeObj = nullptr;
+
+			if (Value.IsValid())
+			{
+				if (Value.Get()->IsA(T::StaticClass()))
+				{
+					SerializeObj = Value.Get();
+				}
+				else
+				{
+					Value.bError = true;
+				}
+			}
+
+			*this << SerializeObj;
+		}
+		else
+		{
+			*this << Value.Get();
+
+			if (IsLoading() && Value.IsValid() && !Value.Get()->IsA(T::StaticClass()))
+			{
+				Value.bError = true;
+				Value = nullptr;
+			}
+		}
+
 		return *this;
 	}
 
@@ -279,10 +401,12 @@ public:
 	 * @param Ar The archive to serialize from or to.
 	 * @param Value The value to serialize.
 	 */
+#if WITH_EDITOR
+	FArchive& operator<<( bool& D );
+#else
 	FORCEINLINE friend FArchive& operator<<( FArchive& Ar, bool& D )
 	{
 		// Serialize bool as if it were UBOOL (legacy, 32 bit int).
-
 #if DEVIRTUALIZE_FLinkerLoad_Serialize
 		const uint8 * RESTRICT Src = Ar.ActiveFPLB->StartFastPathLoadBuffer;
 		if (Src + sizeof(uint32) <= Ar.ActiveFPLB->EndFastPathLoadBuffer)
@@ -304,6 +428,7 @@ public:
 		}
 		return Ar;
 	}
+#endif
 
 	/**
 	 * Serializes a signed 32-bit integer value from or into an archive.

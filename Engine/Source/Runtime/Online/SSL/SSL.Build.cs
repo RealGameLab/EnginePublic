@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 using UnrealBuildTool;
 
@@ -31,6 +31,10 @@ public class SSL : ModuleRules
 				);
 
 			AddEngineThirdPartyPrivateStaticDependencies(Target, "OpenSSL");
+		}
+		else
+		{
+			Definitions.Add("WITH_SSL=0");
 		}
     }
 }

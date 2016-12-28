@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SoundBaseDetails.h"
 #include "Sound/SoundBase.h"
@@ -19,6 +19,9 @@ void FSoundBaseDetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
 		Property->MarkHiddenByCustomization();
 
 		Property = DetailBuilder.GetProperty("SourceEffectChain", USoundBase::StaticClass());
+		Property->MarkHiddenByCustomization();
+
+		Property = DetailBuilder.GetProperty("DefaultMasterReverbSendAmount", USoundBase::StaticClass());
 		Property->MarkHiddenByCustomization();
 	}
 }

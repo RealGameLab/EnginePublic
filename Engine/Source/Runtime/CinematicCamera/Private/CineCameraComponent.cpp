@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "CineCameraComponent.h"
 #include "UObject/ConstructorHelpers.h"
@@ -112,6 +112,9 @@ void UCineCameraComponent::PostEditChangeProperty(FPropertyChangedEvent& Propert
 	{
 		DebugFocusPlaneMID->SetVectorParameterValue(FName(TEXT("Color")), FocusSettings.DebugFocusPlaneColor.ReinterpretAsLinear());
 	}
+
+	// reset interpolation if the user changes anything
+	bResetInterpolation = true;
 
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 }

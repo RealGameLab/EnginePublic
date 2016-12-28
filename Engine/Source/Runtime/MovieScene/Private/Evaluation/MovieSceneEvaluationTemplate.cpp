@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Evaluation/MovieSceneEvaluationTemplate.h"
 #include "MovieSceneSequence.h"
@@ -26,7 +26,7 @@ void FCachedMovieSceneEvaluationTemplate::Regenerate(const FMovieSceneTrackCompi
 {
 	if (IsOutOfDate(Params))
 	{
-		RegenerateImpl(Params);
+		ForceRegenerate(Params);
 	}
 }
 
@@ -34,11 +34,7 @@ void FCachedMovieSceneEvaluationTemplate::ForceRegenerate(const FMovieSceneTrack
 {
 	// Reassign the template back to default
 	static_cast<FMovieSceneEvaluationTemplate&>(*this) = FMovieSceneEvaluationTemplate();
-	RegenerateImpl(Params);
-}
 
-void FCachedMovieSceneEvaluationTemplate::RegenerateImpl(const FMovieSceneTrackCompilationParams& Params)
-{
 	CachedSignatures.Reset();
 	CachedCompilationParams = Params;
 

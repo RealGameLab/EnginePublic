@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	UDemoNetDriver.cpp: Simulated network driver for recording and playing back game sessions.
@@ -1671,14 +1671,24 @@ void UDemoNetDriver::TickDemoRecord( float DeltaSeconds )
 	{
 		check( !PendingCheckpointActors.Num() );		// We early out above, so this shouldn't be possible
 
-		const double CHECKPOINT_DELAY = CVarCheckpointUploadDelayInSeconds.GetValueOnAnyThread();
-
-		if ( DemoCurrentTime - LastCheckpointTime > CHECKPOINT_DELAY )
+		if (ShouldSaveCheckpoint())
 		{
 			SaveCheckpoint();
 			LastCheckpointTime = DemoCurrentTime;
 		}
 	}
+}
+
+bool UDemoNetDriver::ShouldSaveCheckpoint()
+{
+	const double CHECKPOINT_DELAY = CVarCheckpointUploadDelayInSeconds.GetValueOnGameThread();
+
+	if (DemoCurrentTime - LastCheckpointTime > CHECKPOINT_DELAY)
+	{
+		return true;
+	}
+
+	return false;
 }
 
 void UDemoNetDriver::PauseChannels( const bool bPause )

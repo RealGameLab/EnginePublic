@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #include "Engine/Selection.h"
@@ -204,8 +204,10 @@ void USelection::Serialize(FArchive& Ar)
 
 		for(TWeakObjectPtr<UObject>& ObjectPtr : SelectedObjects)
 		{
-			UObject* Object = ObjectPtr.Get(true);
-			GSelectedAnnotation.Set(Object);
+			if (UObject* Object = ObjectPtr.Get(true))
+			{
+				GSelectedAnnotation.Set(Object);
+			}
 		}
 	}
 }

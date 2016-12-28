@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Widgets/Views/STableViewBase.h"
 #include "Rendering/DrawElements.h"
@@ -691,6 +691,11 @@ float STableViewBase::ScrollTo( float InScrollOffset )
 	}
 
 	return AmountScrolled;
+}
+
+float STableViewBase::GetScrollOffset() const
+{
+	return ScrollOffset;
 }
 
 void STableViewBase::SetScrollOffset( const float InScrollOffset )

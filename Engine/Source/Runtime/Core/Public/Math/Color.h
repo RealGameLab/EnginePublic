@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -393,7 +393,7 @@ struct FColor
 public:
 	// Variables.
 #if PLATFORM_LITTLE_ENDIAN
-	#if _MSC_VER
+	#ifdef _MSC_VER
 		// Win32 x86
 		union { struct{ uint8 B,G,R,A; }; uint32 AlignmentDummy; };
 	#else

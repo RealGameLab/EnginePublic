@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SceneComponentDetails.h"
 #include "UObject/Class.h"
@@ -181,8 +181,9 @@ void FSceneComponentDetails::CustomizeDetails( IDetailLayoutBuilder& DetailBuild
 			FText RestrictReason;
 			if (IsMobilitySettingProhibited(EComponentMobility::Static, SceneComponent, RestrictReason))
 			{
-				 TSharedPtr<FPropertyRestriction> StaticRestriction = MakeShareable(new FPropertyRestriction(RestrictReason));
-				 StaticRestriction->AddValue(TEXT("Static"));
+				 TSharedPtr<FPropertyRestriction> StaticRestriction = MakeShareable(new FPropertyRestriction(MoveTemp(RestrictReason)));
+				 const UEnum* const ComponentMobilityEnum = FindObject<UEnum>(ANY_PACKAGE, TEXT("EComponentMobility"));		
+				 StaticRestriction->AddDisabledValue(ComponentMobilityEnum->GetEnumNameStringByValue((uint8)EComponentMobility::Static));
 				 MobilityHandle->AddRestriction(StaticRestriction.ToSharedRef());
 
 				 RestrictedMobilityBits |= FMobilityCustomization::StaticMobilityBitMask;
@@ -195,8 +196,9 @@ void FSceneComponentDetails::CustomizeDetails( IDetailLayoutBuilder& DetailBuild
 			FText RestrictReason;
 			if (IsMobilitySettingProhibited(EComponentMobility::Stationary, SceneComponent, RestrictReason))
 			{
-				TSharedPtr<FPropertyRestriction> StationaryRestriction = MakeShareable(new FPropertyRestriction(RestrictReason));
-				StationaryRestriction->AddValue(TEXT("Stationary"));
+				TSharedPtr<FPropertyRestriction> StationaryRestriction = MakeShareable(new FPropertyRestriction(MoveTemp(RestrictReason)));
+				const UEnum* const ComponentMobilityEnum = FindObject<UEnum>(ANY_PACKAGE, TEXT("EComponentMobility"));		
+				StationaryRestriction->AddDisabledValue(ComponentMobilityEnum->GetEnumNameStringByValue((uint8)EComponentMobility::Stationary));
 				MobilityHandle->AddRestriction(StationaryRestriction.ToSharedRef());
 
 				RestrictedMobilityBits |= FMobilityCustomization::StationaryMobilityBitMask;

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	AssetPtr.h: Pointer to UObject asset, keeps extra information so that it is works even if the asset is not in memory
@@ -86,6 +86,7 @@ public:
 
 template <> struct TIsPODType<FAssetPtr> { enum { Value = TIsPODType<TPersistentObjectPtr<FStringAssetReference> >::Value }; };
 template <> struct TIsWeakPointerType<FAssetPtr> { enum { Value = TIsWeakPointerType<TPersistentObjectPtr<FStringAssetReference> >::Value }; };
+template <> struct THasGetTypeHash<FAssetPtr> { enum { Value = THasGetTypeHash<TPersistentObjectPtr<FStringAssetReference> >::Value }; };
 
 /**
  * TAssetPtr is templatized wrapper of the generic FAssetPtr, it can be used in UProperties

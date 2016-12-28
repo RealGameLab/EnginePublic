@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -7,11 +7,13 @@
 #include "Templates/SharedPointer.h"
 #include "GenericPlatform/GenericApplicationMessageHandler.h"
 #include "Containers/BitArray.h"
-#include <SDL.h>
+THIRD_PARTY_INCLUDES_START
+	#include <SDL.h>
 
-#if PLATFORM_HTML5_BROWSER
-#include <emscripten/html5.h>
-#endif
+	#if PLATFORM_HTML5_BROWSER
+		#include <emscripten/html5.h>
+	#endif
+THIRD_PARTY_INCLUDES_END
 
 
 /**

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -159,6 +159,14 @@ public:
 	virtual FChildren* GetChildren() override;
 
 	// End SWidget overrides
+
+private:
+
+	/** An array matching the length and order of ArrangedChildren. True means the child must be placed in a layer in front of all previous children. */
+	typedef TArray<bool, TInlineAllocator<16>> FArrangedChildLayers;
+
+	/** Like ArrangeChildren but also generates an array of layering information (see FArrangedChildLayers). */
+	void ArrangeLayeredChildren(const FGeometry& AllottedGeometry, FArrangedChildren& ArrangedChildren, FArrangedChildLayers& ArrangedChildLayers) const;
 
 protected:
 

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "AnimGraphNode_PoseBlendNode.h"
 #include "EdGraphSchema_K2_Actions.h"
@@ -254,6 +254,18 @@ void UAnimGraphNode_PoseBlendNode::GetContextMenuActions(const FGraphNodeContext
 			Context.MenuBuilder->AddMenuEntry(FGraphEditorCommands::Get().ConvertToPoseByName);
 		}
 		Context.MenuBuilder->EndSection();
+	}
+}
+
+EAnimAssetHandlerType UAnimGraphNode_PoseBlendNode::SupportsAssetClass(const UClass* AssetClass) const
+{
+	if (AssetClass->IsChildOf(UPoseAsset::StaticClass()))
+	{
+		return EAnimAssetHandlerType::PrimaryHandler;
+	}
+	else
+	{
+		return EAnimAssetHandlerType::NotSupported;
 	}
 }
 

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	CookOnTheFlyServer.h : handles polite cook requests via network ;)
@@ -1042,6 +1042,12 @@ public:
 	 * Get any packages which are in memory, these were probably required to be loaded because of the current package we are cooking, so we should probably cook them also
 	 */
 	void GetUnsolicitedPackages(TArray<UPackage*>& PackagesToSave, bool &ContainsFullGCAssetClasses, const TArray<FName>& TargetPlatformNames) const;
+
+	/**
+	 * PostLoadPackageFixup
+	 * after a package is loaded we might want to fix up some stuff before it gets saved
+	 */
+	void PostLoadPackageFixup(UPackage* Package);
 
 	/**
 	 * Handles cook package requests until there are no more requests, then returns

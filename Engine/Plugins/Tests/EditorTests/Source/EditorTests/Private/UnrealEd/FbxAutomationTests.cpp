@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "CoreMinimal.h"
 #include "HAL/FileManager.h"
@@ -26,6 +26,7 @@
 #include "AssetRegistryModule.h"
 #include "ObjectTools.h"
 #include "StaticMeshResources.h"
+#include "SkeletalMeshTypes.h"
 
 #include "FbxMeshUtils.h"
 #include "Tests/FbxAutomationCommon.h"

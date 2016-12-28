@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -56,8 +56,8 @@ public:
 
 protected:
 
-	/** Open the media URL in the url text box. */
-	void OpenUrlTextBoxUrl();
+	/** Open the specified media URL. */
+	void OpenUrl(const FText& TextUrl);
 
 	/** Set the name of the desired native media player. */
 	void SetDesiredPlayerName(FName PlayerName);

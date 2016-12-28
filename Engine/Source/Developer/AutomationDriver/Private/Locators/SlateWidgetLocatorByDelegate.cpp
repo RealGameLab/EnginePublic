@@ -1,13 +1,17 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SlateWidgetLocatorByDelegate.h"
 #include "SlateWidgetElement.h"
 #include "IElementLocator.h"
+#include "Framework/Application/SlateApplication.h"
 
 class FSlateWidgetLocatorByWidgetDelegate
 	: public IElementLocator
 {
 public:
+
+	virtual ~FSlateWidgetLocatorByWidgetDelegate()
+	{ }
 
 	virtual FString ToDebugString() const
 	{
@@ -61,6 +65,9 @@ class FSlateWidgetLocatorByWidgetPathDelegate
 	: public IElementLocator
 {
 public:
+
+	virtual ~FSlateWidgetLocatorByWidgetPathDelegate()
+	{ }
 
 	virtual FString ToDebugString() const
 	{

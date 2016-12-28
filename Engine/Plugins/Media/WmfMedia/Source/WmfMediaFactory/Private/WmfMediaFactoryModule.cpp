@@ -1,22 +1,28 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
+
+#include "WmfMediaFactoryPrivate.h"
 
 #include "CoreMinimal.h"
-#include "UObject/Class.h"
+#include "IMediaModule.h"
+#include "IWmfMediaModule.h"
+#include "IMediaOptions.h"
+#include "IMediaPlayerFactory.h"
 #include "Misc/Paths.h"
 #include "Modules/ModuleInterface.h"
 #include "Modules/ModuleManager.h"
+#include "UObject/Class.h"
 #include "UObject/WeakObjectPtr.h"
-#include "IMediaModule.h"
-#include "IWmfMediaModule.h"
-#include "WmfMediaFactoryPrivate.h"
-#include "IMediaOptions.h"
-#include "IMediaPlayerFactory.h"
 #include "WmfMediaSettings.h"
+
+#if PLATFORM_WINDOWS
+	#include "WindowsHWrapper.h"
+#endif
 
 #if WITH_EDITOR
 	#include "ISettingsModule.h"
 	#include "ISettingsSection.h"
 #endif
+
 
 DEFINE_LOG_CATEGORY(LogWmfMediaFactory);
 
@@ -102,7 +108,7 @@ public:
 
 	virtual FText GetDisplayName() const override
 	{
-		return LOCTEXT("MediaPlayerDisplayName", "WMF Media Player");
+		return LOCTEXT("MediaPlayerDisplayName", "Windows Media Foundation");
 	}
 
 	virtual FName GetName() const override
@@ -131,6 +137,7 @@ public:
 		SupportedFileExtensions.Add(TEXT("adts"));
 		SupportedFileExtensions.Add(TEXT("asf"));
 		SupportedFileExtensions.Add(TEXT("avi"));
+		SupportedFileExtensions.Add(TEXT("m2ts"));
 		SupportedFileExtensions.Add(TEXT("m4a"));
 		SupportedFileExtensions.Add(TEXT("m4v"));
 		SupportedFileExtensions.Add(TEXT("mov"));
@@ -141,9 +148,7 @@ public:
 		SupportedFileExtensions.Add(TEXT("wmv"));
 
 		// supported platforms
-#if WINVER >= _WIN32_WINNT_VISTA
 		SupportedPlatforms.Add(TEXT("Windows"));
-#endif
 
 		// supported schemes
 		SupportedUriSchemes.Add(TEXT("file"));

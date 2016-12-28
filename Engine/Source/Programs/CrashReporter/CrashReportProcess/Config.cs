@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
+
+using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
 using System.Reflection;
@@ -204,12 +206,6 @@ namespace Tools.CrashReporter.CrashReportProcess
 		public int MinutesBetweenQueueSizeReports { get; set; }
 
 		/// <summary>
-		/// The limit for AddCrash() calls to the website failing in a row. An alert will be created if this is exceeded.
-		/// </summary>
-		[XmlElement]
-		public int ConsecutiveFailedWebAddLimit { get; set; }
-
-		/// <summary>
 		/// Size limit below which queues will attempt to enqueue more crashes into memory
 		/// Above this size, a queue will skip enqueueing until the next update.
 		/// </summary>
@@ -277,6 +273,12 @@ namespace Tools.CrashReporter.CrashReportProcess
 		public bool CrashFilesToAWS { get; set; }
 
 		/// <summary>
+		/// Should large crash files saved to S3 be compressed? (crash context will never be compressed)
+		/// </summary>
+		[XmlElement]
+		public bool CompressCrashFilesOnAWS { get; set; }
+
+		/// <summary>
 		/// Should we save invalid reports that fail to process to S3?
 		/// </summary>
 		[XmlElement]
@@ -301,6 +303,12 @@ namespace Tools.CrashReporter.CrashReportProcess
 		public string AWSS3InvalidKeyPrefix { get; set; }
 
 		/// <summary>
+		/// AWSSDK AWS S3 path/key suffix used in place of the existing extension for writing compressed reports (optional)
+		/// </summary>
+		[XmlElement]
+		public string AWSS3CompressedSuffix { get; set; }
+
+		/// <summary>
 		/// Buffer size used to decompress zlib archives taken from S3
 		/// </summary>
 		[XmlElement]
@@ -322,13 +330,19 @@ namespace Tools.CrashReporter.CrashReportProcess
 		/// Timeout when calling AddCrash to submit crashes to the website/database.
 		/// </summary>
 		[XmlElement]
-		public int AddCrashRequestTimeoutMillisec { get; set; }
+		public int AddCrashRequestTimeoutSeconds { get; set; }
 
 		/// <summary>
 		/// Time that we wait between a failed AddCrash call and a retry.
 		/// </summary>
 		[XmlElement]
-		public int AddCrashRetryDelayMillisec { get; set; }
+		public int AddCrashRetryDelaySeconds { get; set; }
+
+		/// <summary>
+		/// The time limit for consecutive failed AddCrash() calls after which an alert will be created.
+		/// </summary>
+		[XmlElement]
+		public int FailedWebAddAlertTimeSeconds { get; set; }
 
 		/// <summary>
 		/// Disk space available threshold that generates alerts. If a disk has less space than this, it will generate alerts.
@@ -420,7 +434,6 @@ namespace Tools.CrashReporter.CrashReportProcess
 			LoadedConfig.CrashReportWebSite = string.Empty;
 			LoadedConfig.AWSS3OutputKeyPrefix = LoadedConfig.AWSS3OutputKeyPrefix.Replace("prod", "test");
 			LoadedConfig.AWSS3InvalidKeyPrefix = LoadedConfig.AWSS3InvalidKeyPrefix.Replace("prod", "test");
-
 			LoadedConfig.MinDesiredMemoryQueueSize = 5;
 			LoadedConfig.MaxMemoryQueueSize = 15;
 

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #include "AnimGraphNode_Base.h"
@@ -332,6 +332,12 @@ FAnimNode_Base* UAnimGraphNode_Base::FindDebugAnimNode(USkeletalMeshComponent * 
 
 	return DebugNode;
 }
+
+EAnimAssetHandlerType UAnimGraphNode_Base::SupportsAssetClass(const UClass* AssetClass) const
+{
+	return EAnimAssetHandlerType::NotSupported;
+}
+
 
 void UAnimGraphNode_Base::PinDefaultValueChanged(UEdGraphPin* Pin)
 {

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	UObjectArchetype.cpp: Unreal object archetype relationship management
@@ -10,13 +10,6 @@
 #include "UObject/Class.h"
 #include "UObject/Package.h"
 
-#if !defined(USE_EVENT_DRIVEN_ASYNC_LOAD)
-#error "USE_EVENT_DRIVEN_ASYNC_LOAD must be defined"
-#endif
-
-#if USE_EVENT_DRIVEN_ASYNC_LOAD
-COREUOBJECT_API bool GIgnoreGetArchetypeFromRequiredInfo_RF_NeedsLoad = false;
-#endif
 
 UObject* UObject::GetArchetypeFromRequiredInfo(UClass* Class, UObject* Outer, FName Name, EObjectFlags ObjectFlags)
 {
@@ -70,9 +63,8 @@ UObject* UObject::GetArchetypeFromRequiredInfo(UClass* Class, UObject* Outer, FN
 			Result = Class->GetDefaultObject();
 		}
 	}
-#if USE_EVENT_DRIVEN_ASYNC_LOAD
-	//if (!GIgnoreGetArchetypeFromRequiredInfo_RF_NeedsLoad)
-	if (!GIsInitialLoad)
+
+	if (GEventDrivenLoaderEnabled && EVENT_DRIVEN_ASYNC_LOAD_ACTIVE_AT_RUNTIME)
 	{
 		if (Result && Result->HasAnyFlags(RF_NeedLoad))
 		{
@@ -80,7 +72,6 @@ UObject* UObject::GetArchetypeFromRequiredInfo(UClass* Class, UObject* Outer, FN
 		}
 		check(!Result || !Result->HasAnyFlags(RF_NeedLoad));
 	}
-#endif
 
 	return Result;
 }

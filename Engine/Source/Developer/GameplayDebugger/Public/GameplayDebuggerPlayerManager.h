@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -33,7 +33,11 @@ class AGameplayDebuggerPlayerManager : public AActor
 	GENERATED_UCLASS_BODY()
 
 	virtual void TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction) override;
+
+protected:
 	virtual void BeginPlay() override;
+
+public:
 	virtual void EndPlay(const EEndPlayReason::Type Reason) override;
 		
 	void UpdateAuthReplicators();

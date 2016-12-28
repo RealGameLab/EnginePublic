@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /**
  * Import data and options used when importing a static mesh from fbx
@@ -65,6 +65,10 @@ class UFbxStaticMeshImportData : public UFbxMeshImportData
 	/** If checked, collision will automatically be generated (ignored if custom collision is imported or used). */
 	UPROPERTY(EditAnywhere, config, Category = ImportSettings, meta=(OBJRestrict="true", ImportType="StaticMesh"))
 	uint32 bAutoGenerateCollision : 1;
+
+	/** For static meshes, enabling this option will combine all meshes in the FBX into a single monolithic mesh in Unreal */
+	UPROPERTY(EditAnywhere, AdvancedDisplay, config, Category = Mesh, meta = (ToolTip = "If enabled, combines all meshes into a single mesh", ImportType = "StaticMesh"))
+	uint32 bCombineMeshes : 1;
 
 	/** Gets or creates fbx import data for the specified static mesh */
 	static UFbxStaticMeshImportData* GetImportDataForStaticMesh(UStaticMesh* StaticMesh, UFbxStaticMeshImportData* TemplateForCreation);

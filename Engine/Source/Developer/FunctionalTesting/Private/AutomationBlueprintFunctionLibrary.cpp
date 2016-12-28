@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "AutomationBlueprintFunctionLibrary.h"
 #include "HAL/IConsoleManager.h"
@@ -21,6 +21,8 @@
 #include "DelayAction.h"
 #include "Widgets/SViewport.h"
 #include "Framework/Application/SlateApplication.h"
+#include "ShaderCompiler.h"
+#include "AutomationBlueprintFunctionLibrary.h"
 
 #define LOCTEXT_NAMESPACE "Automation"
 
@@ -250,6 +252,9 @@ bool UAutomationBlueprintFunctionLibrary::TakeAutomationScreenshotInternal(const
 
 	// Force all mip maps to load before taking the screenshot.
 	UTexture::ForceUpdateTextureStreaming();
+
+	// Force all shader compiling to finish.
+	GShaderCompilingManager->FinishAllCompilation();
 
 #if (WITH_DEV_AUTOMATION_TESTS || WITH_PERF_AUTOMATION_TESTS)
 	FAutomationScreenshotTaker* TempObject = new FAutomationScreenshotTaker(Name, Options);

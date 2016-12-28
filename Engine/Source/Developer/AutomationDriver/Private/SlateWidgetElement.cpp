@@ -1,7 +1,8 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SlateWidgetElement.h"
 #include "IApplicationElement.h"
+#include "Framework/Application/SlateApplication.h"
 
 #include "SlateWidgetLocatorByUniqueTag.h"
 #include "DriverUniqueTagMetaData.h"
@@ -10,11 +11,17 @@
 #include "SRichTextBlock.h"
 #include "SMultiLineEditableTextBox.h"
 #include "SMultiLineEditableText.h"
+#include "STextBlock.h"
+#include "SEditableText.h"
+#include "SEditableTextBox.h"
 
 class FSlateWidgetElement
 	: public IApplicationElement
 {
 public:
+
+	virtual ~FSlateWidgetElement()
+	{ }
 
 	virtual FString ToDebugString() const
 	{
@@ -80,7 +87,7 @@ public:
 
 	virtual FVector2D GetSize() const override
 	{
-		return WidgetPath.Widgets.Last().Geometry.GetLocalSize();
+		return WidgetPath.Widgets.Last().Geometry.GetDrawSize();
 	}
 
 	virtual TSharedPtr<FGenericWindow> GetWindow() const override

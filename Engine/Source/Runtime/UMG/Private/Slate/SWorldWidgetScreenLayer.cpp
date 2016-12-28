@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Slate/SWorldWidgetScreenLayer.h"
 #include "Widgets/Layout/SBox.h"
@@ -94,7 +94,7 @@ void SWorldWidgetScreenLayer::Tick(const FGeometry& AllottedGeometry, const doub
 							FVector2D ComponentDrawSize = Entry.WidgetComponent->GetDrawSize();
 							FVector2D ComponentPivot = Entry.WidgetComponent->GetPivot();
 
-							CanvasSlot->AutoSize(ComponentDrawSize.IsZero());
+							CanvasSlot->AutoSize(ComponentDrawSize.IsZero() || Entry.WidgetComponent->GetDrawAtDesiredSize());
 							CanvasSlot->Offset(FMargin(ScreenPosition.X, ScreenPosition.Y, ComponentDrawSize.X, ComponentDrawSize.Y));
 							CanvasSlot->Anchors(FAnchors(0, 0, 0, 0));
 							CanvasSlot->Alignment(ComponentPivot);

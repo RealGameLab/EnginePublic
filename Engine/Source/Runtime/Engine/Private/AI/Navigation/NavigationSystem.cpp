@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "AI/Navigation/NavigationSystem.h"
 #include "Misc/ScopeLock.h"
@@ -2698,7 +2698,17 @@ void UNavigationSystem::UpdateNavOctreeElement(UObject* ElementOwner, INavReleva
 	{
 		FNavigationDirtyElement& UpdateInfo = PendingOctreeUpdates[RequestId];
 		UpdateInfo.PrevFlags = CurrentFlags;
-		UpdateInfo.PrevBounds = CurrentBounds;
+		if (UpdateInfo.PrevBounds.IsValid)
+		{
+			// Is we have something stored already we want to 
+			// sum it up, since we care about the whole bounding
+			// box of changes that potentially took place
+			UpdateInfo.PrevBounds += CurrentBounds;
+		}
+		else
+		{
+			UpdateInfo.PrevBounds = CurrentBounds;
+		}
 		UpdateInfo.bHasPrevData = bAlreadyExists;
 	}
 

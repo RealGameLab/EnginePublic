@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -949,6 +949,9 @@ protected:
 
 	/** Get the graph appearance of a specific graph, GetCurrentGraphAppearance() uses the currently focused graph. */
 	virtual FGraphAppearanceInfo GetGraphAppearance(class UEdGraph* InGraph) const;
+
+	/** Whenever new graphs need to be created it will use this schema by default. */
+	virtual TSubclassOf<UEdGraphSchema> GetDefaultSchemaClass() const;
 
 	/** Attempts to invoke the details tab if it's currently possible to. */
 	void TryInvokingDetailsTab(bool bFlash = true);

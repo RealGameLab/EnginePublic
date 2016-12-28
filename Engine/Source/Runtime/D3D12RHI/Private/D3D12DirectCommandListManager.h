@@ -1,8 +1,11 @@
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
+
 #pragma once
+
 #include "CoreMinimal.h"
 #include "RHI.h"
 
-//#define DEBUG_FENCES 1
+#define DEBUG_FENCES 0
 
 extern int32 GCommandListBatchingMode;
 

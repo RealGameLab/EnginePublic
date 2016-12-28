@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -21,6 +21,7 @@
 #include "Misc/FeedbackContext.h"
 #include "Future.h"
 #include "Async.h"
+#include "Misc/Guid.h"
 
 /** Flags for specifying automation test requirements/behavior */
 namespace EAutomationTestFlags
@@ -464,6 +465,8 @@ struct FAutomationScreenshotData
 {
 	FString Name;
 	FString Context;
+
+	FGuid Id;
 
 	int32 Width;
 	int32 Height;

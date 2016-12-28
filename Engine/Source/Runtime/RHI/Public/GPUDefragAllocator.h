@@ -1,6 +1,4 @@
-/**
-* Copyright 1998-2015 Epic Games, Inc. All Rights Reserved.
-*/
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -18,6 +16,8 @@
 #define VALIDATE_MOVES					0 //validates that GPU moves in a given frame do not overlap destination areas.
 #define TRACK_RELOCATIONS (VALIDATE_SYNC_SIZE || VALIDATE_MOVES)
 #define VALIDATE_MEMORY_PROTECTION		0
+
+#define USE_ALLOCATORFIXEDSIZEFREELIST	0
 
 class FAsyncReallocationRequest;
 class FScopedGPUDefragLock;

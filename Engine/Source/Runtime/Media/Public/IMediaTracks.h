@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -12,11 +12,11 @@ enum class EMediaTrackType
 	/** Audio track. */
 	Audio,
 
-	/** Binary data track. */
-	Binary,
-
 	/** Closed caption track. */
 	Caption,
+
+	/** Metadata track. */
+	Metadata,
 
 	/** Script track. */
 	Script,

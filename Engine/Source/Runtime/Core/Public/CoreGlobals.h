@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 #pragma once
 
 #include "CoreTypes.h"
@@ -287,6 +287,15 @@ extern CORE_API FString GSystemStartTime;
 
 /** Whether we are still in the initial loading process. */
 extern CORE_API bool GIsInitialLoad;
+
+/* Whether we are using the new async IO */
+extern CORE_API bool GNewAsyncIO;
+
+/* Whether we are using the event driven loader */
+extern CORE_API bool GEventDrivenLoaderEnabled;
+
+//@todoio put this in some kind of API
+extern CORE_API bool GPakCache_AcceptPrecacheRequests;
 
 #if WITH_HOT_RELOAD_CTORS
 /** true when we are retrieving VTablePtr from UClass */

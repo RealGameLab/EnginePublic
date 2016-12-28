@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -77,6 +77,9 @@ public:
 	virtual UNREALED_API int32 GetInputIndex(const UEdGraphPin* InputPin) const override;
 	virtual uint32 GetInputType(const UEdGraphPin* InputPin) const override;
 	//~ End UMaterialGraphNode_Base Interface
+
+	/** Will return the shorten pin name to use based on long pin name */
+	FString UNREALED_API GetShortenPinName(const FString& PinName);
 
 private:
 	/** Make sure the MaterialExpression is owned by the Material */

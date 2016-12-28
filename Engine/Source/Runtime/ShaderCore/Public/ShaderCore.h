@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	ShaderCore.h: Shader core module definitions.
@@ -148,7 +148,7 @@ public:
 	/** Checks that all parameters are bound and asserts if any aren't in a debug build
 	* @param InVertexFactoryType can be 0
 	*/
-	SHADERCORE_API void VerifyBindingsAreComplete(const TCHAR* ShaderTypeName, EShaderFrequency Frequency, class FVertexFactoryType* InVertexFactoryType) const;
+	SHADERCORE_API void VerifyBindingsAreComplete(const TCHAR* ShaderTypeName, FShaderTarget Target, class FVertexFactoryType* InVertexFactoryType) const;
 
 	/** Updates the hash state with the contents of this parameter map. */
 	void UpdateHash(FSHA1& HashState) const;

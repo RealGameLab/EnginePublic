@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "DriverElement.h"
 #include "IDriverElement.h"
@@ -831,6 +831,9 @@ class FDriverElementCollection
 {
 public:
 
+	virtual ~FDriverElementCollection()
+	{ }
+
 	virtual TArray<TSharedRef<IDriverElement, ESPMode::ThreadSafe>> GetElements() override
 	{
 		if (IsInGameThread())
@@ -904,6 +907,9 @@ class FDriverElement
 	, public TSharedFromThis<FDriverElement, ESPMode::ThreadSafe>
 {
 public:
+
+	virtual ~FDriverElement()
+	{ }
 
 	virtual bool Hover() override
 	{

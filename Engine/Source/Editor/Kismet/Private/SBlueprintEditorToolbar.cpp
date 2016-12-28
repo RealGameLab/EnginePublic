@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #include "SBlueprintEditorToolbar.h"
@@ -130,6 +130,12 @@ void FKismet2Menu::FillDeveloperMenu( FMenuBuilder& MenuBuilder )
 		}
 		MenuBuilder.EndSection();
 	}
+
+	MenuBuilder.BeginSection("SchemaDeveloperSettings", LOCTEXT("SchemaDevUtilsHeading", "Schema Utilities"));
+	{
+		MenuBuilder.AddMenuEntry(FBlueprintEditorCommands::Get().ShowActionMenuItemSignatures);
+	}
+	MenuBuilder.EndSection();
 }
 
 void FKismet2Menu::FillEditMenu( FMenuBuilder& MenuBuilder )
@@ -399,6 +405,7 @@ static void BlueprintEditorToolbarImpl::MakeCompileDeveloperSubMenu(FMenuBuilder
 {
 	const FBlueprintEditorCommands& EditorCommands = FBlueprintEditorCommands::Get();
 	InMenuBuilder.AddMenuEntry(EditorCommands.SaveIntermediateBuildProducts);
+	InMenuBuilder.AddMenuEntry(EditorCommands.ShowActionMenuItemSignatures);
 }
 
 

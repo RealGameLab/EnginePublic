@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -103,6 +103,13 @@ public:
 	 * @param InUICommandInfo		The command info to unmap
 	 */
 	void UnmapAction( const TSharedPtr< const FUICommandInfo > InUICommandInfo );
+
+	/**
+	 * Checks if an action is already mapped
+	 * 
+	 * @return True if an action is already mapped or false otherwise
+	 */
+	bool IsActionMapped( const TSharedPtr< const FUICommandInfo > InUICommandInfo ) const;
 
 	/**
 	 * Executes the action associated with the provided command info

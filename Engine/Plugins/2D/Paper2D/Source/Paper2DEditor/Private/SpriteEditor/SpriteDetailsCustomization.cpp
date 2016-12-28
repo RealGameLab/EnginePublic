@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "SpriteEditor/SpriteDetailsCustomization.h"
 #include "Materials/MaterialInterface.h"
@@ -252,7 +252,8 @@ void FSpriteDetailsCustomization::BuildCollisionSection(IDetailCategoryBuilder& 
 	{
 		// Restrict the diced value
 		TSharedPtr<FPropertyRestriction> PreventDicedRestriction = MakeShareable(new FPropertyRestriction(LOCTEXT("CollisionGeometryDoesNotSupportDiced", "Collision geometry can not be set to Diced")));
-		PreventDicedRestriction->AddValue(TEXT("Diced"));
+		const UEnum* const SpritePolygonModeEnum = FindObject<UEnum>(ANY_PACKAGE, TEXT("ESpritePolygonMode"));		
+		PreventDicedRestriction->AddDisabledValue(SpritePolygonModeEnum->GetEnumNameStringByValue((uint8)ESpritePolygonMode::Diced));
 
 		// Find and add the property
 		const FString CollisionGeometryTypePropertyPath = FString::Printf(TEXT("%s.%s"), GET_MEMBER_NAME_STRING_CHECKED(UPaperSprite, CollisionGeometry), GET_MEMBER_NAME_STRING_CHECKED(FSpriteGeometryCollection, GeometryType));

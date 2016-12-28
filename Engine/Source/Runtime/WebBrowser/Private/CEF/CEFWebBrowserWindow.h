@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -8,15 +8,6 @@
 #include "Input/Reply.h"
 #include "Widgets/SViewport.h"
 #include "WebBrowserSingleton.h"
-
-class FBrowserBufferedVideo;
-class FCEFBrowserHandler;
-class FCEFJSScripting;
-class FSlateUpdatableTexture;
-class IWebBrowserPopupFeatures;
-class IWebBrowserWindow;
-struct Rect;
-enum class EWebBrowserDocumentState;
 
 #if WITH_CEF3
 
@@ -43,16 +34,24 @@ THIRD_PARTY_INCLUDES_END
 	#include "HideWindowsPlatformTypes.h"
 #endif
 
+#endif
+
+class FBrowserBufferedVideo;
+class FCEFBrowserHandler;
+class FCEFJSScripting;
+class FSlateUpdatableTexture;
+class IWebBrowserPopupFeatures;
+class IWebBrowserWindow;
+struct Rect;
 class FSlateShaderResource;
 enum class EWebBrowserDocumentState;
 struct FGeometry;
 struct FPointerEvent;
 class UObject;
 struct FInputEvent;
-class FSlateUpdatableTexture;
 class FWebJSScripting;
-class FBrowserBufferedVideo;
-class FCEFJSScripting;
+
+#if WITH_CEF3
 
 /**
  * Helper for containing items required for CEF browser window creation.

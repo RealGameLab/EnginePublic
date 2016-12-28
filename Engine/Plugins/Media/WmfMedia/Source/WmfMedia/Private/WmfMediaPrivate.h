@@ -1,12 +1,15 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
-#define WMFMEDIA_SUPPORTED_PLATFORM (PLATFORM_WINDOWS && WINVER >= _WIN32_WINNT_VISTA)
-
-
 #include "Runtime/Core/Public/CoreMinimal.h"
 #include "Runtime/Core/Public/Modules/ModuleManager.h"
+
+#if PLATFORM_WINDOWS
+#include "WindowsHWrapper.h"
+#endif
+
+#define WMFMEDIA_SUPPORTED_PLATFORM (PLATFORM_WINDOWS && WINVER >= _WIN32_WINNT_VISTA)
 
 #if WMFMEDIA_SUPPORTED_PLATFORM
 	#if WITH_ENGINE

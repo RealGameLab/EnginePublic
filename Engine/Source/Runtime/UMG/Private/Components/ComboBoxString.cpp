@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Components/ComboBoxString.h"
 #include "UObject/EditorObjectVersion.h"
@@ -32,6 +32,7 @@ UComboBoxString::UComboBoxString(const FObjectInitializer& ObjectInitializer)
 	ItemStyle.DropIndicator_Below.TintColor = ItemStyle.DropIndicator_Below.TintColor.GetSpecifiedColor();
 
 	ForegroundColor = FLinearColor::Black;
+	bIsFocusable = true;
 
 	ContentPadding = FMargin(4.0, 2.0);
 	MaxListHeight = 450.0f;
@@ -93,6 +94,7 @@ TSharedRef<SWidget> UComboBoxString::RebuildWidget()
 		.OnGenerateWidget(BIND_UOBJECT_DELEGATE(SComboBox< TSharedPtr<FString> >::FOnGenerateWidget, HandleGenerateWidget))
 		.OnSelectionChanged(BIND_UOBJECT_DELEGATE(SComboBox< TSharedPtr<FString> >::FOnSelectionChanged, HandleSelectionChanged))
 		.OnComboBoxOpening(BIND_UOBJECT_DELEGATE(FOnComboBoxOpening, HandleOpening))
+		.IsFocusable(bIsFocusable)
 		[
 			SAssignNew(ComoboBoxContent, SBox)
 		];

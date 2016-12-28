@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Linux/DesktopPlatformLinux.h"
 #include "HAL/FileManager.h"
@@ -11,6 +11,10 @@
 #include "Linux/LinuxApplication.h"
 #include "Misc/FeedbackContextMarkup.h"
 #include "HAL/ThreadHeartBeat.h"
+
+#ifndef WITH_LINUX_NATIVE_DIALOGS
+#define WITH_LINUX_NATIVE_DIALOGS 0
+#endif
 
 //#include "LinuxNativeFeedbackContext.h"
 // custom dialogs

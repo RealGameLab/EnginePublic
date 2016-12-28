@@ -1,10 +1,11 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /**
  * Everything a local player will use to manage online sessions.
  */
 
 #pragma once
+#include "OnlineSubsystem.h"
 
 #include "CoreMinimal.h"
 #include "UObject/ObjectMacros.h"

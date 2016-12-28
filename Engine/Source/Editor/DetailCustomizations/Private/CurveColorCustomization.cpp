@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "CurveColorCustomization.h"
 #include "Curves/CurveLinearColor.h"
@@ -208,6 +208,17 @@ void FCurveColorCustomization::ModifyOwner()
 	{
 		Owner->Modify(true);
 	}
+}
+
+TArray<const UObject*> FCurveColorCustomization::GetOwners() const
+{
+	TArray<const UObject*> Owners;
+	if (Owner)
+	{
+		Owners.Add(Owner);
+	}
+
+	return Owners;
 }
 
 void FCurveColorCustomization::MakeTransactional()

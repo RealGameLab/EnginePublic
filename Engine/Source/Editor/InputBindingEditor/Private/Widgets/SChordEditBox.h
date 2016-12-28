@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -25,7 +25,6 @@ public:
 
 	SLATE_BEGIN_ARGS( SChordEditBox ){}
 	SLATE_END_ARGS()
-
 public:
 
 	/**
@@ -34,7 +33,6 @@ public:
 	 * @param InArgs The Slate argument list.
 	 */
 	void Construct( const FArguments& InArgs, TSharedPtr<FUICommandInfo> InputCommand );
-
 private:
 
 	/** @return Border image for the text box based on the hovered and focused state */

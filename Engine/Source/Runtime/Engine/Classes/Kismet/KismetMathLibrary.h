@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -12,6 +12,9 @@
 #include "UObject/ScriptMacros.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "KismetMathLibrary.generated.h"
+
+// Whether to inline functions at all
+#define KISMET_MATH_INLINE_ENABLED	(!UE_BUILD_DEBUG)
 
 /** Provides different easing functions that can be used in blueprints */
 UENUM(BlueprintType)
@@ -849,6 +852,18 @@ class ENGINE_API UKismetMathLibrary : public UBlueprintFunctionLibrary
 	UFUNCTION(BlueprintPure, Category="Math|Vector", meta=(Keywords = "ProjectOnTo"))
 	static FVector ProjectVectorOnToVector(FVector V, FVector Target);
 
+	/** 
+	 * Given a direction vector and a surface normal, returns the vector reflected across the surface normal.
+	 * Produces a result like shining a laser at a mirror!
+	 *
+	 * @param Direction Direction vector the ray is coming from.
+	 * @param SurfaceNormal A normal of the surface the ray should be reflected on.
+	 *
+	 * @returns Reflected vector.
+	 */
+	UFUNCTION(BlueprintPure, Category="Math|Vector", meta=(Keywords = "Reflection"))
+	static FVector GetReflectionVector(FVector Direction, FVector SurfaceNormal);
+
 	/**
 	 * Find closest points between 2 segments.
 	 *
@@ -1002,10 +1017,6 @@ class ENGINE_API UKismetMathLibrary : public UBlueprintFunctionLibrary
 	/** Create a rotation from an axis and and angle (in degrees) */
 	UFUNCTION(BlueprintPure, Category="Math|Rotator", meta=(Keywords="make construct build rotate rotation"))
 	static FRotator RotatorFromAxisAndAngle(FVector Axis, float Angle);
-
-	/** Get an axis and angle from a given rotation */
-	UFUNCTION(BlueprintPure, Category="Math|Rotator", meta=(Keywords="rotate rotation axis angle"))
-	static void RotatorToAxisAndAngle(const FRotator& Rotation, FVector& Axis, float& Angle);
 
 	/**
 	* Clamps an angle to the range of [0, 360].
@@ -2009,6 +2020,28 @@ class ENGINE_API UKismetMathLibrary : public UBlueprintFunctionLibrary
 	UFUNCTION(BlueprintPure, Category = "Math|Geometry")
 	static bool PointsAreCoplanar(const TArray<FVector>& Points, float Tolerance = 0.1f);
 
+	/**
+	 * Determines whether the given point is in a box. Includes points on the box.
+	 *
+	 * @param Point			Point to test
+	 * @param BoxOrigin		Origin of the box
+	 * @param BoxExtent		Extents of the box (distance in each axis from origin)
+	 * @return Whether the point is in the box.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Math|Geometry")
+	static bool IsPointInBox(FVector Point, FVector BoxOrigin, FVector BoxExtent);
+
+	/**
+	* Determines whether a given point is in a box with a given transform. Includes points on the box.
+	*
+	* @param Point				Point to test
+	* @param BoxWorldTransform	Component-to-World transform of the box.
+	* @param BoxExtent			Extents of the box (distance in each axis from origin), in component space.
+	* @return Whether the point is in the box.
+	*/
+	UFUNCTION(BlueprintPure, Category = "Math|Geometry")
+	static bool IsPointInBoxWithTransform(FVector Point, const FTransform& BoxWorldTransform, FVector BoxExtent);
+
 	//
 	// Intersection
 	//
@@ -2030,4 +2063,27 @@ class ENGINE_API UKismetMathLibrary : public UBlueprintFunctionLibrary
 	 */
 	UFUNCTION(BlueprintPure, Category = "Math|Intersection", meta = (DisplayName = "Line Plane Intersection (Origin & Normal)"))
 	static bool LinePlaneIntersection_OriginNormal(const FVector& LineStart, const FVector& LineEnd, FVector PlaneOrigin, FVector PlaneNormal, float& T, FVector& Intersection);
+
+
+private:
+
+	static void ReportError_Divide_ByteByte();
+	static void ReportError_Percent_ByteByte();
+	static void ReportError_Divide_IntInt();
+	static void ReportError_Percent_IntInt();
+	static void ReportError_Sqrt();
+	static void ReportError_Divide_VectorFloat();
+	static void ReportError_Divide_VectorInt();
+	static void ReportError_Divide_VectorVector();
+	static void ReportError_ProjectVectorOnToVector();
+	static void ReportError_Divide_Vector2DFloat();
+	static void ReportError_DaysInMonth();
 };
+
+
+
+// Conditionally inlined
+#if KISMET_MATH_INLINE_ENABLED
+#include "KismetMathLibrary.inl"
+#endif
+

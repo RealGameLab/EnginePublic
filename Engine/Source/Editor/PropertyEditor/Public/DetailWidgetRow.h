@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -99,6 +99,7 @@ public:
 		, CopyMenuAction()
 		, PasteMenuAction()
 		, RowTagName()
+		, DiffersFromDefaultAttr( false )
 	{
 	}
 	
@@ -211,6 +212,15 @@ public:
 		return *this;
 	}
 
+	/**
+	* Sets flag to indicate if property value differs from the default
+	*/
+	FDetailWidgetRow& DiffersFromDefault(const TAttribute<bool>& InDiffersFromDefaultAttr)
+	{
+		DiffersFromDefaultAttr = InDiffersFromDefaultAttr;
+		return *this;
+	}
+
 public:
 	/** Name column content */
 	FDetailWidgetDecl NameWidget;
@@ -230,5 +240,7 @@ public:
 	FUIAction PasteMenuAction;
 	/* Tag to identify this row */
 	FName	RowTagName;
+	/* Flag to track if property has been modified from default */
+	TAttribute<bool> DiffersFromDefaultAttr;
 };
 

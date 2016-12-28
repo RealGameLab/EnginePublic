@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /* ITargetDevice interface
  *****************************************************************************/
@@ -126,7 +126,7 @@ inline bool FAndroidTargetDevice::GetUserCredentials( FString& OutUserName, FStr
 
 inline void FAndroidTargetDevice::ExecuteConsoleCommand(const FString& ExecCommand) const
 {
-	FString AdbCommand = FString::Printf(TEXT("shell am broadcast -a android.intent.action.RUN -e cmd \"%s\""), *ExecCommand);
+	FString AdbCommand = FString::Printf(TEXT("shell \"am broadcast -a android.intent.action.RUN -e cmd '%s'\""), *ExecCommand);
 	ExecuteAdbCommand(AdbCommand, nullptr, nullptr);
 }
 

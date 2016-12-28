@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -7,8 +7,10 @@
 #include "OnlineAsyncTaskGooglePlayAuthAction.h"
 #include "OnlineSubsystemGooglePlayPackage.h"
 
+THIRD_PARTY_INCLUDES_START
 #include "gpg/status.h"
 #include "gpg/types.h"
+THIRD_PARTY_INCLUDES_END
 
 class FOnlineSubsystemGooglePlay;
 

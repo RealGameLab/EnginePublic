@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "WmfMediaSession.h"
 #include "WmfMediaUtils.h"
@@ -192,6 +192,11 @@ bool FWmfMediaSession::IsLooping() const
 
 bool FWmfMediaSession::Seek(const FTimespan& Time)
 {
+	if (MediaSession == NULL)
+	{
+		return false;
+	}
+
 	if ((CurrentState == EMediaState::Closed) || (CurrentState == EMediaState::Error))
 	{
 		return false;
@@ -213,6 +218,11 @@ bool FWmfMediaSession::SetLooping(bool InLooping)
 
 bool FWmfMediaSession::SetRate(float Rate)
 {
+	if (MediaSession == NULL)
+	{
+		return false;
+	}
+
 	if (!SupportsRate(Rate, false))
 	{
 		return false;

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #include "FeedbackContextEditor.h"
@@ -245,11 +245,7 @@ private:
 		if (ScopeStack.IsValid())
 		{
 			const float ProgressInterp = ScopeStack->GetProgressFraction(0);
-
-			FFormatOrderedArguments Args;
-			Args.Add(int(ProgressInterp * 100));
-
-			return FText::Format(NSLOCTEXT("FeedbackContextEditor", "MainProgressDisplayText", "{0}%"), Args);
+			return FText::AsPercent(ProgressInterp);
 		}
 		return FText();
 	}

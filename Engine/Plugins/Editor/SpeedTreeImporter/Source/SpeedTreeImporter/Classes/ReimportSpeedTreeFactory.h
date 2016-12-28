@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 //=============================================================================
 // ReimportSpeedTreeFactory
@@ -22,6 +22,7 @@ class UReimportSpeedTreeFactory : public USpeedTreeImportFactory, public FReimpo
 	virtual void SetReimportPaths(UObject* Obj, const TArray<FString>& NewReimportPaths) override;
 	virtual EReimportResult::Type Reimport(UObject* Obj) override;
 	virtual int32 GetPriority() const override;
+	virtual const UObject* GetFactoryObject() const { return this; }
 	//~ End FReimportHandler interface
 };
 

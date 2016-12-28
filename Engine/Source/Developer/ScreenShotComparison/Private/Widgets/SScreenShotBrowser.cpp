@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	SScreenShotBrowser.cpp: Implements the SScreenShotBrowser class.
@@ -140,12 +140,13 @@ void SScreenShotBrowser::RebuildTree()
 				ComparisonList.Add(Model);
 			}
 
-			for ( FString& Missing : CurrentComparisons->Missing )
-			{
-				TSharedPtr<FScreenComparisonModel> Model = MakeShared<FScreenComparisonModel>(EComparisonResultType::Missing);
-				Model->Folder = Missing;
-				ComparisonList.Add(Model);
-			}
+			// Ignore Missing
+			//for ( FString& Missing : CurrentComparisons->Missing )
+			//{
+			//	TSharedPtr<FScreenComparisonModel> Model = MakeShared<FScreenComparisonModel>(EComparisonResultType::Missing);
+			//	Model->Folder = Missing;
+			//	ComparisonList.Add(Model);
+			//}
 
 			// Copy the comparisons to an array as shared pointers the list view can use.
 			for ( FImageComparisonResult& Result : CurrentComparisons->Comparisons )

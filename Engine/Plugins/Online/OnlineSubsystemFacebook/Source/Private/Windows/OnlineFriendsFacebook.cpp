@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "OnlineFriendsFacebook.h"
 #include "OnlineSubsystemFacebookPrivate.h"
@@ -55,9 +55,11 @@ FOnlineFriendsFacebook::FOnlineFriendsFacebook(FOnlineSubsystemFacebook* InSubsy
 		UE_LOG(LogOnline, Warning, TEXT("Missing LoginUrl= in [OnlineSubsystemFacebook.OnlineIdentityFacebook] of DefaultEngine.ini"));
 	}
 	GConfig->GetArray(TEXT("OnlineSubsystemFacebook.OnlineFriendsFacebook"), TEXT("FriendsFields"), FriendsFields, GEngineIni);	
+
+	// @HSL_BEGIN - Josh.May - 10/04/2016 - Removed deprecated 'username' parameter
 	// always required fields
 	FriendsFields.AddUnique(TEXT("name"));
-	FriendsFields.AddUnique(TEXT("username"));
+	// @HSL_END - Josh.May - 10/04/2016
 }
 
 FOnlineFriendsFacebook::~FOnlineFriendsFacebook()

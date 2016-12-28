@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -85,6 +85,20 @@ public:
 	{
 #if WITH_EDITOR
 		bSetKey = true;
+		OnSetKeyCompleteDelegate = InOnSetKeyCompleteDelegate;
+#endif
+	}
+
+	void SetKey()
+	{
+#if WITH_EDITOR
+		bSetKey = true;
+#endif
+	}
+
+	void SetKeyCompleteDelegate(FSimpleDelegate InOnSetKeyCompleteDelegate)
+	{
+#if WITH_EDITOR
 		OnSetKeyCompleteDelegate = InOnSetKeyCompleteDelegate;
 #endif
 	}
@@ -244,6 +258,21 @@ class ANIMGRAPH_API UAnimPreviewInstance : public UAnimSingleNodeInstance
 	 * @param Delegate To be called once set key is completed
 	 */
 	void SetKey(FSimpleDelegate InOnSetKeyCompleteDelegate);
+
+	/**
+	 * Convert current modified bone transforms (BoneControllers) to transform curves (CurveControllers)
+	 * it does based on CurrentTime. This function does not set key directly here. 
+	 * It does wait until next update, and it gets the delta of transform before applying curves, and 
+	 * creates curves from it, so you'll need delegate if you'd like to do something after (set with SetKeyCompleteDelegate)
+	 */
+	void SetKey();
+
+	/**
+	 * Set the delegate to be called when a key is set.
+	 * 
+	 * @param Delegate To be called once set key is completed
+	 */
+	void SetKeyCompleteDelegate(FSimpleDelegate InOnSetKeyCompleteDelegate);
 
 	/** 
 	 * Refresh Curve Bone Controllers based on TransformCurves from Animation data

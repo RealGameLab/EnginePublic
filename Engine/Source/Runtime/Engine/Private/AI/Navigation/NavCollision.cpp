@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "AI/Navigation/NavCollision.h"
 #include "Serialization/MemoryWriter.h"
@@ -163,7 +163,7 @@ FGuid UNavCollision::GetGuid() const
 void UNavCollision::Setup(UBodySetup* BodySetup)
 {
 	// Create meshes from cooked data if not already done
-	if (bHasConvexGeometry || BodySetup == NULL)
+	if (bHasConvexGeometry || BodySetup == NULL || BodySetupGuid == BodySetup->BodySetupGuid)
 	{
 		return;
 	}

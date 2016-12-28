@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -381,6 +381,11 @@ public:
 	 * @param InCause The reason that focus is changing.
 	 */
 	virtual void SetAllUserFocusAllowingDescendantFocus(const FWidgetPath& InFocusPath, const EFocusCause InCause) = 0;
+
+	/**
+	 * @return a pointer to the Widget that currently has the users focus; Empty pointer when the user has no focus. 
+	 */
+	virtual TSharedPtr<SWidget> GetUserFocusedWidget(uint32 UserIndex) const = 0;
 
 	/**
 	 * Gets a delegate that is invoked when a global invalidate of all widgets should occur

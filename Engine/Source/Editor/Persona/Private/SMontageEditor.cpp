@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #include "SMontageEditor.h"
@@ -207,7 +207,6 @@ void SMontageEditor::Construct(const FArguments& InArgs, const FMontageEditorReq
 		.InputMax(this, &SAnimEditorBase::GetMaxInput)
 		.OnSetInputViewRange(this, &SAnimEditorBase::SetInputViewRange)
 		.OnGetScrubValue(this, &SAnimEditorBase::GetScrubValue)
-		.OnCurvesChanged(InArgs._OnCurvesChanged)
 	];
 
 	if (MontageObj)

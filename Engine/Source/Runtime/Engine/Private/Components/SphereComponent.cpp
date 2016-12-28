@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #include "Components/SphereComponent.h"
@@ -8,6 +8,7 @@
 #include "PhysicsEngine/SphereElem.h"
 #include "SceneManagement.h"
 #include "PhysicsEngine/BodySetup.h"
+#include "PrimitiveSceneProxy.h"
 
 USphereComponent::USphereComponent(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

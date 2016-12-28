@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	ParticleHelper.h: Particle helper definitions/ macros.
@@ -20,6 +20,7 @@
 #include "MaterialShared.h"
 #include "MeshBatch.h"
 #include "MeshParticleVertexFactory.h"
+#include "PrimitiveSceneProxy.h"
 
 #define _ENABLE_PARTICLE_LOD_INGAME_
 

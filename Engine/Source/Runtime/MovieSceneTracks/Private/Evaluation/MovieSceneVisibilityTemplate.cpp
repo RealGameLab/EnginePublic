@@ -1,13 +1,16 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Evaluation/MovieSceneVisibilityTemplate.h"
 #include "Sections/MovieSceneBoolSection.h"
 #include "Tracks/MovieScenePropertyTrack.h"
 #include "GameFramework/Actor.h"
 #include "Engine/World.h"
+#include "MovieSceneEvaluation.h"
+
 
 DECLARE_CYCLE_STAT(TEXT("Visibility Track Evaluate"), MovieSceneEval_VisibilityTrack_Evaluate, STATGROUP_MovieSceneEval);
 DECLARE_CYCLE_STAT(TEXT("Visibility Track Token Execute"), MovieSceneEval_VisibilityTrack_TokenExecute, STATGROUP_MovieSceneEval);
+
 
 /** A movie scene pre-animated token that stores a pre-animated actor's temporarily hidden in game */
 struct FTemporarilyHiddenInGamePreAnimatedToken : IMovieScenePreAnimatedToken
@@ -98,10 +101,13 @@ void FMovieSceneVisibilitySectionTemplate::Evaluate(const FMovieSceneEvaluationO
 
 	for (TCachedValue<bool>& ObjectAndValue : PersistentData.GetSectionData<TCachedSectionData<bool>>().ObjectsAndValues)
 	{
-		ObjectAndValue.Value = !!BoolCurve.Evaluate(Context.GetTime(), ObjectAndValue.Value ? 1 : 0);
+		bool& bIsHidden = ObjectAndValue.Value;
+
+		// Pass the inverse of our current visibility since we negate the result of the curve evaluation.
+		uint8 InverseCurrentVisibility = bIsHidden ? 1 : 0;
 
 		// Invert this evaluation since the property is "bHiddenInGame" and we want the visualization to be the inverse of that. Green means visible.
-		ObjectAndValue.Value = !ObjectAndValue.Value;
+		bIsHidden = !BoolCurve.Evaluate(Context.GetTime(), InverseCurrentVisibility);
 	}
 	
 	ExecutionTokens.Add(FTemporarilyHiddenInGameExecutionToken());

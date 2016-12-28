@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -65,14 +65,22 @@ public:
 	virtual float GetKeyTime(FKeyHandle KeyHandle) const = 0;
 
 	/**
+	 * Dilates the key by a specific factor
+	 *
+	 * @param Scale The multiplier which scales this key
+	 * @param Origin Time to scale from
+	 * @return The handle of the key
+	 */
+	virtual FKeyHandle DilateKey(FKeyHandle KeyHandle, float Scale, float Origin) = 0;
+
+	/**
 	 * Moves a key
 	 * 
 	 * @param KeyHandle		Handle of the key to move
 	 * @param DeltaPosition	The delta position of the key
-	 * @return The handle of the key
 	 */
 	virtual FKeyHandle MoveKey(FKeyHandle KeyHandle, float DeltaPosition) = 0;
-	
+		
 	/**
 	 * Deletes a key
 	 * 

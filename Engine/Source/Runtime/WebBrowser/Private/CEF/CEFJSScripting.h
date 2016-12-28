@@ -1,12 +1,8 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
-
-class Error;
-class FWebJSScripting;
-struct FWebJSParam;
 
 #if WITH_CEF3
 #include "WebJSFunction.h"
@@ -27,6 +23,13 @@ THIRD_PARTY_INCLUDES_END
 #include "HideWindowsPlatformAtomics.h"
 #include "HideWindowsPlatformTypes.h"
 #endif
+#endif
+
+class Error;
+class FWebJSScripting;
+struct FWebJSParam;
+
+#if WITH_CEF3
 
 /**
  * Implements handling of bridging UObjects client side with JavaScript renderer side.

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Windows/WindowsPlatformMisc.h"
 #include "Misc/DateTime.h"
@@ -607,7 +607,7 @@ void FWindowsPlatformMisc::PlatformPreInit()
 
 void FWindowsPlatformMisc::PlatformInit()
 {
-#if _MSC_VER == 1800 && PLATFORM_64BITS
+#if defined(_MSC_VER) && _MSC_VER == 1800 && PLATFORM_64BITS
 	// Work around bug in the VS 2013 math libraries in 64bit on certain windows versions. http://connect.microsoft.com/VisualStudio/feedback/details/811093 has details, remove this when runtime libraries are fixed
 	_set_FMA3_enable(0);
 #endif

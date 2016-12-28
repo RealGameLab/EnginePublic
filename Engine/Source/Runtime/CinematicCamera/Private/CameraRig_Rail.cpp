@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "CameraRig_Rail.h"
 #include "UObject/ConstructorHelpers.h"
@@ -127,7 +127,7 @@ void ACameraRig_Rail::UpdatePreviewMeshes()
 			GetComponents(OwnedSplineMeshComponents);
 			for (auto OwnedComponent : OwnedSplineMeshComponents)
 			{
-				if (!PreviewRailMeshSegments.Contains(OwnedComponent))
+				if (!PreviewRailMeshSegments.Contains(OwnedComponent) && OwnedComponent->IsRegistered())
 				{
 					OwnedComponent->UnregisterComponent();
 				}

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	UAnimSingleNodeInstance.cpp: Single Node Tree Instance 
@@ -150,8 +150,11 @@ void UAnimSingleNodeInstance::UpdateMontageWeightForTimeSkip(float TimeDifferenc
 
 		UpdateMontageEvaluationData();
 
-		const FName CurrentSlotNodeName = Montage->SlotAnimTracks[0].SlotName;
-		Proxy.UpdateMontageWeightForSlot(CurrentSlotNodeName, 1.f);
+		if(Montage->SlotAnimTracks.Num() > 0)
+		{
+			const FName CurrentSlotNodeName = Montage->SlotAnimTracks[0].SlotName;
+			Proxy.UpdateMontageWeightForSlot(CurrentSlotNodeName, 1.f);
+		}
 	}
 }
 

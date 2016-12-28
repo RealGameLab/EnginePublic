@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -99,6 +99,9 @@ public:
 
 	/** Scrolls the view to the bottom */
 	void ScrollToBottom();
+
+	/** Gets the scroll offset of this view (in items) */
+	float GetScrollOffset() const;
 
 	/** Set the scroll offset of this view (in items) */
 	void SetScrollOffset( const float InScrollOffset );

@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
@@ -233,7 +233,7 @@ private:
 				if ( Settings->HasAnyFlags(RF_ClassDefaultObject) && !Settings->GetClass()->HasAnyCastFlag(CLASS_Deprecated) )
 				{
 					// Ignore the setting if it's specifically the UDeveloperSettings or other abstract settings classes
-					if ( Settings->GetClass()->HasAnyClassFlags(CLASS_Abstract) )
+					if ( Settings->GetClass()->HasAnyClassFlags(CLASS_Abstract) || !Settings->SupportsAutoRegistration())
 					{
 						continue;
 					}

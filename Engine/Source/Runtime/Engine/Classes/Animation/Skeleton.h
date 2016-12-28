@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /** 
  * This is the definition for a skeleton, used to animate USkeletalMesh
@@ -344,6 +344,8 @@ public:
 	ENGINE_API void AccumulateCurveMetaData(FName CurveName, bool bMaterialSet, bool bMorphtargetSet);
 
 	ENGINE_API bool AddNewVirtualBone(const FName SourceBoneName, const FName TargetBoneName);
+
+	ENGINE_API bool AddNewVirtualBone(const FName SourceBoneName, const FName TargetBoneName, FName& NewVirtualBoneName);
 
 	ENGINE_API void RemoveVirtualBones(const TArray<FName>& BonesToRemove);
 	
@@ -707,6 +709,13 @@ public:
 	 * @param	InSkelMesh	: SkeletalMesh to build look up for
 	 */
 	void RebuildLinkup(const USkeletalMesh* InSkelMesh);
+
+	/**
+	 * Remove Link up cache for the SkelMesh
+	 *
+	 * @param	InSkelMesh	: SkeletalMesh to remove linkup cache for 
+	 */
+	void RemoveLinkup(const USkeletalMesh* InSkelMesh);
 
 	ENGINE_API void SetBoneTranslationRetargetingMode(const int32& BoneIndex, EBoneTranslationRetargetingMode::Type NewRetargetingMode, bool bChildrenToo=false);
 

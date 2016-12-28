@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -38,7 +38,8 @@ enum EStereoscopicPass
 {
 	eSSP_FULL,
 	eSSP_LEFT_EYE,
-	eSSP_RIGHT_EYE
+	eSSP_RIGHT_EYE,
+	eSSP_MONOSCOPIC_EYE
 };
 
 

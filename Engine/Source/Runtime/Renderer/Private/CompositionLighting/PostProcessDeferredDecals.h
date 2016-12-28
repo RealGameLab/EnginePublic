@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	PostProcessDeferredDecals.h: Deferred Decals implementation.
@@ -13,6 +13,7 @@
 #include "PostProcess/SceneRenderTargets.h"
 #include "PostProcess/RenderingCompositionGraph.h"
 #include "DecalRenderingCommon.h"
+#include "DrawingPolicy.h"
 
 // ePId_Input0: SceneColor (not needed for DBuffer decals)
 // derives from TRenderingCompositePassBase<InputCount, OutputCount> 

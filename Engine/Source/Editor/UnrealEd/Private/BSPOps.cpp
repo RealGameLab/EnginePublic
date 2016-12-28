@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #include "BSPOps.h"
@@ -530,6 +530,7 @@ void FBSPOps::csgPrepMovingBrush( ABrush* Actor )
 
 	// Make sure simplified collision is up to date.
 	Actor->GetBrushComponent()->BuildSimpleBrushCollision();
+	Actor->RebuildNavigationData();
 }
 
 /**

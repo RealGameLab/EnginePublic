@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -36,6 +36,9 @@ enum class ESavePackageResult
 	/** [When cooking] Package was saved, but we should generate a stub so that other converted packages can interface with it*/
 	GenerateStub
 };
+
+COREUOBJECT_API void StartSavingEDLCookInfoForVerification();
+COREUOBJECT_API void VerifyEDLCookInfo();
 
 /**
  * A package.

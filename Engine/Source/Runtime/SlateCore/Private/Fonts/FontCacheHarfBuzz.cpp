@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #include "Fonts/FontCacheHarfBuzz.h"
 #include "Fonts/FontCache.h"
@@ -19,8 +19,10 @@
 	#endif // #if PLATFORM_WINDOWS
 
 	// Include some private headers needed for our font implementation
+	THIRD_PARTY_INCLUDES_START
 	#include "hb-private.hh"
 	#include "hb-font-private.hh"
+	THIRD_PARTY_INCLUDES_END
 
 	#if PLATFORM_WINDOWS || PLATFORM_XBOXONE
 		#pragma warning(pop)

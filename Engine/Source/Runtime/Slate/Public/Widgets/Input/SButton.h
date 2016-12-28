@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -146,6 +146,12 @@ public:
 
 	/** See OnClicked event */
 	void SetOnClicked(FOnClicked InOnClicked);
+
+	/** Set OnHovered event */
+	void SetOnHovered(FSimpleDelegate InOnHovered);
+
+	/** Set OnUnhovered event */
+	void SetOnUnhovered(FSimpleDelegate InOnUnhovered);
 
 	/** See ButtonStyle attribute */
 	void SetButtonStyle(const FButtonStyle* ButtonStyle);

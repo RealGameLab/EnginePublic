@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #include "FileHelpers.h"
@@ -565,7 +565,8 @@ static bool SaveWorld(UWorld* World,
 			SaveErrors.Flush();
 		}
 
-		if (bSuccess)
+		// @todo Autosaving should save build data as well
+		if (bSuccess && !bAutosaving)
 		{
 			// Also save MapBuildData packages when saving the current level
 			FEditorFileUtils::SaveMapDataPackages(DuplicatedWorld ? DuplicatedWorld : World, bCheckDirty);
@@ -966,7 +967,7 @@ void FEditorFileUtils::SaveAssetsAs(const TArray<UObject*>& Assets, TArray<UObje
 		{
 			if (!OpenSaveAsDialog(Asset->GetClass(), OldPackagePath, OldAssetName, NewPackageName))
 			{
-				break;
+				return;
 			}
 
 			FText OutError;
@@ -1392,6 +1393,10 @@ bool FEditorFileUtils::PromptToCheckoutPackages(bool bCheckDirty, const TArray<U
 							bPackageFailedWritable = true;
 							PkgsWhichFailedWritable += FString::Printf( TEXT("\n%s"), *PackageToMakeWritable->GetName() );
 						}
+					}
+					else if (OutPackagesCheckedOutOrMadeWritable)
+					{
+						OutPackagesCheckedOutOrMadeWritable->Append(PackagesToCheckOut);
 					}
 				}
 

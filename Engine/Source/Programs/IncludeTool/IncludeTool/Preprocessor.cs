@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -297,7 +299,7 @@ namespace IncludeTool
 			if(PreludeFile != null)
 			{
 				TextBuffer PreludeText = TextBuffer.FromFile(PreludeFile.FullName);
-				PreprocessorMarkup[] PreludeMarkup = PreprocessorMarkup.ParseArray(new TokenReader(PreludeText, TextLocation.Origin));
+				PreprocessorMarkup[] PreludeMarkup = PreprocessorMarkup.ParseArray(PreludeText);
 				foreach(PreprocessorMarkup Markup in PreludeMarkup)
 				{
 					ParseMarkup(Markup.Type, Markup.Tokens, Markup.Location.LineIdx);

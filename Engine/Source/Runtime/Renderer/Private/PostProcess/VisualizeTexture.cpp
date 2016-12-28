@@ -1,4 +1,4 @@
-// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
+// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 /*=============================================================================
 	VisualizeTexture.cpp: Post processing visualize texture.
@@ -294,6 +294,12 @@ FVisualizeTexture::FVisualizeTexture()
 	bFullList = false;
 	SortOrder = -1;
 	bEnabled = true;
+}
+
+void FVisualizeTexture::Destroy()
+{
+	VisualizeTextureContent.SafeRelease();
+	StencilSRV.SafeRelease();
 }
 
 FIntRect FVisualizeTexture::ComputeVisualizeTextureRect(FIntPoint InputTextureSize) const
