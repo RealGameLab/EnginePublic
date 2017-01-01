@@ -9,7 +9,8 @@ public class UnrealHeaderToolTarget : TargetRules
 	{
 		Type = TargetType.Program;
 		LinkType = TargetLinkType.Modular;
-	}
+        AdditionalPlugins.Add("UnrealLua");
+    }
 
 	//
 	// TargetRules interface.
