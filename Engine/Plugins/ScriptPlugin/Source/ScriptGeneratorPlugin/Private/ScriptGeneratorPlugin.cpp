@@ -100,24 +100,25 @@ void FScriptGeneratorPlugin::FinishExport()
 
 bool FScriptGeneratorPlugin::SupportsTarget(const FString& TargetName) const
 {
+	return true;
 	// We only support the target if it explicitly enables the required script plugin in its uproject file
-	bool bSupportsTarget = false;
-	if (FPaths::IsProjectFilePathSet())
-	{
-		FProjectDescriptor ProjectDescriptor;
-		FText OutError;
-		if (ProjectDescriptor.Load(FPaths::GetProjectFilePath(), OutError))
-		{
-			for (auto& PluginDescriptor : ProjectDescriptor.Plugins)
-			{
-				// For your own script plugin you might want to change the hardcoded name here to something else
-				if (PluginDescriptor.bEnabled && PluginDescriptor.Name == TEXT("ScriptPlugin"))
-				{
-					bSupportsTarget = true;
-					break;
-				}
-			}
-		}
-	}
-	return bSupportsTarget;
+	//bool bSupportsTarget = false;
+	//if (FPaths::IsProjectFilePathSet())
+	//{
+	//	FProjectDescriptor ProjectDescriptor;
+	//	FText OutError;
+	//	if (ProjectDescriptor.Load(FPaths::GetProjectFilePath(), OutError))
+	//	{
+	//		for (auto& PluginDescriptor : ProjectDescriptor.Plugins)
+	//		{
+	//			// For your own script plugin you might want to change the hardcoded name here to something else
+	//			if (PluginDescriptor.bEnabled && PluginDescriptor.Name == TEXT("ScriptPlugin"))
+	//			{
+	//				bSupportsTarget = true;
+	//				break;
+	//			}
+	//		}
+	//	}
+	//}
+	//return bSupportsTarget;
 }

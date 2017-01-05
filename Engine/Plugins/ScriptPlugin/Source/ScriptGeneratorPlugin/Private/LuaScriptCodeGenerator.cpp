@@ -1,8 +1,8 @@
 // Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
-
 #include "LuaScriptCodeGenerator.h"
+#include "CoreMinimal.h"
 #include "ScriptGeneratorLog.h"
-#include "UObject/ErrorException.h"
+#include "ErrorException.h"
 
 // Supported structs
 static FName Name_Vector2D("Vector2D");
