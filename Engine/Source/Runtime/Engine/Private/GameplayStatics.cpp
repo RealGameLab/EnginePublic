@@ -2299,7 +2299,7 @@ int32 UGameplayStatics::GrassOverlappingSphereCount(const UObject* WorldContextO
 }
 
 
-bool UGameplayStatics::DeprojectScreenToWorld(APlayerController const* Player, const FVector2D& ScreenPosition, FVector& WorldPosition, FVector& WorldDirection)
+bool UGameplayStatics::DeprojectScreenToWorld(const APlayerController* Player, const FVector2D& ScreenPosition, FVector& WorldPosition, FVector& WorldDirection)
 {
 	ULocalPlayer* const LP = Player ? Player->GetLocalPlayer() : nullptr;
 	if (LP && LP->ViewportClient)
@@ -2320,7 +2320,7 @@ bool UGameplayStatics::DeprojectScreenToWorld(APlayerController const* Player, c
 	return false;
 }
 
-bool UGameplayStatics::ProjectWorldToScreen(APlayerController const* Player, const FVector& WorldPosition, FVector2D& ScreenPosition, bool bPlayerViewportRelative)
+bool UGameplayStatics::ProjectWorldToScreen(const APlayerController* Player, const FVector& WorldPosition, FVector2D& ScreenPosition, bool bPlayerViewportRelative)
 {
 	ULocalPlayer* const LP = Player ? Player->GetLocalPlayer() : nullptr;
 	if (LP && LP->ViewportClient)

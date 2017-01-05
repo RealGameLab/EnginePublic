@@ -986,7 +986,7 @@ class ENGINE_API UGameplayStatics : public UBlueprintFunctionLibrary
 	 * @param WorldDirection	(out) World space direction vector away from the camera at the given 2d point.
 	 */
 	UFUNCTION(BlueprintPure, Category = "Utilities", meta = (Keywords = "unproject"))
-	static bool DeprojectScreenToWorld(APlayerController const* Player, const FVector2D& ScreenPosition, FVector& WorldPosition, FVector& WorldDirection);
+	static bool DeprojectScreenToWorld(const APlayerController* Player, const FVector2D& ScreenPosition, FVector& WorldPosition, FVector& WorldDirection);
 
 	/** 
 	 * Transforms the given 3D world-space point into a its 2D screen space coordinate. 
@@ -996,7 +996,7 @@ class ENGINE_API UGameplayStatics : public UBlueprintFunctionLibrary
 	 * @param bPlayerViewportRelative	Should this be relative to the player viewport subregion (useful when using player attached widgets in split screen)
 	 */
 	UFUNCTION(BlueprintPure, Category = "Utilities")
-	static bool ProjectWorldToScreen(APlayerController const* Player, const FVector& WorldPosition, FVector2D& ScreenPosition, bool bPlayerViewportRelative = false);
+	static bool ProjectWorldToScreen(const APlayerController* Player, const FVector& WorldPosition, FVector2D& ScreenPosition, bool bPlayerViewportRelative = false);
 
 	//~ Utility functions for interacting with Options strings
 
