@@ -810,6 +810,21 @@ void EngineMemoryWarningHandler(const FGenericMemoryWarningContext& GenericConte
 
 UEngine::FOnNewStatRegistered UEngine::NewStatDelegate;
 
+void UEngine::PreGarbageCollect()
+{
+	for (TObjectIterator<UWorld> WorldIt; WorldIt; ++WorldIt)
+	{
+		UWorld* World = *WorldIt;
+
+		if (World && World->HasEndOfFrameUpdates())
+		{
+			// Make sure deferred component updates have been sent to the rendering thread before deleting any UObjects which the rendering thread may be referencing
+			// This fixes rendering thread crashes in the following order of operations 1) UMeshComponent::SetMaterial 2) GC 3) Rendering command that dereferences the UMaterial
+			World->SendAllEndOfFrameUpdates();
+		}
+	}
+}
+
 //
 // Initialize the engine.
 //
@@ -848,6 +863,8 @@ void UEngine::Init(IEngineLoop* InEngineLoop)
 
 	// Add to root.
 	AddToRoot();
+
+	FCoreUObjectDelegates::PreGarbageCollect.AddStatic(UEngine::PreGarbageCollect);
 
 	// Initialize the HMDs and motion controllers, if any
 	InitializeHMDDevice();
@@ -11370,9 +11387,9 @@ void UEngine::CopyPropertiesForUnrelatedObjects(UObject* OldObject, UObject* New
 	// Serialize out the modified properties on the old default object
 	TArray<uint8> SavedProperties;
 	TIndirectArray<FInstancedObjectRecord> SavedInstances;
-	TMap<FName, int32> OldInstanceMap;
+	TMap<FString, int32> OldInstanceMap;
 
-	const uint32 AdditinalPortFlags = Params.bCopyDeprecatedProperties ? PPF_UseDeprecatedProperties : PPF_None;
+	const uint32 AdditionalPortFlags = Params.bCopyDeprecatedProperties ? PPF_UseDeprecatedProperties : PPF_None;
 	// Save the modified properties of the old CDO
 	{
 		class FCopyPropertiesArchiveObjectWriter : public FObjectWriter
@@ -11409,7 +11426,7 @@ void UEngine::CopyPropertiesForUnrelatedObjects(UObject* OldObject, UObject* New
 			bool bSkipCompilerGeneratedDefaults;
 		};
 
-		FCopyPropertiesArchiveObjectWriter Writer(OldObject, SavedProperties, NewObject, true, true, Params.bDoDelta, AdditinalPortFlags, Params.bSkipCompilerGeneratedDefaults);
+		FCopyPropertiesArchiveObjectWriter Writer(OldObject, SavedProperties, NewObject, true, true, Params.bDoDelta, AdditionalPortFlags, Params.bSkipCompilerGeneratedDefaults);
 	}
 
 	{
@@ -11422,8 +11439,8 @@ void UEngine::CopyPropertiesForUnrelatedObjects(UObject* OldObject, UObject* New
 			FInstancedObjectRecord* pRecord = new(SavedInstances) FInstancedObjectRecord();
 			UObject* OldInstance = Components[Index];
 			pRecord->OldInstance = OldInstance;
-			OldInstanceMap.Add(OldInstance->GetFName(), SavedInstances.Num() - 1);
-			FObjectWriter Writer(OldInstance, pRecord->SavedProperties, true, true, true, AdditinalPortFlags);
+			OldInstanceMap.Add(OldInstance->GetPathName(OldObject), SavedInstances.Num() - 1);
+			FObjectWriter Writer(OldInstance, pRecord->SavedProperties, true, true, true, AdditionalPortFlags);
 		}
 	}
 
@@ -11446,7 +11463,7 @@ void UEngine::CopyPropertiesForUnrelatedObjects(UObject* OldObject, UObject* New
 		for (int32 Index = 0; Index < ComponentsOnNewObject.Num(); Index++)
 		{
 			UObject* NewInstance = ComponentsOnNewObject[Index];
-			if (int32* pOldInstanceIndex = OldInstanceMap.Find(NewInstance->GetFName()))
+			if (int32* pOldInstanceIndex = OldInstanceMap.Find(NewInstance->GetPathName(NewObject)))
 			{
 				FInstancedObjectRecord& Record = SavedInstances[*pOldInstanceIndex];
 				ReferenceReplacementMap.Add(Record.OldInstance, NewInstance);
@@ -11503,7 +11520,7 @@ void UEngine::CopyPropertiesForUnrelatedObjects(UObject* OldObject, UObject* New
 		for (int32 Index = 0; Index < ComponentsOnNewObject.Num(); Index++)
 		{
 			UObject* NewInstance = ComponentsOnNewObject[Index];
-			if (int32* pOldInstanceIndex = OldInstanceMap.Find(NewInstance->GetFName()))
+			if (int32* pOldInstanceIndex = OldInstanceMap.Find(NewInstance->GetPathName(NewObject)))
 			{
 				// Restore modified properties into the new instance
 				FInstancedObjectRecord& Record = SavedInstances[*pOldInstanceIndex];
