@@ -5682,7 +5682,11 @@ bool FSlateApplication::ProcessMouseMoveEvent( FPointerEvent& MouseEvent, bool b
 		QueueSynthesizedMouseMove();
 
 		// Detecting a mouse move of zero delta is our way of filtering out synthesized move events
+#if WITH_EDITOR
 		const bool AllowSpawningOfToolTips = true;
+#else
+		const bool AllowSpawningOfToolTips = false;
+#endif
 		UpdateToolTip( AllowSpawningOfToolTips );
 		
 		// Guard against synthesized mouse moves and only track user interaction if the cursor pos changed
