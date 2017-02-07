@@ -2939,6 +2939,7 @@ UClass* FLinkerLoad::GetExportLoadClass(int32 Index)
 
 int32 FLinkerLoad::LoadMetaDataFromExportMap(bool bForcePreload/* = false */)
 {
+	UMetaData* MetaData = nullptr;
 	int32 MetaDataIndex = INDEX_NONE;
 
 	// Try to find MetaData and load it first as other objects can depend on it.
@@ -2946,7 +2947,7 @@ int32 FLinkerLoad::LoadMetaDataFromExportMap(bool bForcePreload/* = false */)
 	{
 		if (ExportMap[ExportIndex].ObjectName == NAME_PackageMetaData)
 		{
-			CreateExportAndPreload(ExportIndex, bForcePreload);
+			MetaData = Cast<UMetaData>(CreateExportAndPreload(ExportIndex, bForcePreload));
 			MetaDataIndex = ExportIndex;
 			break;
 		}
@@ -2962,10 +2963,17 @@ int32 FLinkerLoad::LoadMetaDataFromExportMap(bool bForcePreload/* = false */)
 				UObject* Object = CreateExportAndPreload(ExportIndex, bForcePreload);
 				Object->Rename(*FName(NAME_PackageMetaData).ToString(), NULL, REN_ForceNoResetLoaders);
 
+				MetaData = Cast<UMetaData>(Object);
 				MetaDataIndex = ExportIndex;
 				break;
 			}
 		}
+	}
+
+	// Make sure the meta-data is referenced by its package to avoid premature GC
+	if (LinkerRoot)
+	{
+		LinkerRoot->MetaData = MetaData;
 	}
 
 	return MetaDataIndex;
@@ -5184,6 +5192,18 @@ void FLinkerLoad::FlushCache()
 	{
 		Loader->FlushCache();
 	}
+}
+
+bool FLinkerLoad::HasAnyObjectsPendingLoad() const
+{
+	for (const FObjectExport& Export : ExportMap)
+	{
+		if (Export.Object && Export.Object->HasAnyFlags(RF_NeedLoad | RF_NeedPostLoad))
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 #if WITH_EDITORONLY_DATA

@@ -2500,22 +2500,25 @@ bool FSlateApplication::SetUserFocus(uint32 UserIndex, const TSharedPtr<SWidget>
 	ensureMsgf(bValidWidget, TEXT("Attempting to focus an invalid widget. If your intent is to clear focus use ClearUserFocus()"));
 	if (bValidWidget)
 	{
-		FWidgetPath PathToWidget;
-		const bool bFound = FSlateWindowHelper::FindPathToWidget(SlateWindows, WidgetToFocus.ToSharedRef(), /*OUT*/ PathToWidget);
-		if (bFound)
+		if (FSlateUser* User = GetOrCreateUser(UserIndex))
 		{
-			return SetUserFocus(UserIndex, PathToWidget, ReasonFocusIsChanging);
-		}
-		else
-		{
-			const bool bFoundVirtual = FSlateWindowHelper::FindPathToWidget(SlateVirtualWindows, WidgetToFocus.ToSharedRef(), /*OUT*/ PathToWidget);
-			if ( bFoundVirtual )
+			FWidgetPath PathToWidget;
+			const bool bFound = FSlateWindowHelper::FindPathToWidget(SlateWindows, WidgetToFocus.ToSharedRef(), /*OUT*/ PathToWidget);
+			if (bFound)
 			{
-				return SetUserFocus(UserIndex, PathToWidget, ReasonFocusIsChanging);
+				return SetUserFocus(User, PathToWidget, ReasonFocusIsChanging);
 			}
 			else
 			{
-				//ensureMsgf(bFound, TEXT("Attempting to focus a widget that isn't in the tree and visible: %s. If your intent is to clear focus use ClearUserFocus()"), WidgetToFocus->ToString());
+				const bool bFoundVirtual = FSlateWindowHelper::FindPathToWidget(SlateVirtualWindows, WidgetToFocus.ToSharedRef(), /*OUT*/ PathToWidget);
+				if (bFoundVirtual)
+				{
+					return SetUserFocus(User, PathToWidget, ReasonFocusIsChanging);
+				}
+				else
+				{
+					//ensureMsgf(bFound, TEXT("Attempting to focus a widget that isn't in the tree and visible: %s. If your intent is to clear focus use ClearUserFocus()"), WidgetToFocus->ToString());
+				}
 			}
 		}
 	}
@@ -4859,6 +4862,8 @@ bool FSlateApplication::OnMouseDown( const TSharedPtr< FGenericWindow >& Platfor
 bool FSlateApplication::ProcessMouseButtonDownEvent( const TSharedPtr< FGenericWindow >& PlatformWindow, FPointerEvent& MouseEvent )
 {
 	SCOPE_CYCLE_COUNTER(STAT_ProcessMouseButtonDown);
+	
+	TScopeCounter<int32> BeginInput(ProcessingInput);
 
 	QueueSynthesizedMouseMove();
 	SetLastUserInteractionTime(this->GetCurrentTime());
@@ -5456,6 +5461,8 @@ bool FSlateApplication::ProcessMouseButtonDoubleClickEvent( const TSharedPtr< FG
 
 FReply FSlateApplication::RoutePointerDoubleClickEvent(FWidgetPath& WidgetsUnderPointer, FPointerEvent& PointerEvent)
 {
+	TScopeCounter<int32> BeginInput(ProcessingInput);
+
 	FReply Reply = FReply::Unhandled();
 
 	// Switch worlds widgets in the current path

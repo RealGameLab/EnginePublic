@@ -4962,7 +4962,6 @@ void UParticleSystemComponent::InitParticles()
 		int32 NumInstances = EmitterInstances.Num();
 		int32 NumEmitters = Template->Emitters.Num();
 		const bool bIsFirstCreate = NumInstances == 0;
-		check(bIsFirstCreate || NumInstances == NumEmitters);
 		EmitterInstances.SetNumZeroed(NumEmitters);
 
 		bWasCompleted = bIsFirstCreate ? false : bWasCompleted;
@@ -6714,7 +6713,7 @@ void UParticleSystemComponent::AutoPopulateInstanceProperties()
 	}
 }
 
-void UParticleSystemComponent::GetUsedMaterials( TArray<UMaterialInterface*>& OutMaterials ) const
+void UParticleSystemComponent::GetUsedMaterials( TArray<UMaterialInterface*>& OutMaterials, bool bGetDebugMaterials ) const
 {
 	if (Template)
 	{
@@ -6766,7 +6765,7 @@ void UParticleSystemComponent::GetUsedMaterials( TArray<UMaterialInterface*>& Ou
 							if (Material == NULL)
 							{
 								// Walk in reverse order as in the case of multiple modules, only the final result will be applied
-								for (int32 ModuleIndex = LOD->Modules.Num()-1; ModuleIndex > 0; --ModuleIndex)
+								for (int32 ModuleIndex = LOD->Modules.Num()-1; ModuleIndex >= 0; --ModuleIndex)
 								{
 									UParticleModuleMeshMaterial* MeshMatModule = Cast<UParticleModuleMeshMaterial>(LOD->Modules[ModuleIndex]);
 									if (MeshMatModule && MeshMatModule->bEnabled)
