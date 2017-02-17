@@ -9,6 +9,7 @@
 #include "AudioMixerBuffer.h"
 #include "AudioMixerSubmix.h"
 #include "DSP/OnePole.h"
+#include "DSP/EnvelopeFollower.h"
 #include "IAudioExtensionPlugin.h"
 #include "Containers/Queue.h"
 
@@ -48,6 +49,9 @@ namespace Audio
 	public:
 		// Called when the current buffer is finished and a new one needs to be queued
 		virtual void OnSourceBufferEnd() = 0;
+
+		// Called when the buffer queue listener is released. Allows cleaning up any resources from render thread.
+		virtual void OnRelease() = 0;
 	};
 
 	struct FMixerSourceSubmixSend
@@ -61,10 +65,12 @@ namespace Audio
 	{
 		ISourceBufferQueueListener* BufferQueueListener;
 		TArray<FMixerSourceSubmixSend> SubmixSends;
+		TArray<USoundEffectSourcePreset*> SourceEffectChain;
 		FMixerSourceVoice* SourceVoice;
 		int32 NumInputChannels;
 		int32 NumInputFrames;
 		FString DebugName;
+		bool bPlayEffectChainTails;
 		bool bUseHRTFSpatialization;
 		bool bIsDebugMode;
 
@@ -73,6 +79,7 @@ namespace Audio
 			, SourceVoice(nullptr)
 			, NumInputChannels(0)
 			, NumInputFrames(0)
+			, bPlayEffectChainTails(true)
 			, bUseHRTFSpatialization(false)
 			, bIsDebugMode(false)
 		{}
@@ -87,6 +94,7 @@ namespace Audio
 
 		void SetValue(float InValue);
 		float Update();
+		float GetValue() const;
 
 	private:
 		float StartValue;
@@ -95,6 +103,7 @@ namespace Audio
 		float NumInterpFrames;
 		float Frame;
 		bool bIsInit;
+		bool bIsDone;
 	};
 
 
@@ -112,8 +121,9 @@ namespace Audio
 
 		void SetChannelMap(const TArray<float>& ChannelMap)
 		{
-			if (!ChannelValues.Num())
+			if (ChannelValues.Num() != ChannelMap.Num())
 			{
+				ChannelValues.Reset();
 				for (int32 i = 0; i < ChannelMap.Num(); ++i)
 				{
 					ChannelValues.Add(FSourceParam(NumInterpFrames));
@@ -138,7 +148,16 @@ namespace Audio
 			}
 		}
 
-	private:
+		void PadZeroes(const int32 ToSize)
+		{
+			int32 CurrentSize = ChannelValues.Num();
+			for (int32 i = CurrentSize; i < ToSize; ++i)
+			{
+				ChannelValues.Add(FSourceParam(NumInterpFrames));
+				ChannelValues[i].SetValue(0.0f);
+			}
+		}
+
 		TArray<FSourceParam> ChannelValues;
 		float NumInterpFrames;
 	};
@@ -166,7 +185,7 @@ namespace Audio
 		void SetSpatializationParams(const int32 SourceId, const FSpatializationParams& InParams);
 		void SetWetLevel(const int32 SourceId, const float WetLevel);
 		void SetMasterReverbWetLevel(const int32 SourceId, const float MasterReverbWetLevel);
-		void SetChannelMap(const int32 SourceId, const TArray<float>& InChannelMap);
+		void SetChannelMap(const int32 SourceId, const TArray<float>& InChannelMap, const bool bInIs3D, const bool bInIsCenterChannelOnly);
 		void SetLPFFrequency(const int32 SourceId, const float Frequency);
 		
 		void SubmitBuffer(const int32 SourceId, FMixerSourceBufferPtr InSourceVoiceBuffer);
@@ -174,11 +193,14 @@ namespace Audio
 
 		int64 GetNumFramesPlayed(const int32 SourceId) const;
 		bool IsDone(const int32 SourceId) const;
-
+		bool IsEffectTailsDone(const int32 SourceId) const;
+		bool NeedsSpeakerMap(const int32 SourceId) const;
 		void ComputeNextBlockOfSamples();
 		void MixOutputBuffers(const int32 SourceId, TArray<float>& OutDryBuffer, TArray<float>& OutWetBuffer, const float DryLevel, const float WetLevel) const;
 
 		void SetSubmixSendInfo(const int32 SourceId, FMixerSubmixPtr Submix, const float DryLevel, const float WetLevel);
+
+		void UpdateDeviceChannelCount(const int32 InNumOutputChannels);
 
 	private:
 
@@ -223,6 +245,7 @@ namespace Audio
 		TArray<FMixerSourceBufferPtr> CurrentPCMBuffer;
 		TArray<int32> CurrentAudioChunkNumFrames;
 		TArray<TArray<float>> SourceBuffer;
+		TArray<TArray<float>> HRTFSourceBuffer;
 		TArray<TArray<float>> CurrentFrameValues;
 		TArray<TArray<float>> NextFrameValues;
 		TArray<float> CurrentFrameAlpha;
@@ -236,18 +259,28 @@ namespace Audio
 		// Simple LPFs for all sources (all channels of all sources)
 		TArray<TArray<FOnePoleLPF>> LowPassFilters;
 
+		// Source effect instances
+		TArray<TArray<FSoundEffectSource*>> SourceEffects;
+		TArray<TArray<USoundEffectSourcePreset*>> SourceEffectPresets;
+		TArray<bool> bEffectTailsDone;
+		FSoundEffectSourceInputData SourceEffectInputData;
+		FSoundEffectSourceOutputData SourceEffectOutputData;
+
+		// A DSP object which tracks the amplitude envelope of a source.
+		TArray<Audio::FEnvelopeFollower> SourceEnvelopeFollower;
+		TArray<float> SourceEnvelopeValue;
+
 		TArray<FSourceChannelMap> ChannelMapParam;
 		TArray<FSpatializationParams> SpatParams;
 		TArray<float> ScratchChannelMap;
 
 		// Output data, after computing a block of sample data, this is read back from mixers
-		TArray<TArray<float>> PostEffectBuffers;
+		TArray<TArray<float>*> PostEffectBuffers;
 		TArray<TArray<float>> OutputBuffer;
 
-		// Buffer used as an intermediate buffer between effects
-		TArray<float> ScratchBuffer;
-
 		// State management
+		TArray<bool> bIs3D;
+		TArray<bool> bIsCenterChannelOnly;
 		TArray<bool> bIsActive;
 		TArray<bool> bIsPlaying;
 		TArray<bool> bIsPaused;
@@ -267,6 +300,8 @@ namespace Audio
 			TArray<int32> FreeSourceIndices;
 			TArray<bool> bIsBusy;
 			TArray<FThreadSafeBool> bIsDone;
+			TArray<FThreadSafeBool> bEffectTailsDone;
+			TArray <bool> bNeedsSpeakerMap;
 			TArray<bool> bIsDebugMode;
 		} GameThreadInfo;
 

@@ -608,6 +608,7 @@ class FGlobalDistanceFieldInfo
 public:
 
 	bool bInitialized;
+	TArray<FGlobalDistanceFieldClipmap> MostlyStaticClipmaps;
 	TArray<FGlobalDistanceFieldClipmap> Clipmaps;
 	FGlobalDistanceFieldParameterData ParameterData;
 
@@ -802,6 +803,7 @@ public:
 	FVector ExponentialFogColor;
 	float FogMaxOpacity;
 	FVector4 ExponentialFogParameters3;
+	FVector2D SinCosInscatteringColorCubemapRotation;
 
 	UTexture* FogInscatteringColorCubemap;
 	FVector FogInscatteringTextureParameters;
@@ -1395,6 +1397,8 @@ protected:
 	void ClearPrimitiveSingleFramePrecomputedLightingBuffers();
 
 	void RenderPlanarReflection(class FPlanarReflectionSceneProxy* ReflectionSceneProxy);
+
+	void ResolveSceneColor(FRHICommandList& RHICmdList);
 };
 
 /**

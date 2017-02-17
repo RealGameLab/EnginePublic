@@ -2938,16 +2938,15 @@ void FHeaderParser::CompileDirective(FClasses& AllClasses)
 	Variable declaration parser.
 -----------------------------------------------------------------------------*/
 
-void FHeaderParser::GetVarType
-(
-FClasses&                       AllClasses,
-FScope*							Scope,
-FPropertyBase&                  VarProperty,
-uint64                          Disallow,
-FToken*                         OuterPropertyType,
-EPropertyDeclarationStyle::Type PropertyDeclarationStyle,
-EVariableCategory::Type         VariableCategory,
-FIndexRange*                    ParsedVarIndexRange
+void FHeaderParser::GetVarType(
+	FClasses&                       AllClasses,
+	FScope*                         Scope,
+	FPropertyBase&                  VarProperty,
+	uint64                          Disallow,
+	FToken*                         OuterPropertyType,
+	EPropertyDeclarationStyle::Type PropertyDeclarationStyle,
+	EVariableCategory::Type         VariableCategory,
+	FIndexRange*                    ParsedVarIndexRange
 )
 {
 	UStruct* OwnerStruct = Scope->IsFileScope() ? nullptr : ((FStructScope*)Scope)->GetStruct();
@@ -5663,7 +5662,9 @@ void FHeaderParser::ParseParameterList(FClasses& AllClasses, UFunction* Function
 					FString InnerDefaultValue;
 					const bool bDefaultValueParsed = DefaultValueStringCppFormatToInnerFormat(Prop, DefaultArgText, InnerDefaultValue);
 					if (!bDefaultValueParsed)
+					{
 						FError::Throwf(TEXT("C++ Default parameter not parsed: %s \"%s\" "), *Prop->GetName(), *DefaultArgText);
+					}
 
 					if (InnerDefaultValue.IsEmpty())
 					{
@@ -7881,6 +7882,7 @@ void FHeaderParser::SimplifiedClassParse(const TCHAR* Filename, const TCHAR* InB
 
 	const TCHAR* StartOfLine            = Buffer;
 	bool         bFoundGeneratedInclude = false;
+	bool         bFoundExportedClasses  = false;
 
 	while (FParse::Line(&Buffer, StrLine, true))
 	{
@@ -8018,6 +8020,7 @@ void FHeaderParser::SimplifiedClassParse(const TCHAR* Filename, const TCHAR* InB
 				}
 			}
 
+			StrLine.Trim();
 			if (!bProcess || StrLine == TEXT(""))
 			{
 				continue;
@@ -8028,25 +8031,46 @@ void FHeaderParser::SimplifiedClassParse(const TCHAR* Filename, const TCHAR* InB
 			// Get class or interface name
 			if (const TCHAR* UInterfaceMacroDecl = FCString::Strfind(Str, TEXT("UINTERFACE(")))
 			{
-				Parser.ParseClassDeclaration(StartOfLine + (UInterfaceMacroDecl - Str), CurrentLine, TEXT("UINTERFACE"), /*out*/ ClassName, /*out*/ BaseClassName, /*out*/ DependentOn, OutParsedClassArray);
+				FName StrippedInterfaceName;
+				Parser.ParseClassDeclaration(Filename, StartOfLine + (UInterfaceMacroDecl - Str), CurrentLine, TEXT("UINTERFACE"), /*out*/ StrippedInterfaceName, /*out*/ ClassName, /*out*/ BaseClassName, /*out*/ DependentOn, OutParsedClassArray);
 				OutParsedClassArray.Add(FSimplifiedParsingClassInfo(MoveTemp(ClassName), MoveTemp(BaseClassName), CurrentLine, true));
+				if (!bFoundExportedClasses)
+				{
+					if (const TSharedRef<FClassDeclarationMetaData>* Found = GClassDeclarations.Find(StrippedInterfaceName))
+					{
+						bFoundExportedClasses = !((*Found)->ClassFlags & CLASS_NoExport);
+					}
+				}
 			}
 
 			if (const TCHAR* UClassMacroDecl = FCString::Strfind(Str, TEXT("UCLASS(")))
 			{
-				Parser.ParseClassDeclaration(StartOfLine + (UClassMacroDecl - Str), CurrentLine, TEXT("UCLASS"), /*out*/ ClassName, /*out*/ BaseClassName, /*out*/ DependentOn, OutParsedClassArray);
+				FName StrippedClassName;
+				Parser.ParseClassDeclaration(Filename, StartOfLine + (UClassMacroDecl - Str), CurrentLine, TEXT("UCLASS"), /*out*/ StrippedClassName, /*out*/ ClassName, /*out*/ BaseClassName, /*out*/ DependentOn, OutParsedClassArray);
 				OutParsedClassArray.Add(FSimplifiedParsingClassInfo(MoveTemp(ClassName), MoveTemp(BaseClassName), CurrentLine, false));
+				if (!bFoundExportedClasses)
+				{
+					if (const TSharedRef<FClassDeclarationMetaData>* Found = GClassDeclarations.Find(StrippedClassName))
+					{
+						bFoundExportedClasses = !((*Found)->ClassFlags & CLASS_NoExport);
+					}
+				}
 			}
 		}
 	
 		StartOfLine = Buffer;
+	}
+
+	if (bFoundExportedClasses && !bFoundGeneratedInclude)
+	{
+		FError::Throwf(TEXT("No #include found for the .generated.h file - the .generated.h file should always be the last #include in a header"));
 	}
 }
 
 /////////////////////////////////////////////////////
 // FHeaderPreParser
 
-void FHeaderPreParser::ParseClassDeclaration(const TCHAR* InputText, int32 InLineNumber, const TCHAR* StartingMatchID, FString& out_ClassName, FString& out_BaseClassName, TArray<FHeaderProvider>& out_RequiredIncludes, const TArray<FSimplifiedParsingClassInfo>& ParsedClassArray)
+void FHeaderPreParser::ParseClassDeclaration(const TCHAR* Filename, const TCHAR* InputText, int32 InLineNumber, const TCHAR* StartingMatchID, FName& out_StrippedClassName, FString& out_ClassName, FString& out_BaseClassName, TArray<FHeaderProvider>& out_RequiredIncludes, const TArray<FSimplifiedParsingClassInfo>& ParsedClassArray)
 {
 	FString ErrorMsg = TEXT("Class declaration");
 
@@ -8067,15 +8091,16 @@ void FHeaderPreParser::ParseClassDeclaration(const TCHAR* InputText, int32 InLin
 	FString RequiredAPIMacroIfPresent;
 	ParseNameWithPotentialAPIMacroPrefix(/*out*/ out_ClassName, /*out*/ RequiredAPIMacroIfPresent, StartingMatchID);
 
-	FName ClassNameWithoutPrefix(*GetClassNameWithPrefixRemoved(out_ClassName));
-	auto DeclarationDataPtr = GClassDeclarations.Find(ClassNameWithoutPrefix);
+	FString ClassNameWithoutPrefixStr = GetClassNameWithPrefixRemoved(out_ClassName);
+	out_StrippedClassName = *ClassNameWithoutPrefixStr;
+	auto DeclarationDataPtr = GClassDeclarations.Find(out_StrippedClassName);
 	if (!DeclarationDataPtr)
 	{
 		// Add class declaration meta data so that we can access class flags before the class is fully parsed
 		TSharedRef<FClassDeclarationMetaData> DeclarationData = MakeShareable(new FClassDeclarationMetaData());
 		DeclarationData->MetaData = MetaData;
 		DeclarationData->ParseClassProperties(SpecifiersFound, RequiredAPIMacroIfPresent);
-		GClassDeclarations.Add(ClassNameWithoutPrefix, DeclarationData);
+		GClassDeclarations.Add(out_StrippedClassName, DeclarationData);
 	}
 
 	// Skip optional final keyword
@@ -8096,7 +8121,31 @@ void FHeaderPreParser::ParseClassDeclaration(const TCHAR* InputText, int32 InLin
 
 		out_BaseClassName = BaseClassNameToken.Identifier;
 
-		AddDependencyIfNeeded(ParsedClassArray, out_BaseClassName, out_RequiredIncludes);
+		int32 InputLineLocal = InputLine;
+		auto AddDependencyIfNeeded = [Filename, InputLineLocal, &ParsedClassArray, &out_RequiredIncludes, &out_ClassName, &ClassNameWithoutPrefixStr](const FString& DependencyClassName)
+		{
+			if (!ParsedClassArray.ContainsByPredicate([&DependencyClassName](const FSimplifiedParsingClassInfo& Info)
+				{
+					return Info.GetClassName() == DependencyClassName;
+				}))
+			{
+				if (out_ClassName == DependencyClassName)
+				{
+					FFileLineException::Throwf(Filename, InputLineLocal, TEXT("A class cannot inherit itself"));
+				}
+
+				FString StrippedDependencyName = DependencyClassName.Mid(1);
+
+				// Only add a stripped dependency if the stripped name differs from the stripped class name
+				// otherwise it's probably a class with a different prefix.
+				if (StrippedDependencyName != ClassNameWithoutPrefixStr)
+				{
+					out_RequiredIncludes.Add(FHeaderProvider(EHeaderProviderSourceType::ClassName, MoveTemp(StrippedDependencyName)));
+				}
+			}
+		};
+
+		AddDependencyIfNeeded(out_BaseClassName);
 
 		// Get additional inheritance links and rack them up as dependencies if they're UObject derived
 		while (MatchSymbol(TEXT(",")))
@@ -8107,22 +8156,11 @@ void FHeaderPreParser::ParseClassDeclaration(const TCHAR* InputText, int32 InLin
 			FToken InterfaceClassNameToken;
 			if (!GetIdentifier(InterfaceClassNameToken, true))
 			{
-				FError::Throwf(TEXT("Expected an interface class name"));
+				FFileLineException::Throwf(Filename, InputLine, TEXT("Expected an interface class name"));
 			}
 
-			AddDependencyIfNeeded(ParsedClassArray, FString(InterfaceClassNameToken.Identifier), out_RequiredIncludes);
+			AddDependencyIfNeeded(FString(InterfaceClassNameToken.Identifier));
 		}
-	}
-}
-
-void FHeaderPreParser::AddDependencyIfNeeded(const TArray<FSimplifiedParsingClassInfo>& ParsedClassArray, const FString& DependencyClassName, TArray<FHeaderProvider>& RequiredIncludes) const
-{
-	if (ParsedClassArray.FindByPredicate([&DependencyClassName](const FSimplifiedParsingClassInfo& Info)
-		{
-			return Info.GetClassName() == DependencyClassName;
-		}) == nullptr)
-	{
-		RequiredIncludes.Add(FHeaderProvider(EHeaderProviderSourceType::ClassName, DependencyClassName.Mid(1)));
 	}
 }
 
@@ -8237,27 +8275,43 @@ bool FHeaderParser::DefaultValueStringCppFormatToInnerFormat(const UProperty* Pr
 		const UStructProperty* StructProperty = CastChecked<UStructProperty>(Property);
 		if( StructProperty->Struct == VectorStruct )
 		{
+			FString Parameters;
 			if(FDefaultValueHelper::Is( CppForm, TEXT("FVector::ZeroVector") ))
 			{
 				return true;
 			}
-			if(FDefaultValueHelper::Is(CppForm, TEXT("FVector::UpVector")))
+			else if(FDefaultValueHelper::Is(CppForm, TEXT("FVector::UpVector")))
 			{
 				OutForm = FString::Printf(TEXT("%f,%f,%f"),
 					FVector::UpVector.X, FVector::UpVector.Y, FVector::UpVector.Z);
 			}
-			FString Parameters;
-			if( FDefaultValueHelper::GetParameters(CppForm, TEXT("FVector"), Parameters) )
+			else if(FDefaultValueHelper::Is(CppForm, TEXT("FVector::ForwardVector")))
+			{
+				OutForm = FString::Printf(TEXT("%f,%f,%f"),
+					FVector::ForwardVector.X, FVector::ForwardVector.Y, FVector::ForwardVector.Z);
+			}
+			else if(FDefaultValueHelper::Is(CppForm, TEXT("FVector::RightVector")))
+			{
+				OutForm = FString::Printf(TEXT("%f,%f,%f"),
+					FVector::RightVector.X, FVector::RightVector.Y, FVector::RightVector.Z);
+			}
+			else if( FDefaultValueHelper::GetParameters(CppForm, TEXT("FVector"), Parameters) )
 			{
 				if( FDefaultValueHelper::Is(Parameters, TEXT("ForceInit")) )
 				{
 					return true;
 				}
 				FVector Vector;
-				if(FDefaultValueHelper::ParseVector(Parameters, Vector))
+				float Value;
+				if (FDefaultValueHelper::ParseVector(Parameters, Vector))
 				{
 					OutForm = FString::Printf(TEXT("%f,%f,%f"),
 						Vector.X, Vector.Y, Vector.Z);
+				}
+				else if (FDefaultValueHelper::ParseFloat(Parameters, Value))
+				{
+					OutForm = FString::Printf(TEXT("%f,%f,%f"),
+						Value, Value, Value);
 				}
 			}
 		}

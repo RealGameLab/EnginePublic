@@ -27,6 +27,7 @@
 #include "StaticMeshResources.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "InstancedStaticMesh.h"
+#include "SceneManagement.h"
 
 static TAutoConsoleVariable<int32> CVarFoliageSplitFactor(
 	TEXT("foliage.SplitFactor"),
@@ -747,6 +748,7 @@ class FHierarchicalStaticMeshSceneProxy : public FInstancedStaticMeshSceneProxy
 	TMap<uint32, FFoliageOcclusionResults> OcclusionResults;
 	bool bIsGrass;
 	uint32 SceneProxyCreatedFrameNumberRenderThread;
+	bool bDitheredLODTransitions;
 
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 	mutable TArray<uint32> SingleDebugRuns[MAX_STATIC_MESH_LODS];
@@ -767,6 +769,7 @@ public:
 		, LastUnbuiltIndex(InComponent->GetNumRenderInstances()-1)
 		, bIsGrass(bInIsGrass)
 		, SceneProxyCreatedFrameNumberRenderThread(UINT32_MAX)
+		, bDitheredLODTransitions(InComponent->SupportsDitheredLODTransitions())
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 		, CaptureTag(0)
 #endif
@@ -783,6 +786,8 @@ public:
 		, FirstUnbuiltIndex(InComponent->NumBuiltRenderInstances)
 		, LastUnbuiltIndex(InComponent->GetNumRenderInstances()-1)
 		, bIsGrass(bInIsGrass)
+		, SceneProxyCreatedFrameNumberRenderThread(UINT32_MAX)
+		, bDitheredLODTransitions(InComponent->SupportsDitheredLODTransitions())
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 		, CaptureTag(0)
 #endif
@@ -1315,7 +1320,7 @@ void FHierarchicalStaticMeshSceneProxy::GetDynamicMeshElements(const TArray<cons
 
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_HierarchicalInstancedStaticMeshSceneProxy_GetMeshElements);
 
-	bool bMultipleSections = ALLOW_DITHERED_LOD_FOR_INSTANCED_STATIC_MESHES && CVarDitheredLOD.GetValueOnRenderThread() > 0;
+	bool bMultipleSections = ALLOW_DITHERED_LOD_FOR_INSTANCED_STATIC_MESHES && bDitheredLODTransitions && CVarDitheredLOD.GetValueOnRenderThread() > 0;
 	bool bSingleSections = !bMultipleSections;
 	bool bOverestimate = CVarOverestimateLOD.GetValueOnRenderThread() > 0;
 
@@ -1448,40 +1453,26 @@ void FHierarchicalStaticMeshSceneProxy::GetDynamicMeshElements(const TArray<cons
 				float MaxDrawDistanceScale = GetCachedScalabilityCVars().ViewDistanceScale;
 				float SphereRadius = RenderData->Bounds.SphereRadius;
 
-				for (int32 LODIndex = 0; LODIndex < InstanceParams.LODs; LODIndex++)
+				float FinalCull = MAX_flt;
+				if (MinSize > 0.0)
 				{
-					InstanceParams.LODPlanesMax[LODIndex] = MIN_flt;
-					InstanceParams.LODPlanesMin[LODIndex] = MAX_flt;
+					FinalCull = ComputeBoundsDrawDistance(MinSize, SphereRadius, View->ViewMatrices.GetProjectionMatrix()) * LODScale;
 				}
-				ElementParams.FinalCullDistance = MIN_flt;
-				for (int32 SampleIndex = 0; SampleIndex < 2; SampleIndex++)
+				if (UserData_AllInstances.EndCullDistance > 0.0f)
 				{
-					// we aren't going to accurately figure out LOD planes for both samples and try all 4 possibilities, rather we just consider the worst case LOD range; the shaders will render correctly
-					float Fac = View->GetTemporalLODDistanceFactor(SampleIndex, bMultipleSections) * SphereRadius * LODScale;
-
-					float FinalCull = MAX_flt;
-
-					if (MinSize > 0.0)
-					{
-						FinalCull = FMath::Sqrt(Fac / MinSize);
-					}
-					if (UserData_AllInstances.EndCullDistance > 0.0f && UserData_AllInstances.EndCullDistance < FinalCull)
-					{
-						FinalCull = UserData_AllInstances.EndCullDistance;
-					}
-					FinalCull *= MaxDrawDistanceScale;
-					ElementParams.FinalCullDistance = FMath::Max(ElementParams.FinalCullDistance, FinalCull);
-
-					for (int32 LODIndex = 1; LODIndex < InstanceParams.LODs; LODIndex++)
-					{
-						float Val = FMath::Min(FMath::Sqrt(Fac / RenderData->ScreenSize[LODIndex]), FinalCull);
-						InstanceParams.LODPlanesMin[LODIndex - 1] = FMath::Min(InstanceParams.LODPlanesMin[LODIndex - 1], Val - LODRandom);
-						InstanceParams.LODPlanesMax[LODIndex - 1] = FMath::Max(InstanceParams.LODPlanesMax[LODIndex - 1], Val);
-					}
-					InstanceParams.LODPlanesMin[InstanceParams.LODs - 1] = FMath::Min(InstanceParams.LODPlanesMin[InstanceParams.LODs - 1], FinalCull - LODRandom);
-					InstanceParams.LODPlanesMax[InstanceParams.LODs - 1] = FMath::Max(InstanceParams.LODPlanesMax[InstanceParams.LODs - 1], FinalCull);
+					FinalCull = FMath::Min(FinalCull, UserData_AllInstances.EndCullDistance * MaxDrawDistanceScale);
 				}
+				ElementParams.FinalCullDistance = FinalCull;
 
+				for (int32 LODIndex = 1; LODIndex < InstanceParams.LODs; LODIndex++)
+				{
+					float Distance = ComputeBoundsDrawDistance(RenderData->ScreenSize[LODIndex], SphereRadius, View->ViewMatrices.GetProjectionMatrix()) * LODScale;
+					InstanceParams.LODPlanesMin[LODIndex - 1] = Distance - LODRandom;
+					InstanceParams.LODPlanesMax[LODIndex - 1] = Distance;
+				}
+				InstanceParams.LODPlanesMin[InstanceParams.LODs - 1] = FinalCull - LODRandom;
+				InstanceParams.LODPlanesMax[InstanceParams.LODs - 1] = FinalCull;
+			
 				for (int32 LODIndex = 0; LODIndex < InstanceParams.LODs; LODIndex++)
 				{
 					InstanceParams.MinInstancesToSplit[LODIndex] = 2;
@@ -1628,38 +1619,26 @@ void FHierarchicalStaticMeshSceneProxy::GetDynamicMeshElements(const TArray<cons
 						const float SphereRadius = RenderData->Bounds.SphereRadius;
 
 						checkSlow(NumLODs > 0);
-						for (int32 LODIndex = 0; LODIndex < NumLODs; LODIndex++)
-						{
-							LODPlanesMax[LODIndex] = MIN_flt;
-							LODPlanesMin[LODIndex] = MAX_flt;
-						}
-						ElementParams.FinalCullDistance = MIN_flt;
-						for (int32 SampleIndex = 0; SampleIndex < 2; SampleIndex++)
-						{
-							// we aren't going to accurately figure out LOD planes for both samples and try all 4 possibilities, rather we just consider the worst case LOD range; the shaders will render correctly
-							float Fac = View->GetTemporalLODDistanceFactor(SampleIndex, bMultipleSections) * SphereRadius * LODScale;
-							float FinalCull = MAX_flt;
 
-							if (MinSize > 0.0)
-							{
-								FinalCull = FMath::Sqrt(Fac / MinSize);
-							}
-							if (UserData_AllInstances.EndCullDistance > 0.0f && UserData_AllInstances.EndCullDistance < FinalCull)
-							{
-								FinalCull = UserData_AllInstances.EndCullDistance;
-							}
-							FinalCull *= MaxDrawDistanceScale;
-							ElementParams.FinalCullDistance = FMath::Max(ElementParams.FinalCullDistance, FinalCull);
-
-							for (int32 LODIndex = 1; LODIndex < NumLODs; LODIndex++)
-							{
-								float Val = FMath::Min(FMath::Sqrt(Fac / RenderData->ScreenSize[LODIndex]), FinalCull);
-								LODPlanesMin[LODIndex - 1] = FMath::Min(LODPlanesMin[LODIndex - 1], Val - LODRandom);
-								LODPlanesMax[LODIndex - 1] = FMath::Max(LODPlanesMax[LODIndex - 1], Val);
-							}
-							LODPlanesMin[NumLODs - 1] = FMath::Min(LODPlanesMin[NumLODs - 1], FinalCull - LODRandom);
-							LODPlanesMax[NumLODs - 1] = FMath::Max(LODPlanesMax[NumLODs - 1], FinalCull);
+						float FinalCull = MAX_flt;
+						if (MinSize > 0.0)
+						{
+							FinalCull = ComputeBoundsDrawDistance(MinSize, SphereRadius, View->ViewMatrices.GetProjectionMatrix()) * LODScale;
 						}
+						if (UserData_AllInstances.EndCullDistance > 0.0f)
+						{
+							FinalCull = FMath::Min(FinalCull, UserData_AllInstances.EndCullDistance * MaxDrawDistanceScale);
+						}
+						ElementParams.FinalCullDistance = FinalCull;
+
+						for (int32 LODIndex = 1; LODIndex < NumLODs; LODIndex++)
+						{
+							float Distance = ComputeBoundsDrawDistance(RenderData->ScreenSize[LODIndex], SphereRadius, View->ViewMatrices.GetProjectionMatrix()) * LODScale;
+							LODPlanesMin[LODIndex - 1] = Distance - LODRandom;
+							LODPlanesMax[LODIndex - 1] = Distance;
+						}
+						LODPlanesMin[NumLODs - 1] = FinalCull - LODRandom;
+						LODPlanesMax[NumLODs - 1] = FinalCull;				
 
 						// calculate runs
 						int32 MinLOD = 0;
@@ -1751,12 +1730,12 @@ UHierarchicalInstancedStaticMeshComponent::UHierarchicalInstancedStaticMeshCompo
 	, WriteOncePrebuiltInstanceBuffer(/*NeedsCPUAccess*/ false, /*bSupportsVertexHalfFloat*/ GVertexElementTypeSupport.IsSupported(VET_Half2))
 	, NumBuiltInstances(0)
 	, NumBuiltRenderInstances(0)
-	, UnbuiltInstanceBounds(0)
+	, UnbuiltInstanceBounds(ForceInit)
 	, bEnableDensityScaling(false)
 	, bIsAsyncBuilding(false)
 	, bDiscardAsyncBuildResults(false)
 	, bConcurrentRemoval(false)
-	, AccumulatedNavigationDirtyArea(0)
+	, AccumulatedNavigationDirtyArea(ForceInit)
 {
 	bCanEverAffectNavigation = true;
 	bUseAsOccluder = false;
@@ -1818,7 +1797,7 @@ void UHierarchicalInstancedStaticMeshComponent::Serialize(FArchive& Ar)
 	ClusterTree.BulkSerialize(Ar);
 	if (Ar.IsLoading() && !BuiltInstanceBounds.IsValid)
 	{
-		BuiltInstanceBounds = (ClusterTree.Num() > 0 ? FBox(ClusterTree[0].BoundMin, ClusterTree[0].BoundMax) : FBox(0));
+		BuiltInstanceBounds = (ClusterTree.Num() > 0 ? FBox(ClusterTree[0].BoundMin, ClusterTree[0].BoundMax) : FBox(ForceInit));
 	}
 }
 
@@ -1970,7 +1949,7 @@ bool UHierarchicalInstancedStaticMeshComponent::UpdateInstanceTransform(int32 In
 	// if we are only updating rotation/scale we update the instance directly in the cluster tree
 	const bool bIsOmittedInstance = (RenderIndex == INDEX_NONE);
 	const bool bIsBuiltInstance = !bIsOmittedInstance && RenderIndex < NumBuiltRenderInstances;
-	const bool bDoInPlaceUpdate = !bIsOmittedInstance && (bIsBuiltInstance || NewLocalLocation.Equals(OldTransform.GetOrigin()));
+	const bool bDoInPlaceUpdate = bIsBuiltInstance && NewLocalLocation.Equals(OldTransform.GetOrigin());
 
 	bool Result = Super::UpdateInstanceTransform(InstanceIndex, NewInstanceTransform, bWorldSpace, bMarkRenderStateDirty, bTeleport);
 	
@@ -2181,7 +2160,7 @@ void UHierarchicalInstancedStaticMeshComponent::BuildTree()
 		UnbuiltInstanceBounds.Init();
 		RemovedInstances.Empty();
 		UnbuiltInstanceBoundsList.Empty();
-		BuiltInstanceBounds = (Builder.Result->Nodes.Num() > 0 ? FBox(Builder.Result->Nodes[0].BoundMin, Builder.Result->Nodes[0].BoundMax) : FBox(0));
+		BuiltInstanceBounds = (Builder.Result->Nodes.Num() > 0 ? FBox(Builder.Result->Nodes[0].BoundMin, Builder.Result->Nodes[0].BoundMax) : FBox(ForceInit));
 
 		ClusterTreePtr = MakeShareable(new TArray<FClusterNode>(MoveTemp(Builder.Result->Nodes)));
 		InstanceReorderTable = MoveTemp(Builder.Result->InstanceReorderTable);
@@ -2251,7 +2230,7 @@ void UHierarchicalInstancedStaticMeshComponent::AcceptPrebuiltTree(TArray<FClust
 	InstanceReorderTable.Empty();
 	SortedInstances.Empty();
 	OcclusionLayerNumNodes = InOcclusionLayerNumNodes;
-	BuiltInstanceBounds = (InClusterTree.Num() > 0 ? FBox(InClusterTree[0].BoundMin, InClusterTree[0].BoundMax) : FBox(0));
+	BuiltInstanceBounds = (InClusterTree.Num() > 0 ? FBox(InClusterTree[0].BoundMin, InClusterTree[0].BoundMax) : FBox(ForceInit));
 
 	// Verify that the mesh is valid before using it.
 	const bool bMeshIsValid = 
@@ -2326,7 +2305,7 @@ void UHierarchicalInstancedStaticMeshComponent::ApplyBuildTreeAsync(ENamedThread
 			SortedInstances = MoveTemp(Builder->Result->SortedInstances);
 			RemovedInstances.Empty();
 			OcclusionLayerNumNodes = Builder->Result->OutOcclusionLayerNum;
-			BuiltInstanceBounds = (ClusterTree.Num() > 0 ? FBox(ClusterTree[0].BoundMin, ClusterTree[0].BoundMax) : FBox(0));
+			BuiltInstanceBounds = (ClusterTree.Num() > 0 ? FBox(ClusterTree[0].BoundMin, ClusterTree[0].BoundMax) : FBox(ForceInit));
 
 			UE_LOG(LogStaticMesh, Verbose, TEXT("Built a foliage hierarchy with %d of %d elements in %.1fs."), NumBuiltInstances, PerInstanceSMData.Num(), (float)(FPlatformTime::Seconds() - StartTime));
 
@@ -2899,11 +2878,11 @@ TArray<int32> UHierarchicalInstancedStaticMeshComponent::GetInstancesOverlapping
 			WorldSpaceBox = WorldSpaceBox.TransformBy(ComponentToWorld);
 		}
 
-		const FVector StaticMeshBoundsExtent = GetStaticMesh()->GetBounds().BoxExtent;
+		const FBox StaticMeshBox = GetStaticMesh()->GetBounds().GetBox();
 		GatherInstancesOverlappingArea(*this, WorldSpaceBox, 0,
-			[LocalSpaceSpaceBox, StaticMeshBoundsExtent](const FMatrix& InstanceTransform)->bool
+			[LocalSpaceSpaceBox, StaticMeshBox](const FMatrix& InstanceTransform)->bool
 			{
-				FBox InstanceBox(InstanceTransform.GetOrigin() - StaticMeshBoundsExtent, InstanceTransform.GetOrigin() + StaticMeshBoundsExtent);
+				FBox InstanceBox = StaticMeshBox.TransformBy(InstanceTransform);
 				return LocalSpaceSpaceBox.Intersect(InstanceBox);
 			},
 			Result);

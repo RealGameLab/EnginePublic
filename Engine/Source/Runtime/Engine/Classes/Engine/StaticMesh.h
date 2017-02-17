@@ -238,6 +238,7 @@ struct FMeshSectionInfoMap
 	GENERATED_USTRUCT_BODY()
 
 	/** Maps an LOD+Section to the material it should render with. */
+	UPROPERTY()
 	TMap<uint32,FMeshSectionInfo> Map;
 
 	/** Serialize. */
@@ -474,6 +475,10 @@ class UStaticMesh : public UObject, public IInterface_CollisionDataProvider, pub
 	/** The light map coordinate index */
 	UPROPERTY(EditAnywhere, AdvancedDisplay, Category=StaticMesh, meta=(ToolTip="The light map coordinate index"))
 	int32 LightMapCoordinateIndex;
+
+	/** Useful for reducing self shadowing from distance field methods when using world position offset to animate the mesh's vertices. */
+	UPROPERTY(EditAnywhere, AdvancedDisplay, Category = StaticMesh)
+	float DistanceFieldSelfShadowBias;
 
 	/** 
 	 * Whether to generate a distance field for this mesh, which can be used by DistanceField Indirect Shadows.
@@ -800,12 +805,6 @@ public:
 	ENGINE_API void CalculateExtendedBounds();
 
 #if WITH_EDITOR
-
-	/**
-	 * Returns true if LODs of this static mesh may share texture lightmaps.
-	 */
-	bool CanLODsShareStaticLighting() const;
-
 	/**
 	 * Retrieves the names of all LOD groups.
 	 */

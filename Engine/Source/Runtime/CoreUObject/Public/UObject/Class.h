@@ -281,10 +281,6 @@ public:
 	/** Array of object references embedded in script code. Mirrored for easy access by realtime garbage collection code */
 	TArray<UObject*> ScriptObjectReferences;
 
-	/** Map of Class Name to Map of Old Property Name to New Property Name */
-	static TMap<FName,TMap<FName,FName> > TaggedPropertyRedirects;
-	static void InitTaggedPropertyRedirectsMap();
-
 public:
 	// Constructors.
 	UStruct( EStaticConstructor, int32 InSize, EObjectFlags InFlags );
@@ -1674,7 +1670,7 @@ public:
 	 *
 	 * @return The display name for this object.
 	 */
-	FText GetDisplayNameText(int32 NameIndex=INDEX_NONE) const;
+	virtual FText GetDisplayNameText(int32 NameIndex=INDEX_NONE) const;
 	FText GetDisplayNameTextByValue(int64 Value = INDEX_NONE) const;
 
 	/**
@@ -1796,12 +1792,6 @@ public:
 	}
 
 private:
-	/** Map of Enum Name to Map of Old Enum entry to New Enum entry */
-	static TMap<FName,TMap<FName,FName> > EnumRedirects;
-	/** Map of Enum Name to Map of Old Enum substring to New Enum substring, to handle many renames at once */
-	static TMap<FName,TMap<FString,FString> > EnumSubstringRedirects;
-	static void InitEnumRedirectsMap();
-
 	FORCEINLINE static FString GetIndexAsString_Internal( const TCHAR* EnumPath, const int32 Index )
 	{
 		UEnum* EnumClass = FindObject<UEnum>( nullptr, EnumPath );
@@ -2143,6 +2133,7 @@ public:
 	{
 		return this;
 	}
+	const UClass* GetAuthoritativeClass() const { return const_cast<UClass*>(this)->GetAuthoritativeClass(); }
 
 	/**
 	 * Add a native function to the internal native function table
@@ -2575,6 +2566,7 @@ public:
 	static void AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector);
 
 	// UClass interface
+	virtual UObject* CreateDefaultObject();
 	virtual void PurgeClass(bool bRecompilingOnLoad) override;
 	virtual UObject* FindArchetype(UClass* ArchetypeClass, const FName ArchetypeName) const override;
 
@@ -2943,6 +2935,9 @@ struct FStructUtils
 
 	// does structures have exactly the same memory layout
 	COREUOBJECT_API static bool TheSameLayout(const UStruct* StructA, const UStruct* StructB, bool bCheckPropertiesNames = false);
+
+	/** Locates a named structure in the package with the given name. Not expected to fail. */
+	COREUOBJECT_API static UStruct* FindStructureInPackageChecked(const TCHAR* StructName, const TCHAR* PackageName);
 };
 
 template< class T > struct TBaseStructure
@@ -3029,4 +3024,23 @@ template<> struct TBaseStructure<FInt32Interval>
 {
 	COREUOBJECT_API static UScriptStruct* Get();
 };
+
+struct FStringAssetReference;
+template<> struct TBaseStructure<FStringAssetReference>
+{
+	COREUOBJECT_API static UScriptStruct* Get();
+};
+
+struct FStringClassReference;
+template<> struct TBaseStructure<FStringClassReference>
+{
+	COREUOBJECT_API static UScriptStruct* Get();
+};
+
+struct FPrimaryAssetId;
+template<> struct TBaseStructure<FPrimaryAssetId>
+{
+	COREUOBJECT_API static UScriptStruct* Get();
+};
+
 

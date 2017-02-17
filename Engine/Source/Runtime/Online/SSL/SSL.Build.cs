@@ -4,7 +4,7 @@ using UnrealBuildTool;
 
 public class SSL : ModuleRules
 {
-    public SSL(TargetInfo Target)
+    public SSL(ReadOnlyTargetRules Target) : base(Target)
     {
         Definitions.Add("SSL_PACKAGE=1");
 
@@ -12,7 +12,8 @@ public class SSL : ModuleRules
 			Target.Platform == UnrealTargetPlatform.Mac ||
 			Target.Platform == UnrealTargetPlatform.Win32 ||
 			Target.Platform == UnrealTargetPlatform.Win64 ||
-			Target.Platform == UnrealTargetPlatform.Linux;
+			Target.Platform == UnrealTargetPlatform.Linux ||
+			Target.Platform == UnrealTargetPlatform.PS4;
 
 		PrivateDependencyModuleNames.AddRange(
 			new string[] {

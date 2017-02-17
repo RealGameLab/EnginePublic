@@ -648,8 +648,46 @@ void UPathFollowingComponent::SetMovementComponent(UNavMovementComponent* MoveCo
 
 		UWorld* MyWorld = GetWorld();
 		if (MyWorld && MyWorld->GetNavigationSystem())
-		{	
+		{
 			MyNavData = MyWorld->GetNavigationSystem()->GetNavDataForProps(NavAgentProps);
+			if (MyNavData == nullptr)
+			{
+				if (MyWorld->GetNavigationSystem()->IsInitialized() == false)
+				{
+					MyWorld->GetNavigationSystem()->OnNavigationInitDone.AddUObject(this, &UPathFollowingComponent::OnNavigationInitDone);
+				}
+				else
+				{
+					MyWorld->GetNavigationSystem()->OnNavDataRegisteredEvent.AddUniqueDynamic(this, &UPathFollowingComponent::OnNavDataRegistered);
+				}
+			}
+		}
+	}
+}
+
+void UPathFollowingComponent::OnNavigationInitDone()
+{
+	UWorld* MyWorld = GetWorld();
+	if (MovementComp && MyWorld)
+	{
+		check(MyWorld->GetNavigationSystem());
+		const FNavAgentProperties& NavAgentProps = MovementComp->GetNavAgentPropertiesRef();
+		MyNavData = MyWorld->GetNavigationSystem()->GetNavDataForProps(NavAgentProps);
+		MyWorld->GetNavigationSystem()->OnNavigationInitDone.RemoveAll(this);
+	}
+}
+
+void UPathFollowingComponent::OnNavDataRegistered(ANavigationData* NavData)
+{
+	if (NavData && MovementComp)
+	{
+		const FNavAgentProperties& NavAgentProps = MovementComp->GetNavAgentPropertiesRef();
+		if (NavData->DoesSupportAgent(NavAgentProps))
+		{
+			MyNavData = NavData;
+			UWorld* MyWorld = GetWorld();
+			check(MyWorld && MyWorld->GetNavigationSystem());
+			MyWorld->GetNavigationSystem()->OnNavDataRegisteredEvent.RemoveAll(this);
 		}
 	}
 }
@@ -741,7 +779,10 @@ int32 UPathFollowingComponent::DetermineStartingPathPoint(const FNavigationPath*
 				// would influence the result
 				const float SqDistToFirstPoint = (CurrentLocation - PathPt0).SizeSquared2D();
 				const float SqDistToSecondPoint = (CurrentLocation - PathPt1).SizeSquared2D();
-				PickedPathPoint = (SqDistToFirstPoint < SqDistToSecondPoint) ? 0 : 1;
+
+				PickedPathPoint = FMath::IsNearlyEqual(SqDistToFirstPoint, SqDistToSecondPoint) ?
+					((FMath::Abs(CurrentLocation.Z - PathPt0.Z) < FMath::Abs(CurrentLocation.Z - PathPt1.Z)) ? 0 : 1) :
+					((SqDistToFirstPoint < SqDistToSecondPoint) ? 0 : 1);
 			}
 			else
 			{
@@ -842,6 +883,8 @@ void UPathFollowingComponent::UpdatePathSegment()
 		return;
 	}
 
+	FMetaNavMeshPath* MetaNavPath = bIsUsingMetaPath ? Path->CastPath<FMetaNavMeshPath>() : nullptr;
+
 	// if agent has control over its movement, check finish conditions
 	const FVector CurrentLocation = MovementComp->GetActorFeetLocation();
 	const bool bCanUpdateState = HasMovementAuthority();
@@ -849,6 +892,7 @@ void UPathFollowingComponent::UpdatePathSegment()
 	{
 		const int32 LastSegmentEndIndex = Path->GetPathPoints().Num() - 1;
 		const bool bFollowingLastSegment = (MoveSegmentEndIndex >= LastSegmentEndIndex);
+		const bool bLastPathChunk = (MetaNavPath == nullptr || MetaNavPath->IsLastSection());
 
 		if (bCollidedWithGoal)
 		{
@@ -861,7 +905,7 @@ void UPathFollowingComponent::UpdatePathSegment()
 			OnSegmentFinished();
 			OnPathFinished(EPathFollowingResult::Success, FPathFollowingResultFlags::None);
 		}
-		else if (bFollowingLastSegment && bMoveToGoalOnLastSegment)
+		else if (bFollowingLastSegment && bMoveToGoalOnLastSegment && bLastPathChunk)
 		{
 			// use goal actor for end of last path segment
 			// UNLESS it's partial path (can't reach goal)
@@ -891,7 +935,6 @@ void UPathFollowingComponent::UpdatePathSegment()
 	if (bCanUpdateState && Status == EPathFollowingStatus::Moving)
 	{
 		// check waypoint switch condition in meta paths
-		FMetaNavMeshPath* MetaNavPath = bIsUsingMetaPath ? Path->CastPath<FMetaNavMeshPath>() : nullptr;
 		if (MetaNavPath && Status == EPathFollowingStatus::Moving)
 		{
 			MetaNavPath->ConditionalMoveToNextSection(CurrentLocation, EMetaPathUpdateReason::MoveTick);
@@ -1039,8 +1082,8 @@ bool UPathFollowingComponent::HasReachedDestination(const FVector& CurrentLocati
 	float GoalRadius = 0.0f;
 	float GoalHalfHeight = 0.0f;
 	
-	// take goal's current location, unless path is partial
-	if (DestinationActor.IsValid() && !Path->IsPartial())
+	// take goal's current location, unless path is partial or last segment doesn't reach goal actor (used by tethered AI)
+	if (DestinationActor.IsValid() && !Path->IsPartial() && bMoveToGoalOnLastSegment)
 	{
 		if (DestinationAgent)
 		{

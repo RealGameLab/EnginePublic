@@ -242,15 +242,14 @@ void UVREditorUISystem::OnVRAction( FEditorViewportClient& ViewportClient, UView
 	{
 		if ( !bWasHandled )
 		{
-			// If the numpad is currently showing
-			if (bRadialMenuIsNumpad)
+			// If the numpad is currently showing and we press a button (only on press to avoid duplicate calls)
+			if (bRadialMenuIsNumpad && Action.Event == IE_Pressed)
 			{
 				// Modifier button is backspace
 				if (Action.ActionType == VRActionTypes::Modifier)
 				{
 					const bool bRepeat = false;
-					FVREditorActionCallbacks::SimulateKeyDown( EKeys::BackSpace, bRepeat );
-					FVREditorActionCallbacks::SimulateKeyUp( EKeys::BackSpace );
+					FVREditorActionCallbacks::SimulateBackspace();
 					bWasHandled = true;
 				}
 				// Side triggers function as enter keys
@@ -782,7 +781,6 @@ void UVREditorUISystem::Tick( FEditorViewportClient* ViewportClient, const float
 		{
 			// Despawn
 			HandInteractorWithQuickMenu->SetHasUIOnForearm( false );
-			HandInteractorWithQuickMenu->SetHasUIInFront( false );
 			QuickMenuUI->ShowUI( false );
 			// Reset all the currently animating buttons to their minimum scale and stop animating them
 			for (FVRButton& VRButton : VRButtons)
@@ -797,7 +795,7 @@ void UVREditorUISystem::Tick( FEditorViewportClient* ViewportClient, const float
 					VRButton.CurrentScale = VRButton.MinScale;
 					VRButton.ButtonBorder->SetRenderTransform(FSlateRenderTransform::FTransform2D(VRButton.CurrentScale));
 					VRButton.AnimationDirection = EVREditorAnimationState::None;
-		}
+				}
 			}
 		}
 
@@ -810,7 +808,6 @@ void UVREditorUISystem::Tick( FEditorViewportClient* ViewportClient, const float
 				const AVREditorFloatingUI::EDockedTo DockTo = ( MotionControllerHandInteractorThatNeedsQuickMenu->GetControllerSide() == EControllerHand::Left ) ? AVREditorFloatingUI::EDockedTo::LeftArm : AVREditorFloatingUI::EDockedTo::RightArm;
 				QuickMenuUI->SetDockedTo( DockTo );
 				QuickMenuUI->ShowUI( true );
-				MotionControllerHandInteractorThatNeedsQuickMenu->SetHasUIInFront( true );
 				MotionControllerHandInteractorThatNeedsQuickMenu->SetHasUIOnForearm( true );
 			}
 		}

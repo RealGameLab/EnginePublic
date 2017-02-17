@@ -83,215 +83,7 @@ namespace StaticMeshCookStats
 }
 #endif
 
-/*-----------------------------------------------------------------------------
-	FStaticMeshVertexBuffer
------------------------------------------------------------------------------*/
 
-FStaticMeshVertexBuffer::FStaticMeshVertexBuffer():
-	VertexData(NULL),
-	NumTexCoords(0),
-	Data(NULL),
-	Stride(0),
-	NumVertices(0),
-	bUseFullPrecisionUVs(false),
-	bUseHighPrecisionTangentBasis(false)
-{}
-
-FStaticMeshVertexBuffer::~FStaticMeshVertexBuffer()
-{
-	CleanUp();
-}
-
-/** Delete existing resources */
-void FStaticMeshVertexBuffer::CleanUp()
-{
-	delete VertexData;
-	VertexData = NULL;
-}
-
-/**
-* Initializes the buffer with the given vertices.
-* @param InVertices - The vertices to initialize the buffer with.
-* @param InNumTexCoords - The number of texture coordinate to store in the buffer.
-*/
-void FStaticMeshVertexBuffer::Init(const TArray<FStaticMeshBuildVertex>& InVertices,uint32 InNumTexCoords)
-{
-	NumTexCoords = InNumTexCoords;
-	NumVertices = InVertices.Num();
-
-	// Allocate the vertex data storage type.
-	AllocateData();
-
-	// Allocate the vertex data buffer.
-	VertexData->ResizeBuffer(NumVertices);
-	Data = VertexData->GetDataPointer();
-
-	// Copy the vertices into the buffer.
-	for(int32 VertexIndex = 0;VertexIndex < InVertices.Num();VertexIndex++)
-	{
-		const FStaticMeshBuildVertex& SourceVertex = InVertices[VertexIndex];
-		const uint32 DestVertexIndex = VertexIndex;
-		SetVertexTangents(DestVertexIndex, SourceVertex.TangentX, SourceVertex.TangentY, SourceVertex.TangentZ);
-
-		for(uint32 UVIndex = 0; UVIndex < NumTexCoords; UVIndex++)
-		{
-			SetVertexUV(DestVertexIndex,UVIndex,SourceVertex.UVs[UVIndex]);
-		}
-	}
-}
-
-/**
- * Initializes this vertex buffer with the contents of the given vertex buffer.
- * @param InVertexBuffer - The vertex buffer to initialize from.
- */
-void FStaticMeshVertexBuffer::Init(const FStaticMeshVertexBuffer& InVertexBuffer)
-{
-	NumTexCoords = InVertexBuffer.GetNumTexCoords();
-	NumVertices = InVertexBuffer.GetNumVertices();
-	bUseFullPrecisionUVs = InVertexBuffer.GetUseFullPrecisionUVs();
-	bUseHighPrecisionTangentBasis = InVertexBuffer.GetUseHighPrecisionTangentBasis();
-
-	if ( NumVertices )
-	{
-		AllocateData();
-		check( GetStride() == InVertexBuffer.GetStride() );
-		VertexData->ResizeBuffer(NumVertices);
-		Data = VertexData->GetDataPointer();
-		const uint8* InData = InVertexBuffer.GetRawVertexData();
-		FMemory::Memcpy( Data, InData, Stride * NumVertices );
-	}
-}
-
-/**
-* Removes the cloned vertices used for extruding shadow volumes.
-* @param NumVertices - The real number of static mesh vertices which should remain in the buffer upon return.
-*/
-void FStaticMeshVertexBuffer::RemoveLegacyShadowVolumeVertices(uint32 InNumVertices)
-{
-	check(VertexData);
-	VertexData->ResizeBuffer(InNumVertices);
-	NumVertices = InNumVertices;
-
-	// Make a copy of the vertex data pointer.
-	Data = VertexData->GetDataPointer();
-}
-
-template<typename SrcVertexTypeT, typename DstVertexTypeT>
-void FStaticMeshVertexBuffer::ConvertVertexFormat()
-{
-	CA_SUPPRESS(6326);
-	if (SrcVertexTypeT::TangentBasisType == DstVertexTypeT::TangentBasisType &&
-		SrcVertexTypeT::UVType == DstVertexTypeT::UVType)
-	{
-		return;
-	}
-
-	static_assert(SrcVertexTypeT::NumTexCoords == DstVertexTypeT::NumTexCoords, "NumTexCoords don't match");
-
-	auto& SrcVertexData = *static_cast<TStaticMeshVertexData<SrcVertexTypeT>*>(VertexData);
-
-	TArray<DstVertexTypeT> DstVertexData;
-	DstVertexData.AddUninitialized(SrcVertexData.Num());
-
-	for (int32 VertIdx = 0; VertIdx < SrcVertexData.Num(); VertIdx++)
-	{
-		SrcVertexTypeT& SrcVert = SrcVertexData[VertIdx];
-		DstVertexTypeT& DstVert = DstVertexData[VertIdx];
-
-		DstVert.SetTangents(SrcVert.GetTangentX(), SrcVert.GetTangentY(), SrcVert.GetTangentZ());
-
-		for (int32 UVIdx = 0; UVIdx < DstVertexTypeT::NumTexCoords; UVIdx++)
-		{
-			DstVert.SetUV(UVIdx, SrcVert.GetUV(UVIdx));
-		}
-	}
-
-	CA_SUPPRESS(6326);
-	bUseHighPrecisionTangentBasis = DstVertexTypeT::TangentBasisType == EStaticMeshVertexTangentBasisType::HighPrecision;
-	CA_SUPPRESS(6326);
-	bUseFullPrecisionUVs = DstVertexTypeT::UVType == EStaticMeshVertexUVType::HighPrecision;
-
-	AllocateData();
-	*static_cast<TStaticMeshVertexData<DstVertexTypeT>*>(VertexData) = DstVertexData;
-
-	Data = VertexData->GetDataPointer();
-	Stride = VertexData->GetStride();
-}
-
-/**
-* Serializer
-*
-* @param	Ar				Archive to serialize with
-* @param	bNeedsCPUAccess	Whether the elements need to be accessed by the CPU
-*/
-void FStaticMeshVertexBuffer::Serialize( FArchive& Ar, bool bNeedsCPUAccess )
-{
-	DECLARE_SCOPE_CYCLE_COUNTER( TEXT("FStaticMeshVertexBuffer::Serialize"), STAT_StaticMeshVertexBuffer_Serialize, STATGROUP_LoadTime );
-
-	FStripDataFlags StripFlags(Ar, 0, VER_UE4_STATIC_SKELETAL_MESH_SERIALIZATION_FIX);
-
-	Ar << NumTexCoords << Stride << NumVertices;
-	Ar << bUseFullPrecisionUVs;	
-	Ar << bUseHighPrecisionTangentBasis;
-
-	if( Ar.IsLoading() )
-	{
-		// Allocate the vertex data storage type.
-		AllocateData( bNeedsCPUAccess );
-	}
-
-	if (!StripFlags.IsDataStrippedForServer() || Ar.IsCountingMemory())
-	{
-		if( VertexData != NULL )
-		{
-			// Serialize the vertex data.
-			VertexData->Serialize(Ar);
-
-			// Make a copy of the vertex data pointer.
-			Data = VertexData->GetDataPointer();
-		}
-	}
-}
-
-
-/**
-* Specialized assignment operator, only used when importing LOD's.  
-*/
-void FStaticMeshVertexBuffer::operator=(const FStaticMeshVertexBuffer &Other)
-{
-	//VertexData doesn't need to be allocated here because Build will be called next,
-	VertexData = NULL;
-	bUseFullPrecisionUVs = Other.bUseFullPrecisionUVs;
-	bUseHighPrecisionTangentBasis = Other.bUseHighPrecisionTangentBasis;
-}
-
-void FStaticMeshVertexBuffer::InitRHI()
-{
-	check(VertexData);
-	FResourceArrayInterface* ResourceArray = VertexData->GetResourceArray();
-	if(ResourceArray->GetResourceDataSize())
-	{
-		// Create the vertex buffer.
-		FRHIResourceCreateInfo CreateInfo(ResourceArray);
-		VertexBufferRHI = RHICreateVertexBuffer(ResourceArray->GetResourceDataSize(),BUF_Static,CreateInfo);
-	}
-}
-
-void FStaticMeshVertexBuffer::AllocateData( bool bNeedsCPUAccess /*= true*/ )
-{
-	// Clear any old VertexData before allocating.
-	CleanUp();
-
-	SELECT_STATIC_MESH_VERTEX_TYPE(
-		GetUseHighPrecisionTangentBasis(),
-		GetUseFullPrecisionUVs(),
-		GetNumTexCoords(),
-		VertexData = new TStaticMeshVertexData<VertexType>(bNeedsCPUAccess);
-		);
-
-	// Calculate the vertex stride.
-	Stride = VertexData->GetStride();
-}
 
 /*-----------------------------------------------------------------------------
 	FStaticMeshLODResources
@@ -699,7 +491,6 @@ void FStaticMeshLODResources::ReleaseResources()
 ------------------------------------------------------------------------------*/
 
 FStaticMeshRenderData::FStaticMeshRenderData()
-	: bLODsShareStaticLighting(false)
 {
 	for (int32 LODIndex = 0; LODIndex < MAX_STATIC_MESH_LODS; ++LODIndex)
 	{
@@ -763,7 +554,6 @@ void FStaticMeshRenderData::Serialize(FArchive& Ar, UStaticMesh* Owner, bool bCo
 	}
 
 	Ar << Bounds;
-	Ar << bLODsShareStaticLighting;
 
 	if (Ar.IsLoading() && Ar.CustomVer(FRenderingObjectVersion::GUID) < FRenderingObjectVersion::TextureStreamingMeshUVChannelData)
 	{
@@ -1193,7 +983,6 @@ FArchive& operator<<(FArchive& Ar, FMeshBuildSettings& BuildSettings)
 	
 	Ar << BuildSettings.DistanceFieldResolutionScale;
 	Ar << BuildSettings.bGenerateDistanceFieldAsIfTwoSided;
-	Ar << BuildSettings.DistanceFieldBias;
 
 	FString ReplacementMeshName = BuildSettings.DistanceFieldReplacementMesh->GetPathName();
 	Ar << ReplacementMeshName;
@@ -1205,7 +994,7 @@ FArchive& operator<<(FArchive& Ar, FMeshBuildSettings& BuildSettings)
 // differences, etc.) replace the version GUID below with a new one.
 // In case of merge conflicts with DDC versions, you MUST generate a new GUID
 // and set this new GUID as the version.                                       
-#define STATICMESH_DERIVEDDATA_VER TEXT("A1C08472697A4FC2B1E0A31E4B382B6E")
+#define STATICMESH_DERIVEDDATA_VER TEXT("71F138FFEE1B456C86761D2AD2F3ADB8")
 
 static const FString& GetStaticMeshDerivedDataVersion()
 {
@@ -1410,7 +1199,6 @@ void FStaticMeshRenderData::Cache(UStaticMesh* Owner, const FStaticMeshLODSettin
 			IMeshUtilities& MeshUtilities = FModuleManager::Get().LoadModuleChecked<IMeshUtilities>(TEXT("MeshUtilities"));
 			MeshUtilities.BuildStaticMesh(*this, Owner->SourceModels, LODGroup, Owner->ImportVersion);
 			ComputeUVDensities();
-			bLODsShareStaticLighting = Owner->CanLODsShareStaticLighting();
 			FMemoryWriter Ar(DerivedData, /*bIsPersistent=*/ true);
 			Serialize(Ar, Owner, /*bCooked=*/ false);
 			GetDerivedDataCacheRef().Put(*DerivedDataKey, DerivedData);
@@ -1446,7 +1234,7 @@ void FStaticMeshRenderData::Cache(UStaticMesh* Owner, const FStaticMeshLODSettin
 				BuildSettings.DistanceFieldReplacementMesh->ConditionalPostLoad();
 			}
 
-			LODResources[0].DistanceFieldData->CacheDerivedData(DistanceFieldKey, Owner, MeshToGenerateFrom, BuildSettings.DistanceFieldResolutionScale, BuildSettings.DistanceFieldBias, BuildSettings.bGenerateDistanceFieldAsIfTwoSided);
+			LODResources[0].DistanceFieldData->CacheDerivedData(DistanceFieldKey, Owner, MeshToGenerateFrom, BuildSettings.DistanceFieldResolutionScale, BuildSettings.bGenerateDistanceFieldAsIfTwoSided);
 		}
 		else
 		{
@@ -2226,7 +2014,14 @@ FArchive& operator<<(FArchive& Ar, FMeshSectionInfo& Info)
 
 void FMeshSectionInfoMap::Serialize(FArchive& Ar)
 {
-	Ar << Map;
+	Ar.UsingCustomVersion(FReleaseObjectVersion::GUID);
+	Ar.UsingCustomVersion(FEditorObjectVersion::GUID);
+
+	if ( Ar.CustomVer(FReleaseObjectVersion::GUID) < FReleaseObjectVersion::UPropertryForMeshSectionSerialize // Release-4.15 change
+		&& Ar.CustomVer(FEditorObjectVersion::GUID) < FEditorObjectVersion::UPropertryForMeshSectionSerialize) // Dev-Editor change
+	{
+		Ar << Map;
+	}
 }
 
 #endif // #if WITH_EDITORONLY_DATA
@@ -2353,6 +2148,7 @@ void UStaticMesh::Serialize(FArchive& Ar)
 	Ar.UsingCustomVersion(FReleaseObjectVersion::GUID);
 	Ar.UsingCustomVersion(FEditorObjectVersion::GUID);
 	Ar.UsingCustomVersion(FRenderingObjectVersion::GUID);
+	Ar.UsingCustomVersion(FReleaseObjectVersion::GUID);
 
 	FStripDataFlags StripFlags( Ar );
 
@@ -2510,6 +2306,11 @@ void UStaticMesh::Serialize(FArchive& Ar)
 		SourceFilePath_DEPRECATED = TEXT("");
 		SourceFileTimestamp_DEPRECATED = TEXT("");
 	}
+
+	if (Ar.IsLoading() && Ar.CustomVer(FRenderingObjectVersion::GUID) < FRenderingObjectVersion::DistanceFieldSelfShadowBias)
+	{
+		DistanceFieldSelfShadowBias = SourceModels[0].BuildSettings.DistanceFieldBias_DEPRECATED * 10.0f;
+	}
 #endif // WITH_EDITORONLY_DATA
 
 	if (Ar.CustomVer(FEditorObjectVersion::GUID) >= FEditorObjectVersion::RefactorMeshEditorMaterials)
@@ -2524,6 +2325,38 @@ void UStaticMesh::Serialize(FArchive& Ar)
 		}
 		Materials_DEPRECATED.Empty();
 	}
+
+
+#if WITH_EDITOR
+	bool bHasSpeedTreeWind = SpeedTreeWind.IsValid();
+	if (Ar.CustomVer(FReleaseObjectVersion::GUID) < FReleaseObjectVersion::SpeedTreeBillboardSectionInfoFixup && bHasSpeedTreeWind)
+	{
+		// Ensure we have multiple tree LODs
+		if (SourceModels.Num() > 1)
+		{
+			// Look a the last LOD model and check its vertices
+			const int32 LODIndex = SourceModels.Num() - 1;
+			FStaticMeshSourceModel& SourceModel = SourceModels[LODIndex];
+
+			FRawMesh RawMesh;
+			SourceModel.RawMeshBulkData->LoadRawMesh(RawMesh);
+
+			// Billboard LOD is made up out of quads so check for this
+			bool bQuadVertices = ((RawMesh.VertexPositions.Num() % 4) == 0);
+
+			// If there is no section info for the billboard LOD make sure we add it
+			uint32 Key = GetMeshMaterialKey(LODIndex, 0);
+			bool bSectionInfoExists = SectionInfoMap.Map.Contains(Key);
+			if (!bSectionInfoExists && bQuadVertices)
+			{
+				FMeshSectionInfo Info;
+				// Assuming billboard material is added last
+				Info.MaterialIndex = StaticMaterials.Num() - 1;
+				SectionInfoMap.Set(LODIndex, 0, Info);
+			}
+		}
+	}
+#endif // WITH_EDITOR
 }
 
 //
@@ -2875,10 +2708,18 @@ void UStaticMesh::CreateNavCollision(const bool bIsUpdate)
 	// do NOT test properties of BodySetup at load time, they still can change between PostLoad and component's OnRegister
 	if (bHasNavigationData && BodySetup != nullptr && (!bIsUpdate || NavigationHelper::IsBodyNavigationRelevant(*BodySetup)))
 	{
+		UNavCollision* PrevNavCollision = NavCollision;
+
 		if (NavCollision == nullptr || bIsUpdate)
 		{
 			NavCollision = NewObject<UNavCollision>(this);
 		}
+
+		if (PrevNavCollision)
+		{
+			NavCollision->CopyUserSettings(*PrevNavCollision);
+		}
+
 		NavCollision->Setup(BodySetup);
 	}
 	else
@@ -3289,23 +3130,6 @@ const FStaticMeshLODResources& UStaticMesh::GetLODForExport(int32 LODIndex) cons
 }
 
 #if WITH_EDITOR
-bool UStaticMesh::CanLODsShareStaticLighting() const
-{
-	bool bCanShareData = true;
-	for (int32 LODIndex = 1; bCanShareData && LODIndex < SourceModels.Num(); ++LODIndex)
-	{
-		bCanShareData = bCanShareData && SourceModels[LODIndex].RawMeshBulkData->IsEmpty();
-	}
-
-	if (SpeedTreeWind.IsValid())
-	{
-		// SpeedTrees are set up for lighting to share between LODs
-		bCanShareData = true;
-	}
-
-	return bCanShareData;
-}
-
 void UStaticMesh::ConvertLegacyLODDistance()
 {
 	check(SourceModels.Num() > 0);

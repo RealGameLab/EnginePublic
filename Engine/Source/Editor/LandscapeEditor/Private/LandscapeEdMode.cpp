@@ -249,6 +249,7 @@ FEdModeLandscape::~FEdModeLandscape()
 	GSelectionRegionMaterial = NULL;
 	GMaskRegionMaterial = NULL;
 	GLandscapeBlackTexture = NULL;
+	GLandscapeLayerUsageMaterial = NULL;
 
 	InteractorPainting = nullptr;
 }
@@ -266,6 +267,7 @@ void FEdModeLandscape::AddReferencedObjects(FReferenceCollector& Collector)
 	Collector.AddReferencedObject(GSelectionRegionMaterial);
 	Collector.AddReferencedObject(GMaskRegionMaterial);
 	Collector.AddReferencedObject(GLandscapeBlackTexture);
+	Collector.AddReferencedObject(GLandscapeLayerUsageMaterial);
 }
 
 void FEdModeLandscape::InitializeToolModes()
@@ -436,6 +438,8 @@ void FEdModeLandscape::Enter()
 	// Load UI settings from config file
 	UISettings->Load();
 
+	UpdateShownLayerList();
+
 	// Initialize current tool prior to creating the landscape toolkit in case it has a dependency on it
 	if (LandscapeList.Num() == 0)
 	{
@@ -475,14 +479,18 @@ void FEdModeLandscape::Enter()
 	}
 
 	// Register to find out about VR input events
-	UViewportWorldInteraction* ViewportWorldInteraction = GEditor->GetEditorWorldManager()->GetEditorWorldWrapper(GetWorld())->GetViewportWorldInteraction();
-	if (ViewportWorldInteraction != nullptr)
+	TSharedPtr<FEditorWorldWrapper> EditorWorldWrapper = GEditor->GetEditorWorldManager()->GetEditorWorldWrapper(GetWorld(), false);
+	if (EditorWorldWrapper.IsValid())
 	{
-		ViewportWorldInteraction->OnViewportInteractionInputAction().RemoveAll(this);
-		ViewportWorldInteraction->OnViewportInteractionInputAction().AddRaw(this, &FEdModeLandscape::OnVRAction);
+		UViewportWorldInteraction* WorldInteraction = EditorWorldWrapper->GetViewportWorldInteraction();
+		if (WorldInteraction != nullptr)
+		{
+			WorldInteraction->OnViewportInteractionInputAction().RemoveAll(this);
+			WorldInteraction->OnViewportInteractionInputAction().AddRaw(this, &FEdModeLandscape::OnVRAction);
 
-		ViewportWorldInteraction->OnViewportInteractionHoverUpdate().RemoveAll(this);
-		ViewportWorldInteraction->OnViewportInteractionHoverUpdate().AddRaw(this, &FEdModeLandscape::OnVRHoverUpdate);
+			WorldInteraction->OnViewportInteractionHoverUpdate().RemoveAll(this);
+			WorldInteraction->OnViewportInteractionHoverUpdate().AddRaw(this, &FEdModeLandscape::OnVRHoverUpdate);
+		}
 	}
 }
 
@@ -493,11 +501,15 @@ void FEdModeLandscape::Exit()
 	// Unregister VR mode from event handlers
 	if (IVREditorModule::IsAvailable())
 	{
-		UViewportWorldInteraction* ViewportWorldInteraction = GEditor->GetEditorWorldManager()->GetEditorWorldWrapper(GetWorld())->GetViewportWorldInteraction();
-		if (ViewportWorldInteraction != nullptr)
+		TSharedPtr<FEditorWorldWrapper> EditorWorldWrapper = GEditor->GetEditorWorldManager()->GetEditorWorldWrapper(GetWorld(), false);
+		if (EditorWorldWrapper.IsValid())
 		{
-			ViewportWorldInteraction->OnViewportInteractionInputAction().RemoveAll(this);
-			ViewportWorldInteraction->OnViewportInteractionHoverUpdate().RemoveAll(this);
+			UViewportWorldInteraction* WorldInteraction = EditorWorldWrapper->GetViewportWorldInteraction();
+			if (WorldInteraction != nullptr)
+			{
+				WorldInteraction->OnViewportInteractionInputAction().RemoveAll(this);
+				WorldInteraction->OnViewportInteractionHoverUpdate().RemoveAll(this);
+			}
 		}
 	}
 	
@@ -572,33 +584,33 @@ void FEdModeLandscape::Exit()
 
 void FEdModeLandscape::OnVRHoverUpdate(FEditorViewportClient& ViewportClient, UViewportInteractor* Interactor, FVector& HoverImpactPoint, bool& bWasHandled)
 {
-	if( InteractorPainting != nullptr && InteractorPainting == Interactor )
+	if (InteractorPainting != nullptr && InteractorPainting == Interactor && IVREditorModule::Get().IsVREditorModeActive())
 	{
-		UVREditorMode* VREditorMode = GEditor->GetEditorWorldManager()->GetEditorWorldWrapper( ViewportClient.GetWorld() )->GetVREditorMode();
-		if( VREditorMode != nullptr && VREditorMode->IsActive() && Interactor != nullptr )
+		UVREditorMode* VREditorMode = IVREditorModule::Get().GetVREditorMode();
+		if (VREditorMode != nullptr && VREditorMode->IsActive() && Interactor != nullptr)
 		{
-			const UVREditorInteractor* VRInteractor = Cast<UVREditorInteractor>( Interactor );
+			const UVREditorInteractor* VRInteractor = Cast<UVREditorInteractor>(Interactor);
 
-			if( !VRInteractor->IsHoveringOverPriorityType() && CurrentTool && ( CurrentTool->GetSupportedTargetTypes() == ELandscapeToolTargetTypeMask::NA || CurrentToolTarget.TargetType != ELandscapeToolTargetType::Invalid ) )
+			if (!VRInteractor->IsHoveringOverPriorityType() && CurrentTool && (CurrentTool->GetSupportedTargetTypes() == ELandscapeToolTargetTypeMask::NA || CurrentToolTarget.TargetType != ELandscapeToolTargetType::Invalid))
 			{
 				FVector HitLocation;
 				FVector LaserPointerStart, LaserPointerEnd;
-				if( Interactor->GetLaserPointer( /* Out */ LaserPointerStart, /* Out */ LaserPointerEnd ) )
+				if (Interactor->GetLaserPointer( /* Out */ LaserPointerStart, /* Out */ LaserPointerEnd))
 				{
-					if( LandscapeTrace( &ViewportClient, LaserPointerStart, LaserPointerEnd, HitLocation ) )
+					if (LandscapeTrace(&ViewportClient, LaserPointerStart, LaserPointerEnd, HitLocation))
 					{
-						if( bIsPaintingInVR && !( CurrentToolTarget.TargetType == ELandscapeToolTargetType::Weightmap && CurrentToolTarget.LayerInfo == NULL ) )
+						if (bIsPaintingInVR && !(CurrentToolTarget.TargetType == ELandscapeToolTargetType::Weightmap && CurrentToolTarget.LayerInfo == NULL))
 						{
-							if( CurrentTool->BeginTool( &ViewportClient, CurrentToolTarget, HitLocation, Interactor ) )
+							if (CurrentTool->BeginTool(&ViewportClient, CurrentToolTarget, HitLocation, Interactor))
 							{
 								ToolActiveViewport = ViewportClient.Viewport;
 							}
 						}
 
-						if( CurrentBrush )
+						if (CurrentBrush)
 						{
 							// Inform the brush of the current location, to update the cursor
-							CurrentBrush->MouseMove( HitLocation.X, HitLocation.Y );
+							CurrentBrush->MouseMove(HitLocation.X, HitLocation.Y);
 						}
 					}
 				}
@@ -609,11 +621,10 @@ void FEdModeLandscape::OnVRHoverUpdate(FEditorViewportClient& ViewportClient, UV
 
 void FEdModeLandscape::OnVRAction(FEditorViewportClient& ViewportClient, UViewportInteractor* Interactor, const struct FViewportActionKeyInput& Action, bool& bOutIsInputCaptured, bool& bWasHandled)
 {
-	UVREditorMode* VREditorMode = GEditor->GetEditorWorldManager()->GetEditorWorldWrapper(ViewportClient.GetWorld())->GetVREditorMode();
 	// Never show the traditional Unreal transform widget.  It doesn't work in VR because we don't have hit proxies.
 	ViewportClient.EngineShowFlags.SetModeWidgets(false);
 
-	if (VREditorMode != nullptr && VREditorMode->IsActive() && Interactor != nullptr)
+	if (IVREditorModule::Get().IsVREditorModeActive() && Interactor != nullptr)
 	{
 		if (Action.ActionType == ViewportWorldActionTypes::SelectAndMove_LightlyPressed || Action.ActionType == ViewportWorldActionTypes::SelectAndMove)
 		{
@@ -771,6 +782,25 @@ bool FEdModeLandscape::MouseMove(FEditorViewportClient* ViewportClient, FViewpor
 			ViewportClient->Invalidate(false, false);
 		}
 	}
+	return Result;
+}
+
+bool FEdModeLandscape::GetCursor(EMouseCursor::Type& OutCursor) const
+{
+	if (!IsEditingEnabled())
+	{
+		return false;
+	}
+
+	bool Result = false;
+	if (NewLandscapePreviewMode == ENewLandscapePreviewMode::None)
+	{
+		if (CurrentTool)
+		{
+			Result = CurrentTool->GetCursor(OutCursor);
+		}
+	}
+
 	return Result;
 }
 
@@ -1410,18 +1440,22 @@ bool FEdModeLandscape::InputKey(FEditorViewportClient* ViewportClient, FViewport
 						else
 						{
 							Viewport->CaptureMouse(true);
-							bool bToolActive = CurrentTool->BeginTool(ViewportClient, CurrentToolTarget, HitLocation);
-							if (bToolActive)
+
+							if (CurrentTool->CanToolBeActivated())
 							{
-								ToolActiveViewport = Viewport;
+								bool bToolActive = CurrentTool->BeginTool(ViewportClient, CurrentToolTarget, HitLocation);
+								if (bToolActive)
+								{
+									ToolActiveViewport = Viewport;
+								}
+								else
+								{
+									ToolActiveViewport = nullptr;
+									Viewport->CaptureMouse(false);
+								}
+								ViewportClient->Invalidate(false, false);
+								return bToolActive;
 							}
-							else
-							{
-								ToolActiveViewport = nullptr;
-								Viewport->CaptureMouse(false);
-							}
-							ViewportClient->Invalidate(false, false);
-							return bToolActive;
 						}
 					}
 				}
@@ -1842,7 +1876,7 @@ void FEdModeLandscape::SetCurrentBrush(int32 BrushIndex)
 	}
 }
 
-const TArray<TSharedRef<FLandscapeTargetListInfo>>& FEdModeLandscape::GetTargetList()
+const TArray<TSharedRef<FLandscapeTargetListInfo>>& FEdModeLandscape::GetTargetList() const
 {
 	return LandscapeTargetList;
 }
@@ -1930,7 +1964,18 @@ int32 FEdModeLandscape::UpdateLandscapeList()
 			}
 			CurrentToolTarget.LandscapeInfo = LandscapeList[0].Info;
 			CurrentIndex = 0;
+
+			// Init UI to saved value
+			ALandscapeProxy* LandscapeProxy = CurrentToolTarget.LandscapeInfo->GetLandscapeProxy();
+
+			if (LandscapeProxy != nullptr)
+			{
+				UISettings->TargetDisplayOrder = LandscapeProxy->TargetDisplayOrder;
+			}
+
 			UpdateTargetList();
+			UpdateShownLayerList();
+
 			if (CurrentTool != nullptr)
 			{
 				CurrentTool->EnterTool();
@@ -1954,84 +1999,368 @@ void FEdModeLandscape::UpdateTargetList()
 {
 	LandscapeTargetList.Empty();
 
-	if (CurrentToolTarget.LandscapeInfo.IsValid() &&
-		CurrentToolTarget.LandscapeInfo->GetLandscapeProxy())
+	if (CurrentToolTarget.LandscapeInfo.IsValid())
 	{
-		CachedLandscapeMaterial = CurrentToolTarget.LandscapeInfo->GetLandscapeProxy()->GetLandscapeMaterial();
+		ALandscapeProxy* LandscapeProxy = CurrentToolTarget.LandscapeInfo->GetLandscapeProxy();
 
-		bool bFoundSelected = false;
-
-		// Add heightmap
-		LandscapeTargetList.Add(MakeShareable(new FLandscapeTargetListInfo(LOCTEXT("Heightmap", "Heightmap"), ELandscapeToolTargetType::Heightmap, CurrentToolTarget.LandscapeInfo.Get())));
-
-		if (CurrentToolTarget.TargetType == ELandscapeToolTargetType::Heightmap)
+		if (LandscapeProxy != nullptr)
 		{
-			bFoundSelected = true;
-		}
+			CachedLandscapeMaterial = LandscapeProxy->GetLandscapeMaterial();
 
-		// Add visibility
-		FLandscapeInfoLayerSettings VisibilitySettings(ALandscapeProxy::VisibilityLayer, CurrentToolTarget.LandscapeInfo->GetLandscapeProxy());
-		LandscapeTargetList.Add(MakeShareable(new FLandscapeTargetListInfo(LOCTEXT("Visibility", "Visibility"), ELandscapeToolTargetType::Visibility, VisibilitySettings)));
+			bool bFoundSelected = false;
 
-		if (CurrentToolTarget.TargetType == ELandscapeToolTargetType::Visibility)
-		{
-			bFoundSelected = true;
-		}
+			// Add heightmap
+			LandscapeTargetList.Add(MakeShareable(new FLandscapeTargetListInfo(LOCTEXT("Heightmap", "Heightmap"), ELandscapeToolTargetType::Heightmap, CurrentToolTarget.LandscapeInfo.Get())));
 
-		// Add layers
-		UTexture2D* ThumbnailWeightmap = NULL;
-		UTexture2D* ThumbnailHeightmap = NULL;
-
-		for (auto It = CurrentToolTarget.LandscapeInfo->Layers.CreateIterator(); It; It++)
-		{
-			FLandscapeInfoLayerSettings& LayerSettings = *It;
-
-			FName LayerName = LayerSettings.GetLayerName();
-
-			if (LayerSettings.LayerInfoObj == ALandscapeProxy::VisibilityLayer)
-			{
-				// Already handled above
-				continue;
-			}
-
-			if (!bFoundSelected &&
-				CurrentToolTarget.TargetType == ELandscapeToolTargetType::Weightmap &&
-				CurrentToolTarget.LayerInfo == LayerSettings.LayerInfoObj &&
-				CurrentToolTarget.LayerName == LayerSettings.LayerName)
+			if (CurrentToolTarget.TargetType == ELandscapeToolTargetType::Heightmap)
 			{
 				bFoundSelected = true;
 			}
 
-			// Ensure thumbnails are up valid
-			if (LayerSettings.ThumbnailMIC == NULL)
-			{
-				if (ThumbnailWeightmap == NULL)
-				{
-					ThumbnailWeightmap = LoadObject<UTexture2D>(NULL, TEXT("/Engine/EditorLandscapeResources/LandscapeThumbnailWeightmap.LandscapeThumbnailWeightmap"), NULL, LOAD_None, NULL);
-				}
-				if (ThumbnailHeightmap == NULL)
-				{
-					ThumbnailHeightmap = LoadObject<UTexture2D>(NULL, TEXT("/Engine/EditorLandscapeResources/LandscapeThumbnailHeightmap.LandscapeThumbnailHeightmap"), NULL, LOAD_None, NULL);
-				}
+			// Add visibility
+			FLandscapeInfoLayerSettings VisibilitySettings(ALandscapeProxy::VisibilityLayer, LandscapeProxy);
+			LandscapeTargetList.Add(MakeShareable(new FLandscapeTargetListInfo(LOCTEXT("Visibility", "Visibility"), ELandscapeToolTargetType::Visibility, VisibilitySettings)));
 
-				// Construct Thumbnail MIC
-				UMaterialInterface* LandscapeMaterial = LayerSettings.Owner ? LayerSettings.Owner->GetLandscapeMaterial() : UMaterial::GetDefaultMaterial(MD_Surface);
-				LayerSettings.ThumbnailMIC = ALandscapeProxy::GetLayerThumbnailMIC(LandscapeMaterial, LayerName, ThumbnailWeightmap, ThumbnailHeightmap, LayerSettings.Owner);
+			if (CurrentToolTarget.TargetType == ELandscapeToolTargetType::Visibility)
+			{
+				bFoundSelected = true;
 			}
 
-			// Add the layer
-			LandscapeTargetList.Add(MakeShareable(new FLandscapeTargetListInfo(FText::FromName(LayerName), ELandscapeToolTargetType::Weightmap, LayerSettings)));
-		}
+			// Add layers
+			UTexture2D* ThumbnailWeightmap = NULL;
+			UTexture2D* ThumbnailHeightmap = NULL;
 
-		if (!bFoundSelected)
-		{
-			CurrentToolTarget.TargetType = ELandscapeToolTargetType::Invalid;
-			CurrentToolTarget.LayerInfo = nullptr;
-			CurrentToolTarget.LayerName = NAME_None;
+			TargetLayerStartingIndex = LandscapeTargetList.Num();
+
+			for (auto It = CurrentToolTarget.LandscapeInfo->Layers.CreateIterator(); It; It++)
+			{
+				FLandscapeInfoLayerSettings& LayerSettings = *It;
+
+				FName LayerName = LayerSettings.GetLayerName();
+
+				if (LayerSettings.LayerInfoObj == ALandscapeProxy::VisibilityLayer)
+				{
+					// Already handled above
+					continue;
+				}
+
+				if (!bFoundSelected &&
+					CurrentToolTarget.TargetType == ELandscapeToolTargetType::Weightmap &&
+					CurrentToolTarget.LayerInfo == LayerSettings.LayerInfoObj &&
+					CurrentToolTarget.LayerName == LayerSettings.LayerName)
+				{
+					bFoundSelected = true;
+				}
+
+				// Ensure thumbnails are up valid
+				if (LayerSettings.ThumbnailMIC == NULL)
+				{
+					if (ThumbnailWeightmap == NULL)
+					{
+						ThumbnailWeightmap = LoadObject<UTexture2D>(NULL, TEXT("/Engine/EditorLandscapeResources/LandscapeThumbnailWeightmap.LandscapeThumbnailWeightmap"), NULL, LOAD_None, NULL);
+					}
+					if (ThumbnailHeightmap == NULL)
+					{
+						ThumbnailHeightmap = LoadObject<UTexture2D>(NULL, TEXT("/Engine/EditorLandscapeResources/LandscapeThumbnailHeightmap.LandscapeThumbnailHeightmap"), NULL, LOAD_None, NULL);
+					}
+
+					// Construct Thumbnail MIC
+					UMaterialInterface* LandscapeMaterial = LayerSettings.Owner ? LayerSettings.Owner->GetLandscapeMaterial() : UMaterial::GetDefaultMaterial(MD_Surface);
+					LayerSettings.ThumbnailMIC = ALandscapeProxy::GetLayerThumbnailMIC(LandscapeMaterial, LayerName, ThumbnailWeightmap, ThumbnailHeightmap, LayerSettings.Owner);
+				}
+
+				// Add the layer
+				LandscapeTargetList.Add(MakeShareable(new FLandscapeTargetListInfo(FText::FromName(LayerName), ELandscapeToolTargetType::Weightmap, LayerSettings)));
+			}
+
+			if (!bFoundSelected)
+			{
+				CurrentToolTarget.TargetType = ELandscapeToolTargetType::Invalid;
+				CurrentToolTarget.LayerInfo = nullptr;
+				CurrentToolTarget.LayerName = NAME_None;
+			}
+
+			UpdateTargetLayerDisplayOrder(UISettings->TargetDisplayOrder);
 		}
 	}
 
 	TargetsListUpdated.Broadcast();
+}
+
+void FEdModeLandscape::UpdateTargetLayerDisplayOrder(ELandscapeLayerDisplayMode InTargetDisplayOrder)
+{
+	if (!CurrentToolTarget.LandscapeInfo.IsValid())
+	{
+		return;
+	}
+
+	ALandscapeProxy* LandscapeProxy = CurrentToolTarget.LandscapeInfo->GetLandscapeProxy();
+
+	if (LandscapeProxy == nullptr)
+	{
+		return;
+	}
+
+	bool DetailPanelRefreshRequired = false;
+
+	// Save value to landscape
+	LandscapeProxy->TargetDisplayOrder = InTargetDisplayOrder;
+	TArray<FName>& SavedTargetNameList = LandscapeProxy->TargetDisplayOrderList;
+
+	switch (InTargetDisplayOrder)
+	{
+		case ELandscapeLayerDisplayMode::Default:
+		{
+			SavedTargetNameList.Empty();
+
+			for (const TSharedRef<FLandscapeTargetListInfo>& TargetInfo : LandscapeTargetList)
+			{
+				SavedTargetNameList.Add(TargetInfo->LayerName);
+			}
+
+			DetailPanelRefreshRequired = true;
+		}
+		break;
+
+		case ELandscapeLayerDisplayMode::Alphabetical:
+		{
+			SavedTargetNameList.Empty();
+
+			// Add only layers to be able to sort them by name
+			for (int32 i = GetTargetLayerStartingIndex(); i < LandscapeTargetList.Num(); ++i)
+			{
+				SavedTargetNameList.Add(LandscapeTargetList[i]->LayerName);
+			}
+
+			SavedTargetNameList.Sort();
+
+			// Then insert the non layer target that shouldn't be sorted
+			for (int32 i = 0; i < GetTargetLayerStartingIndex(); ++i)
+			{
+				SavedTargetNameList.Insert(LandscapeTargetList[i]->LayerName, i);
+			}
+
+			DetailPanelRefreshRequired = true;
+		}
+		break;
+
+		case ELandscapeLayerDisplayMode::UserSpecific:
+		{
+			for (const TSharedRef<FLandscapeTargetListInfo>& TargetInfo : LandscapeTargetList)
+			{
+				bool Found = false;
+
+				for (const FName& LayerName : SavedTargetNameList)
+				{
+					if (TargetInfo->LayerName == LayerName)
+					{
+						Found = true;
+						break;
+					}
+				}
+
+				if (!Found)
+				{
+					DetailPanelRefreshRequired = true;
+					SavedTargetNameList.Add(TargetInfo->LayerName);
+				}
+			}
+
+			// Handle the removing of elements from material
+			for (int32 i = SavedTargetNameList.Num() - 1; i >= 0; --i)
+			{
+				bool Found = false;
+
+				for (const TSharedRef<FLandscapeTargetListInfo>& TargetInfo : LandscapeTargetList)
+				{
+					if (SavedTargetNameList[i] == TargetInfo->LayerName)
+					{
+						Found = true;
+						break;
+					}
+				}
+
+				if (!Found)
+				{
+					DetailPanelRefreshRequired = true;
+					SavedTargetNameList.RemoveSingle(SavedTargetNameList[i]);
+				}
+			}
+		}
+		break;
+	}	
+
+	if (DetailPanelRefreshRequired)
+	{
+		if (Toolkit.IsValid())
+		{
+			StaticCastSharedPtr<FLandscapeToolKit>(Toolkit)->RefreshDetailPanel();
+		}
+	}
+}
+
+void FEdModeLandscape::UpdateShownLayerList()
+{
+	if (!CurrentToolTarget.LandscapeInfo.IsValid())
+	{
+		return;
+	}
+
+	// Make sure usage information is up to date
+	UpdateLayerUsageInformation();
+
+	bool DetailPanelRefreshRequired = false;
+
+	ShownTargetLayerList.Empty();
+
+	const TArray<FName>* DisplayOrderList = GetTargetDisplayOrderList();
+
+	if (DisplayOrderList == nullptr)
+	{
+		return;
+	}
+
+	for (const FName& LayerName : *DisplayOrderList)
+	{
+		for (const TSharedRef<FLandscapeTargetListInfo>& TargetInfo : GetTargetList())
+		{
+			if (TargetInfo->LayerName == LayerName)
+			{
+				// Keep a mapping of visible layer name to display order list so we can drag & drop proper items
+				if (ShouldShowLayer(TargetInfo))
+				{
+					ShownTargetLayerList.Add(TargetInfo->LayerName);
+					DetailPanelRefreshRequired = true;
+				}
+
+				break;
+			}
+		}
+	}	
+
+	if (DetailPanelRefreshRequired)
+	{
+		if (Toolkit.IsValid())
+		{
+			StaticCastSharedPtr<FLandscapeToolKit>(Toolkit)->RefreshDetailPanel();
+		}
+	}
+}
+
+void FEdModeLandscape::UpdateLayerUsageInformation()
+{
+	if (!CurrentToolTarget.LandscapeInfo.IsValid())
+	{
+		return;
+	}
+
+	bool DetailPanelRefreshRequired = false;
+
+	for (const TSharedRef<FLandscapeTargetListInfo>& TargetInfo : GetTargetList())
+	{		
+		TArray<ULandscapeComponent*> AllComponents;
+		CurrentToolTarget.LandscapeInfo->XYtoComponentMap.GenerateValueArray(AllComponents);
+		for (ULandscapeComponent* Component : AllComponents)
+		{
+			if (TargetInfo->LayerInfoObj.IsValid())
+			{
+				TArray<uint8> WeightmapTextureData;
+				FLandscapeComponentDataInterface DataInterface(Component);
+				DataInterface.GetWeightmapTextureData(TargetInfo->LayerInfoObj.Get(), WeightmapTextureData);
+
+				int32 UsageCount = 0;
+
+				for (uint8 Value : WeightmapTextureData)
+				{
+					UsageCount += Value;
+				}
+
+				bool PreviousValue = TargetInfo->LayerInfoObj->IsReferencedFromLoadedData;
+				TargetInfo->LayerInfoObj->IsReferencedFromLoadedData = UsageCount > 0;
+
+				if (PreviousValue != TargetInfo->LayerInfoObj->IsReferencedFromLoadedData)
+				{
+					DetailPanelRefreshRequired = true;
+				}
+
+				// Early exit as we already found a component using this layer
+				if (TargetInfo->LayerInfoObj->IsReferencedFromLoadedData)
+				{
+					break;
+				}
+			}
+		}
+	}
+
+	if (DetailPanelRefreshRequired)
+	{
+		if (Toolkit.IsValid())
+		{
+			StaticCastSharedPtr<FLandscapeToolKit>(Toolkit)->RefreshDetailPanel();
+		}
+	}
+}
+
+bool FEdModeLandscape::ShouldShowLayer(TSharedRef<FLandscapeTargetListInfo> Target) const
+{
+	if (!UISettings->ShowUnusedLayers)
+	{
+		return Target->LayerInfoObj.IsValid() && Target->LayerInfoObj.Get()->IsReferencedFromLoadedData;
+	}
+
+	return true;
+}
+
+const TArray<FName>& FEdModeLandscape::GetTargetShownList() const
+{
+	return ShownTargetLayerList;
+}
+
+int32 FEdModeLandscape::GetTargetLayerStartingIndex() const
+{
+	return TargetLayerStartingIndex;
+}
+
+const TArray<FName>* FEdModeLandscape::GetTargetDisplayOrderList() const
+{
+	if (!CurrentToolTarget.LandscapeInfo.IsValid())
+	{
+		return nullptr;
+	}
+
+	ALandscapeProxy* LandscapeProxy = CurrentToolTarget.LandscapeInfo->GetLandscapeProxy();
+
+	if (LandscapeProxy == nullptr)
+	{
+		return nullptr;
+	}
+
+	return &LandscapeProxy->TargetDisplayOrderList;
+}
+
+void FEdModeLandscape::MoveTargetLayerDisplayOrder(int32 IndexToMove, int32 IndexToDestination)
+{
+	if (!CurrentToolTarget.LandscapeInfo.IsValid())
+	{
+		return;
+	}
+
+	ALandscapeProxy* LandscapeProxy = CurrentToolTarget.LandscapeInfo->GetLandscapeProxy();
+
+	if (LandscapeProxy == nullptr)
+	{
+		return;
+	}
+	
+	FName Data = LandscapeProxy->TargetDisplayOrderList[IndexToMove];
+	LandscapeProxy->TargetDisplayOrderList.RemoveAt(IndexToMove);
+	LandscapeProxy->TargetDisplayOrderList.Insert(Data, IndexToDestination);
+
+	LandscapeProxy->TargetDisplayOrder = ELandscapeLayerDisplayMode::UserSpecific;
+	UISettings->TargetDisplayOrder = ELandscapeLayerDisplayMode::UserSpecific;
+
+	// Everytime we move something from the display order we must rebuild the shown layer list
+	UpdateShownLayerList();
 }
 
 FEdModeLandscape::FTargetsListUpdated FEdModeLandscape::TargetsListUpdated;
@@ -2042,6 +2371,7 @@ void FEdModeLandscape::HandleLevelsChanged()
 
 	UpdateLandscapeList();
 	UpdateTargetList();
+	UpdateShownLayerList();
 
 	// if the Landscape is deleted then close the landscape editor
 	if (bHadLandscape && CurrentToolTarget.LandscapeInfo == nullptr)
@@ -2066,6 +2396,7 @@ void FEdModeLandscape::OnMaterialCompilationFinished(UMaterialInterface* Materia
 	{
 		CurrentToolTarget.LandscapeInfo->UpdateLayerInfoMap();
 		UpdateTargetList();
+		UpdateShownLayerList();
 	}
 }
 
@@ -2521,8 +2852,7 @@ void FEdModeLandscape::ForceRealTimeViewports(const bool bEnable, const bool bSt
 					Viewport.SetRealtime(bEnable, bStoreCurrentState);
 
 					// @todo vreditor: Force game view to true in VREditor since we can't use hitproxies and debug objects yet
-					UVREditorMode* VREditorMode = GEditor->GetEditorWorldManager()->GetEditorWorldWrapper(Viewport.GetWorld())->GetVREditorMode();
-					if (VREditorMode != nullptr && VREditorMode->IsActive())
+					if (IVREditorModule::Get().IsVREditorModeActive())
 					{
 						Viewport.SetGameView(true);
 					} 
@@ -3070,6 +3400,9 @@ ALandscape* FEdModeLandscape::ChangeComponentSetting(int32 NumComponentsX, int32
 			Landscape->StaticLightingResolution = OldLandscapeProxy->StaticLightingResolution;
 			Landscape->bCastStaticShadow = OldLandscapeProxy->bCastStaticShadow;
 			Landscape->bCastShadowAsTwoSided = OldLandscapeProxy->bCastShadowAsTwoSided;
+			Landscape->LightingChannels = OldLandscapeProxy->LightingChannels;
+			Landscape->bRenderCustomDepth = OldLandscapeProxy->bRenderCustomDepth;
+			Landscape->CustomDepthStencilValue = OldLandscapeProxy->CustomDepthStencilValue;
 			Landscape->LightmassSettings = OldLandscapeProxy->LightmassSettings;
 			Landscape->CollisionThickness = OldLandscapeProxy->CollisionThickness;
 			Landscape->BodyInstance.SetCollisionProfileName(OldLandscapeProxy->BodyInstance.GetCollisionProfileName());

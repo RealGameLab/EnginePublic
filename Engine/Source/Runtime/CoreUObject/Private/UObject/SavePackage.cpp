@@ -735,14 +735,14 @@ bool IsEditorOnlyObject(const UObject* InObject)
 	{
 		return false;
 	}
-	
+	check(InObject);
+
 	if (InObject->HasAnyMarks(OBJECTMARK_EditorOnly) || InObject->IsEditorOnly())
 	{
 		return true;
 	}
 
 	bool bResult = false;
-	check(InObject);
 	// If this is a package that is editor only or the object is in editor-only package,
 	// the object is editor-only too.
 	const bool bIsAPackage = InObject->IsA<UPackage>();
@@ -1121,9 +1121,32 @@ class FArchiveSaveTagImports : public FArchiveUObject
 public:
 	FLinkerSave* Linker;
 	TArray<UObject*> Dependencies;
+	TArray<UObject*> NativeDependencies;
+	TArray<UObject*> OtherImports;
+	bool bIgnoreDependencies;
+
+	/** Helper object to save/store state of bSerializingDependency */
+	class FScopeIgnoreDependencies
+	{
+		FArchiveSaveTagImports& Archive;
+		bool bScopedIgnoreDependencies;
+		
+	public:
+		FScopeIgnoreDependencies(FArchiveSaveTagImports& InArchive)
+			: Archive(InArchive)
+			, bScopedIgnoreDependencies(InArchive.bIgnoreDependencies)
+		{
+			Archive.bIgnoreDependencies = true;
+		}
+		~FScopeIgnoreDependencies()
+		{
+			Archive.bIgnoreDependencies = bScopedIgnoreDependencies;
+		}
+	};
 
 	FArchiveSaveTagImports(FLinkerSave* InLinker)
 		: Linker(InLinker)
+		, bIgnoreDependencies(false)
 	{
 		check(Linker);
 
@@ -1186,6 +1209,9 @@ public:
 			(*MutableArchive) << TempObject;
 		}
 
+		// Manually mark the name as referenced, in case it got skipped due to delta serialization
+		SavePackageState->MarkNameAsReferenced(ValueName);
+
 		Linker->SearchableNamesObjectMap.FindOrAdd(TypeObject).AddUnique(ValueName);
 	}
 
@@ -1240,11 +1266,11 @@ FArchive& FArchiveSaveTagImports::operator<<( UObject*& Obj )
 	// Skip PendingKill objects and objects that are both not for client and not for server when cooking.
 	if (Obj && !Obj->IsPendingKill() && (!IsCooking() || !Obj->HasAllMarks(ObjectMarks)) && !Obj->HasAnyMarks(OBJECTMARK_EditorOnly))
 	{
-		if( !Obj->HasAnyFlags(RF_Transient) || Obj->IsNative() )
+		bool bIsNative = Obj->IsNative();
+		if( !Obj->HasAnyFlags(RF_Transient) || bIsNative)
 		{
 			// remember it as a dependency, unless it's a top level package or native
 			const bool bIsTopLevelPackage = Obj->GetOuter() == NULL && dynamic_cast<UPackage*>(Obj);
-			bool bIsNative = Obj->IsNative();
 			UObject* Outer = Obj->GetOuter();
 
 			const bool bIsEditorOnly = IsCookingForNoEditorDataPlatform(*this) && IsEditorOnlyObject(Obj);
@@ -1265,11 +1291,16 @@ FArchive& FArchiveSaveTagImports::operator<<( UObject*& Obj )
 			}
 
 			// only add valid objects
-			if (!bIsTopLevelPackage && !bIsNative)
+			if (!bIsTopLevelPackage && !bIgnoreDependencies)
 			{
-				Dependencies.AddUnique(Obj);
+				TArray<UObject*>& DependencyArray = bIsNative ? NativeDependencies : Dependencies;
+				if (DependencyArray.Contains(Obj))
+				{
+					return *this;
+				}
+				DependencyArray.Add(Obj);
 			}
-
+			
 			if( !Obj->HasAnyMarks(OBJECTMARK_TagExp) )  
 			{
 				// if anything in the outer chain is NotFor, then we are also NotFor. Stop this search at public objects.
@@ -1278,22 +1309,34 @@ FArchive& FArchiveSaveTagImports::operator<<( UObject*& Obj )
 				// mark this object as an import
 				if (!bIsEditorOnly)
 				{
+					if (bIsTopLevelPackage || bIgnoreDependencies)
+					{
+						if (OtherImports.Contains(Obj))
+						{
+							return *this;
+						}
+
+						OtherImports.Add(Obj);
+					}
 					Obj->Mark(OBJECTMARK_TagImp);
 					UClass* ClassObj = Cast<UClass>(Obj);
 
-					if (IsEventDrivenLoaderEnabledInCookedBuilds() && IsCooking() && !bIsNative && ClassObj)
+					// Don't recurse into CDOs if we're already ignoring dependencies, we only want to recurse into our outer chain in that case
+					if (IsEventDrivenLoaderEnabledInCookedBuilds() && IsCooking() && !bIsNative && !bIgnoreDependencies && ClassObj)
 					{
 						// We don't want to add this to Dependencies, we simply want it to be an import so that a serialization before creation dependency can be created to the CDO
+						FScopeIgnoreDependencies IgnoreDependencies(*this);
 						UObject* CDO = ClassObj->GetDefaultObject();
-						
+
 						if (CDO)
 						{
-							// Gets all subobjects defined in a class, including the CDO, CDO components and blueprint-created components
-							TArray<UObject*> ObjectTemplates;
-							ObjectTemplates.Add(CDO);
+							*this << CDO;
 
+							// Gets all subobjects defined in a class, including the CDO, CDO components and blueprint-created components
 							TArray<UObject*> CurrentSubobjects;
 							TArray<UObject*> NextSubobjects;
+
+							UE_LOG(LogSavePackage, Verbose, TEXT("******Class import %s"), *Obj->GetFullName());
 
 							// Recursively search for subobjects. Only care about ones that have a full subobject chain as some nested objects are set wrong
 							GetObjectsWithOuter(ClassObj, NextSubobjects, false);
@@ -1307,25 +1350,14 @@ FArchive& FArchiveSaveTagImports::operator<<( UObject*& Obj )
 								{
 									if (SubObj->HasAnyFlags(RF_DefaultSubObject | RF_ArchetypeObject))
 									{
-										ObjectTemplates.Add(SubObj);
+										*this << SubObj;
+
 										GetObjectsWithOuter(SubObj, NextSubobjects, false);
 									}
-								}
-							}
-
-							for (UObject* ObjTemplate : ObjectTemplates)
-							{
-								if (IsCookingForNoEditorDataPlatform(*this) && IsEditorOnlyObject(ObjTemplate))
-								{
-									// Explicitly mark as editor only so it will be skipped later
-									ObjTemplate->Mark(OBJECTMARK_EditorOnly);
-								}
-								else if (!ObjTemplate->HasAnyFlags(RF_Transient) && !ObjTemplate->IsPendingKill())
-								{
-									// Correctly mark objects that shouldn't be cooked
-									ConditionallyExcludeObjectForTarget(ObjTemplate, *this);
-
-									ObjTemplate->Mark(OBJECTMARK_TagImp);
+									else
+									{
+										UE_LOG(LogSavePackage, Verbose, TEXT("      rejected subobj because it was not RF_DefaultSubObject | RF_ArchetypeObject %s"), *SubObj->GetFullName());
+									}
 								}
 							}
 						}
@@ -1335,10 +1367,16 @@ FArchive& FArchiveSaveTagImports::operator<<( UObject*& Obj )
 #endif //WITH_EDITOR
 				}
 
-				if ( IsCDOWithIncludedClassForPlatform(Obj, *this) )
+				if (Obj->HasAnyMarks(EObjectMark(OBJECTMARK_NotForClient | OBJECTMARK_NotForServer)))
 				{
-					Obj->UnMark(OBJECTMARK_NotForClient);
-					Obj->UnMark(OBJECTMARK_NotForServer);
+					// Native CDOs are always included
+					bool bNativeCDO = Obj->GetOutermost()->HasAnyPackageFlags(PKG_CompiledIn);
+
+					if ( IsCDOWithIncludedClassForPlatform(Obj, *this) && !(IsEventDrivenLoaderEnabledInCookedBuilds() && IsCooking() && !bNativeCDO))
+					{
+						Obj->UnMark(OBJECTMARK_NotForClient);
+						Obj->UnMark(OBJECTMARK_NotForServer);
+					}
 				}
 
 				// If the object has been excluded, don't add its outer
@@ -2672,30 +2710,33 @@ class FExportReferenceSorter : public FArchiveUObject
 			const int32 PreviousReferencedObjectCount = ReferencedObjects.Num();
 			const int32 PreviousInsertIndex = CurrentInsertIndex;
 
-			if (UStruct* RequiredObjectStruct = dynamic_cast<UStruct*>(RequiredObject))
+			if (!PackageToSort || RequiredObject->GetOutermost() == PackageToSort)
 			{
-				// if this is a struct/class/function/state, it may have a super that needs to be processed first
-				ProcessStruct(RequiredObjectStruct);
-			}
-			else if ( bProcessObject )
-			{
-				// this means that RequiredObject is being force-loaded by the referencing object, rather than simply referenced
-				ProcessObject(RequiredObject);
-			}
-			else
-			{
-				// only the object's class and archetype are force-loaded, so only those objects need to be in the list before
-				// whatever object was referencing RequiredObject
-				if ( ProcessedObjects.Find(RequiredObject->GetOuter()) == INDEX_NONE )
+				// Don't compute prerequisites for objects outside the package, this will recurse into all native properties
+				if (UStruct* RequiredObjectStruct = dynamic_cast<UStruct*>(RequiredObject))
 				{
-					HandleDependency(RequiredObject->GetOuter());
+					// if this is a struct/class/function/state, it may have a super that needs to be processed first
+					ProcessStruct(RequiredObjectStruct);
 				}
+				else if (bProcessObject)
+				{
+					// this means that RequiredObject is being force-loaded by the referencing object, rather than simply referenced
+					ProcessObject(RequiredObject);
+				}
+				else
+				{
+					// only the object's class and archetype are force-loaded, so only those objects need to be in the list before
+					// whatever object was referencing RequiredObject
+					if (ProcessedObjects.Find(RequiredObject->GetOuter()) == INDEX_NONE)
+					{
+						HandleDependency(RequiredObject->GetOuter());
+					}
 
-				// class is needed before archetype, but we need to process these in reverse order because we are inserting into the list.
-				ProcessObject(RequiredObject->GetArchetype());
-				ProcessStruct(RequiredObject->GetClass());
+					// class is needed before archetype, but we need to process these in reverse order because we are inserting into the list.
+					ProcessObject(RequiredObject->GetArchetype());
+					ProcessStruct(RequiredObject->GetClass());
+				}
 			}
-
 			// InsertIndexOffset is the amount the CurrentInsertIndex was incremented during the serialization of SuperField; we need to
 			// subtract out this number to get the correct location of the new insert index
 			const int32 InsertIndexOffset = CurrentInsertIndex - PreviousInsertIndex;
@@ -2779,8 +2820,9 @@ public:
 	/**
 	 * Get the list of new objects which were encountered by this archive; excludes those objects which were passed into the constructor
 	 */
-	void GetExportList( TArray<UObject*>& out_Exports, bool bIncludeCoreClasses=false )
+	void GetExportList( TArray<UObject*>& out_Exports, UPackage* OuterPackage, bool bIncludeCoreClasses=false )
 	{
+		PackageToSort = OuterPackage;
 		if ( !bIncludeCoreClasses )
 		{
 			const int32 NumReferencedObjects = ReferencedObjects.Num() - CoreReferencesOffset;
@@ -2847,7 +2889,7 @@ public:
 									}
 									else
 									{
-										UByteProperty* ByteProp = dynamic_cast<UByteProperty*>(Object);
+								UByteProperty* ByteProp = dynamic_cast<UByteProperty*>(Object);
 										if (ByteProp && ByteProp->Enum)
 										{
 											Enum = ByteProp->Enum;
@@ -2855,9 +2897,9 @@ public:
 									}
 
 									if (Enum)
-									{
+								{
 										HandleDependency(Enum, /*bProcessObject =*/true);
-									}
+								}
 								}
 
 								// a normal field - property, enum, const; just insert it into the list and keep going
@@ -3158,9 +3200,10 @@ private:
 	 * prioritized in the target ExportMap, before the struct).
 	 */
 	TArray<UObject*> ForceLoadObjects;
+
+	/** Package to constrain checks to */
+	UPackage* PackageToSort;
 };
-
-
 
 /**
  * Helper structure encapsulating functionality to sort a linker's export map to allow seek free
@@ -3206,7 +3249,7 @@ struct FObjectExportSeekFreeSorter
 				SortArchive.ProcessStruct(ExportObjectClass);
 #if EXPORT_SORTING_DETAILED_LOGGING
 				TArray<UObject*> ReferencedObjects;
-				SortArchive.GetExportList(ReferencedObjects, bRetrieveInitialReferences);
+				SortArchive.GetExportList(ReferencedObjects, Linker->LinkerRoot, bRetrieveInitialReferences);
 
 				UE_LOG(LogSavePackage, Log, TEXT("Referenced objects for (%i) %s in %s"), ExportIndex, *Export.Object->GetFullName(), *Linker->LinkerRoot->GetName());
 				for ( int32 RefIndex = 0; RefIndex < ReferencedObjects.Num(); RefIndex++ )
@@ -3221,7 +3264,7 @@ struct FObjectExportSeekFreeSorter
 
 				SortedExports += ReferencedObjects;
 #else
-				SortArchive.GetExportList(SortedExports, bRetrieveInitialReferences);
+				SortArchive.GetExportList(SortedExports, Linker->LinkerRoot, bRetrieveInitialReferences);
 #endif
 				bRetrieveInitialReferences = false;
 			}
@@ -3242,7 +3285,7 @@ struct FObjectExportSeekFreeSorter
 				SortArchive.ProcessObject(Export.Object);
 #if EXPORT_SORTING_DETAILED_LOGGING
 				TArray<UObject*> ReferencedObjects;
-				SortArchive.GetExportList(ReferencedObjects, bRetrieveInitialReferences);
+				SortArchive.GetExportList(ReferencedObjects, Linker->LinkerRoot, bRetrieveInitialReferences);
 
 				UE_LOG(LogSavePackage, Log, TEXT("Referenced objects for (%i) %s in %s"), ExportIndex, *Export.Object->GetFullName(), *Linker->LinkerRoot->GetName());
 				for ( int32 RefIndex = 0; RefIndex < ReferencedObjects.Num(); RefIndex++ )
@@ -3257,7 +3300,7 @@ struct FObjectExportSeekFreeSorter
 
 				SortedExports += ReferencedObjects;
 #else
-				SortArchive.GetExportList(SortedExports, bRetrieveInitialReferences);
+				SortArchive.GetExportList(SortedExports, Linker->LinkerRoot, bRetrieveInitialReferences);
 #endif
 				bRetrieveInitialReferences = false;
 			}
@@ -3779,14 +3822,16 @@ struct FEDLCookChecker
 		if (bIsActive && Exports.Num())
 		{
 			double StartTime = FPlatformTime::Seconds();
-			// imports to things that are not exports...
-			for (auto& Pair : ImportToImportingPackage)
-			{
-				if (!Exports.Contains(Pair.Key))
-				{
-					UE_LOG(LogSavePackage, Warning, TEXT("%s imported %s, but it was never saved as an export."), *Pair.Value, *Pair.Key);
-				}
-			}
+			
+			// @TODO: temporarily disabling this warning block to keep noise down (until we can figure out what's causing this; see UE-41880)
+// 			// imports to things that are not exports...
+// 			for (auto& Pair : ImportToImportingPackage)
+// 			{
+// 				if (!Exports.Contains(Pair.Key))
+// 				{
+// 					UE_LOG(LogSavePackage, Warning, TEXT("%s imported %s, but it was never saved as an export."), *Pair.Value, *Pair.Key);
+// 				}
+// 			}
 			// cycles in the dep graph
 			TSet<FString> Visited;
 			TSet<FString> Stack;
@@ -3942,7 +3987,7 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 					Arguments.Add(TEXT("Name"), FText::FromString(NewPath));
 					ErrorText = FText::Format(NSLOCTEXT("SavePackage", "CannotSaveAssetPartiallyLoaded", "Asset '{Name}' cannot be saved as it has only been partially loaded"), Arguments);
 				}
-				Error->Logf(ELogVerbosity::Warning, *ErrorText.ToString());
+				Error->Logf(ELogVerbosity::Warning, TEXT("%s"), *ErrorText.ToString());
 			}
 			return ESavePackageResult::Error;
 		}
@@ -3968,7 +4013,7 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 						Arguments.Add(TEXT("Name"), FText::FromString(NewPath));
 						ErrorText = FText::Format(NSLOCTEXT("SavePackage", "AssetSaveNotAllowed", "Asset '{Name}' is not allowed to save (see log for reason)"), Arguments);
 					}
-					Error->Logf(ELogVerbosity::Warning, *ErrorText.ToString());
+					Error->Logf(ELogVerbosity::Warning, TEXT("%s"), *ErrorText.ToString());
 				}
 				return ESavePackageResult::Error;
 			}
@@ -3992,7 +4037,7 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 					Arguments.Add(TEXT("Name"), FText::FromString(NewPath));
 					ErrorText = FText::Format(NSLOCTEXT("SavePackage", "CannotSaveAssetConformIncompatibility", "Conformed Asset '{Name}' cannot be saved as it is incompatible with the original"), Arguments);
 				}
-				Error->Logf(ELogVerbosity::Error, *ErrorText.ToString());
+				Error->Logf(ELogVerbosity::Error, TEXT("%s"), *ErrorText.ToString());
 			}
 			return ESavePackageResult::Error;
 		}
@@ -4042,6 +4087,9 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 		UnMarkAllObjects();
 
 		TArray<UObject*> CachedObjects;
+
+		// structure to track what every export needs to import (native only)
+		TMap<UObject*, TArray<UObject*> > NativeObjectDependencies;
 
 		// Size of serialized out package in bytes. This is before compression.
 		int32 PackageSize = INDEX_NONE;
@@ -4277,8 +4325,7 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 						ImportTagger << Class;
 
 						UObject* Template = Obj->GetArchetype();
-						if ( Template 
-							)
+						if (Template)
 						{
 							// If we're not cooking for the event driven loader, exclude the CDO
 							if (Template != Class->GetDefaultObject() || (IsEventDrivenLoaderEnabledInCookedBuilds() && TargetPlatform))
@@ -4287,6 +4334,22 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 							}
 						}
 
+						if (IsEventDrivenLoaderEnabledInCookedBuilds() && TargetPlatform)
+						{
+							TArray<UObject*> Deps;
+							Obj->GetPreloadDependencies(Deps);
+							for (UObject* Dep : Deps)
+							{
+								// We assume nothing in coreuobject ever loads assets in a constructor
+								if (Dep && Dep->GetOutermost()->GetFName() != GLongCoreUObjectPackageName)
+								{
+									FArchiveSaveTagImports::FScopeIgnoreDependencies IgnoreDependencies(ImportTagger);
+									ImportTagger << Dep;
+								}
+							}
+						}
+
+
 						if( Obj->IsIn(GetTransientPackage()) )
 						{
 							UE_LOG(LogSavePackage, Fatal, TEXT("%s"), *FString::Printf( TEXT("Transient object imported: %s"), *Obj->GetFullName() ) );
@@ -4294,20 +4357,25 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 
 						if (Linker->IsCooking())
 						{
-							// Remove all dependencies that are not required for the cooking target platform
-							for (int32 DependencyIndex = ImportTagger.Dependencies.Num() - 1; DependencyIndex >= 0; DependencyIndex--)
+							auto RemoveInvalidObject = [&ObjectMarks](UObject* DependencyObj)
 							{
-								UObject* DependencyObj = ImportTagger.Dependencies[DependencyIndex];
 								if (DependencyObj->HasAllMarks(ObjectMarks))
 								{
 									DependencyObj->UnMark(OBJECTMARK_TagImp);
-									ImportTagger.Dependencies.RemoveAtSwap(DependencyIndex);
-								}								
-							}
+									return true;
+								}
+								return false;
+							};
+
+							// Remove all dependencies that are not required for the cooking target platform
+							ImportTagger.Dependencies.RemoveAll(RemoveInvalidObject);
+							ImportTagger.NativeDependencies.RemoveAll(RemoveInvalidObject);
+							ImportTagger.OtherImports.RemoveAll(RemoveInvalidObject);
 						}
 
 						// add the list of dependencies to the dependency map
 						ObjectDependencies.Add(Obj, ImportTagger.Dependencies);
+						NativeObjectDependencies.Add(Obj, ImportTagger.NativeDependencies);
 
 						if (Obj->GetClass() != UObjectRedirector::StaticClass())
 						{
@@ -4393,13 +4461,16 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 							// When Startup is cooked, it will pull in C and A. When M is cooked, it will pull in B, but not A, because
 							// A was already marked by the cooker. M.xxx now has a private import to A, which is normally illegal, hence
 							// the OBJECTMARK_MarkedByCooker check below
+							UPackage* ObjPackage = Obj->GetOutermost();
 							if( !Obj->HasAnyFlags(RF_Public) && !Obj->HasAnyFlags(RF_Transient))
 							{
-								PrivateObjects.Add(Obj);
+								if (!IsEventDrivenLoaderEnabledInCookedBuilds() || !TargetPlatform || !ObjPackage->HasAnyPackageFlags(PKG_CompiledIn))
+								{
+									PrivateObjects.Add(Obj);
+								}
 							}
 
 							// See whether the object we are referencing is in another map package.
-							UPackage* ObjPackage = dynamic_cast<UPackage*>(Obj->GetOutermost());
 							if( ObjPackage && ObjPackage->ContainsMap() )
 							{
 								if ( ObjPackage != Obj && Obj->GetFName() != NAME_PersistentLevel && Obj->GetClass()->GetFName() != WorldClassName )
@@ -4412,7 +4483,7 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 
 										if (!(SaveFlags & SAVE_NoError))
 										{
-											Error->Logf(ELogVerbosity::Warning, *FText::Format( NSLOCTEXT( "Core", "SavePackageObjInAnotherMap", "Object '{0}' is in another map" ), FText::FromString( *Obj->GetFullName() ) ).ToString() );
+											Error->Logf(ELogVerbosity::Warning, TEXT("%s"), *FText::Format( NSLOCTEXT( "Core", "SavePackageObjInAnotherMap", "Object '{0}' is in another map" ), FText::FromString( *Obj->GetFullName() ) ).ToString() );
 										}
 									}
 								}
@@ -4790,19 +4861,14 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 				FObjectExportSortHelper ExportSortHelper;
 				ExportSortHelper.SortExports( Linker, Conform );
 				
-				if ( EndSavingIfCancelled( Linker, TempFilename ) ) 
-				{ 
-					return ESavePackageResult::Canceled;
-				}
-				SlowTask.EnterProgressFrame();
-
 				// Sort exports for seek-free loading.
 				{
 					COOK_STAT(FScopedDurationTimer SaveTimer(SavePackageStats::SortExportsSeekfreeInnerTimeSec));
-				FObjectExportSeekFreeSorter SeekFreeSorter;
-				SeekFreeSorter.SortExports( Linker, Conform );
-				Linker->Summary.ExportCount = Linker->ExportMap.Num();
+					FObjectExportSeekFreeSorter SeekFreeSorter;
+					SeekFreeSorter.SortExports( Linker, Conform );
 				}
+
+				Linker->Summary.ExportCount = Linker->ExportMap.Num();
 
 				if ( EndSavingIfCancelled( Linker, TempFilename ) ) 
 				{ 
@@ -4826,7 +4892,6 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 					ExportToIndexMap.Add(Linker->ExportMap[ExpIndex].Object, FPackageIndex::FromExport(ExpIndex));
 				}
 
-				
 				// go back over the (now sorted) exports and fill out the DependsMap
 				for (int32 ExpIndex = 0; ExpIndex < Linker->ExportMap.Num(); ExpIndex++)
 				{
@@ -4837,7 +4902,7 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 						UE_LOG(LogSavePackage, Warning, TEXT("Object is missing for an export, unable to save dependency map. Most likely this is caused my conforming against a package that is missing this object. See log for more info"));
 						if (!(SaveFlags & SAVE_NoError))
 						{
-							Error->Logf(ELogVerbosity::Warning, *FText::Format( NSLOCTEXT( "Core", "SavePackageObjectIsMissingExport", "Object is missing for an export, unable to save dependency map for asset '{0}'. Most likely this is caused my conforming against a asset that is missing this object. See log for more info" ), FText::FromString( FString( Filename ) ) ).ToString() );
+							Error->Logf(ELogVerbosity::Warning, TEXT("%s"), *FText::Format( NSLOCTEXT( "Core", "SavePackageObjectIsMissingExport", "Object is missing for an export, unable to save dependency map for asset '{0}'. Most likely this is caused my conforming against a asset that is missing this object. See log for more info" ), FText::FromString( FString( Filename ) ) ).ToString() );
 						}
 						continue;
 					}
@@ -4950,7 +5015,7 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 
 						if (!(SaveFlags & SAVE_NoError))
 						{
-							Error->Logf(ELogVerbosity::Warning, *FText::Format( NSLOCTEXT( "Core", "SavePackageNoMap", "Attempting to save a map asset '{0}' that does not contain a map object" ), FText::FromString( FString( Filename ) ) ).ToString() );
+							Error->Logf(ELogVerbosity::Warning, TEXT("%s"), *FText::Format( NSLOCTEXT( "Core", "SavePackageNoMap", "Attempting to save a map asset '{0}' that does not contain a map object" ), FText::FromString( FString( Filename ) ) ).ToString() );
 						}
 						Success = false;
 					}
@@ -5052,6 +5117,7 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 				{
 					//@todo optimization, this should just be stripped entirely from cooked packages
 					TArray<FPackageIndex> Depends; // empty array
+					Linker->Summary.DependsOffset = Linker->Tell();
 					for (int32 i = 0; i < Linker->ExportMap.Num(); i++)
 					{
 						*Linker << Depends;
@@ -5196,26 +5262,38 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 					const EObjectMark ObjectMarks = UPackage::GetObjectMarksForTargetPlatform(Linker->CookingTarget(), Linker->IsCooking());
 					Linker->Summary.PreloadDependencyCount = 0;
 
-					auto IncludeObjectAsDependency = [Linker,ObjectMarks](TSet<FPackageIndex>& AddTo, UObject* ToTest, UObject* ForObj, bool bMandatory)
+					auto IncludeObjectAsDependency = [Linker,ObjectMarks](int32 CallSite, TSet<FPackageIndex>& AddTo, UObject* ToTest, UObject* ForObj, bool bMandatory, bool bOnlyIfInLinkerTable)
 					{
 						// Skip transient, editor only, and excluded client/server objects
-						if (ToTest && !ToTest->HasAllFlags(RF_Transient) && !ToTest->IsPendingKill())
+						if (ToTest)
 						{
 							UPackage* Outermost = ToTest->GetOutermost();
 							check(Outermost);
-							if (Outermost->HasAnyPackageFlags(EPackageFlags::PKG_CompiledIn))
+							if (Outermost->GetFName() == GLongCoreUObjectPackageName)
 							{
-								return; // we never add dependencies for things that are compiled in
+								return; // We assume nothing in coreuobject ever loads assets in a constructor
 							}
-							bool bNotFiltered = !ToTest->HasAllMarks(ObjectMarks) && (!(Linker->Summary.PackageFlags & PKG_FilterEditorOnly) || !ToTest->HasAnyMarks(OBJECTMARK_EditorOnly));
+							FPackageIndex Index = Linker->MapObject(ToTest);
+							if (Index.IsNull() && bOnlyIfInLinkerTable)
+							{
+								return;
+							}
+							if (!Index.IsNull() && (ToTest->HasAllFlags(RF_Transient) && !ToTest->IsNative()))
+							{
+								UE_LOG(LogSavePackage, Warning, TEXT("A dependency '%s' of '%s' is in the linker table, but is transient. We will keep the dependency anyway (%d)."), *ToTest->GetFullName(), *ForObj->GetFullName(), CallSite);
+							}
+							if (!Index.IsNull() && ToTest->IsPendingKill())
+							{
+								UE_LOG(LogSavePackage, Warning, TEXT("A dependency '%s' of '%s' is in the linker table, but is pending kill. We will keep the dependency anyway (%d)."), *ToTest->GetFullName(), *ForObj->GetFullName(), CallSite);
+							}
+							bool bNotFiltered = !ToTest->HasAllMarks(ObjectMarks) && (!(Linker->Summary.PackageFlags & PKG_FilterEditorOnly) || !IsEditorOnlyObject(ToTest));
 							if (bMandatory && !bNotFiltered)
 							{
-								UE_LOG(LogSavePackage, Warning, TEXT("A dependency '%s' of '%s' was filtered, but is mandatory. This indicates a problem with editor only stripping. We will keep the dependency anyway."), *ToTest->GetFullName(), *ForObj->GetFullName());
+								UE_LOG(LogSavePackage, Warning, TEXT("A dependency '%s' of '%s' was filtered, but is mandatory. This indicates a problem with editor only stripping. We will keep the dependency anyway (%d)."), *ToTest->GetFullName(), *ForObj->GetFullName(), CallSite);
 								bNotFiltered = true;
 							}
 							if (bNotFiltered)
 							{
-								FPackageIndex Index = Linker->MapObject(ToTest);
 								if (!Index.IsNull())
 								{
 									AddTo.Add(Index);
@@ -5223,7 +5301,8 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 								}
 								else
 								{
-									UE_LOG(LogSavePackage, Fatal, TEXT("A dependency '%s' of '%s' was not actually in the linker tables and so will be ignored."), *ToTest->GetFullName(), *ForObj->GetFullName());
+									UE_CLOG(Outermost->HasAnyPackageFlags(PKG_CompiledIn), LogSavePackage, Verbose, TEXT("A compiled in dependency '%s' of '%s' was not actually in the linker tables and so will be ignored (%d)."), *ToTest->GetFullName(), *ForObj->GetFullName(), CallSite);
+									UE_CLOG(!Outermost->HasAnyPackageFlags(PKG_CompiledIn), LogSavePackage, Fatal, TEXT("A dependency '%s' of '%s' was not actually in the linker tables and so will be ignored (%d)."), *ToTest->GetFullName(), *ForObj->GetFullName(), CallSite);
 								}
 							}
 							check(!bMandatory);
@@ -5238,7 +5317,7 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 							if (ToTest)
 							{
 								UPackage* Outermost = ToTest->GetOutermost();
-								if (Outermost && !Outermost->HasAnyPackageFlags(EPackageFlags::PKG_CompiledIn))
+								if (Outermost && Outermost->GetFName() != GLongCoreUObjectPackageName) // We assume nothing in coreuobject ever loads assets in a constructor
 								{
 									AddTo.Add(Dep);
 								}
@@ -5248,6 +5327,7 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 
 
 					TArray<UObject*> Subobjects;
+					TArray<UObject*> Deps;
 					for (int32 i = 0; i < Linker->ExportMap.Num(); i++)
 					{
 						FObjectExport& Export = Linker->ExportMap[i];
@@ -5258,7 +5338,7 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 							{
 								IncludeIndexAsDependency(SerializationBeforeCreateDependencies, Export.ClassIndex);
 								UObject* CDO = Export.Object->GetArchetype();
-								IncludeObjectAsDependency(SerializationBeforeCreateDependencies, CDO, Export.Object, true);
+								IncludeObjectAsDependency(1, SerializationBeforeCreateDependencies, CDO, Export.Object, true, false);
 								Subobjects.Reset();
 								GetObjectsWithOuter(CDO, Subobjects);
 								for (UObject* SubObj : Subobjects)
@@ -5266,37 +5346,93 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 									// Only include subobject archetypes
 									if (SubObj->HasAnyFlags(RF_DefaultSubObject | RF_ArchetypeObject))
 									{
-										IncludeObjectAsDependency(SerializationBeforeCreateDependencies, SubObj, Export.Object, false);
+										while (SubObj->HasAnyFlags(RF_Transient)) // transient components are stripped by the ICH, so find the one it will really use at runtime
+										{
+											UObject* SubObjArch = SubObj->GetArchetype();
+											if (SubObjArch->GetClass()->HasAnyClassFlags(CLASS_Native | CLASS_Intrinsic))
+											{
+												break;
+											}
+											SubObj = SubObjArch;
+										}
+										if (!SubObj->IsPendingKill())
+										{
+											IncludeObjectAsDependency(2, SerializationBeforeCreateDependencies, SubObj, Export.Object, false, false);
+										}
 									}
 								}
 							}
 							TSet<FPackageIndex> SerializationBeforeSerializationDependencies;
 							{
-								TArray<UObject*> Deps;
+								Deps.Reset();
 								Export.Object->GetPreloadDependencies(Deps);
 
 								for (UObject* Obj : Deps)
 								{
-									IncludeObjectAsDependency(SerializationBeforeSerializationDependencies, Obj, Export.Object, false);
+									IncludeObjectAsDependency(3, SerializationBeforeSerializationDependencies, Obj, Export.Object, false, true);
 								}
-								if (Export.Object->HasAnyFlags(RF_ArchetypeObject | RF_ClassDefaultObject) && !Export.Object->GetOuter()->IsA(UPackage::StaticClass()))
+								if (Export.Object->HasAnyFlags(RF_ArchetypeObject | RF_ClassDefaultObject))
 								{
-									IncludeObjectAsDependency(SerializationBeforeSerializationDependencies, Export.Object->GetOuter(), Export.Object, true);
+									UObject *Outer = Export.Object->GetOuter();
+									if (!Outer->IsA(UPackage::StaticClass()))
+									{
+										IncludeObjectAsDependency(4, SerializationBeforeSerializationDependencies, Outer, Export.Object, true, false);
+									}
+								}
+								if (Export.Object->IsA(UClass::StaticClass()))
+								{
+									// we need to load archetypes of our subobjects before we load the class
+									UObject* CDO = CastChecked<UClass>(Export.Object)->GetDefaultObject();
+									Subobjects.Reset();
+									GetObjectsWithOuter(CDO, Subobjects);
+									for (UObject* SubObj : Subobjects)
+									{
+										// Only include subobject archetypes
+										if (SubObj->HasAnyFlags(RF_DefaultSubObject | RF_ArchetypeObject))
+										{
+											SubObj = SubObj->GetArchetype();
+											while (SubObj->HasAnyFlags(RF_Transient)) // transient components are stripped by the ICH, so find the one it will really use at runtime
+											{
+												UObject* SubObjArch = SubObj->GetArchetype();
+												if (SubObjArch->GetClass()->HasAnyClassFlags(CLASS_Native | CLASS_Intrinsic))
+												{
+													break;
+												}
+												SubObj = SubObjArch;
+											}
+											if (!SubObj->IsPendingKill())
+											{
+												IncludeObjectAsDependency(5, SerializationBeforeSerializationDependencies, SubObj, Export.Object, false, false);
+											}
+										}
+									}
 								}
 							}
 
 							TSet<FPackageIndex> CreateBeforeSerializationDependencies;
 							{
-								TArray<FPackageIndex>& Depends = Linker->DependsMap[i];
-								for (FPackageIndex Dep : Depends)
+								UClass* Class = Cast<UClass>(Export.Object);
+								UObject* ClassCDO = Class ? Class->GetDefaultObject() : nullptr;
 								{
-									UClass* Class = Cast<UClass>(Export.Object);
-									UObject* ToTest = Dep.IsExport() ? Linker->Exp(Dep).Object : Linker->Imp(Dep).XObject;
-									if (Class && ToTest == Class->GetDefaultObject())
+									TArray<FPackageIndex>& Depends = Linker->DependsMap[i];
+									for (FPackageIndex Dep : Depends)
 									{
-										continue;
+										UObject* ToTest = Dep.IsExport() ? Linker->Exp(Dep).Object : Linker->Imp(Dep).XObject;
+										if (ToTest != ClassCDO)
+										{
+											IncludeIndexAsDependency(CreateBeforeSerializationDependencies, Dep);
+										}
 									}
-									IncludeIndexAsDependency(CreateBeforeSerializationDependencies, Dep);
+								}
+								{
+									TArray<UObject*>& NativeDeps = NativeObjectDependencies[Export.Object];
+									for (UObject* ToTest : NativeDeps)
+									{
+										if (ToTest != ClassCDO)
+										{
+											IncludeObjectAsDependency(6, CreateBeforeSerializationDependencies, ToTest, Export.Object, false, true);
+										}
+									}
 								}
 							}
 							TSet<FPackageIndex> CreateBeforeCreateDependencies;
@@ -5383,7 +5519,7 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 							}
 						}
 					}
-					UE_LOG(LogSavePackage, Log, TEXT("Saved %d dependencies for %d exports."), Linker->Summary.PreloadDependencyCount, Linker->ExportMap.Num());
+					UE_LOG(LogSavePackage, Verbose, TEXT("Saved %d dependencies for %d exports."), Linker->Summary.PreloadDependencyCount, Linker->ExportMap.Num());
 				}
 
 				
@@ -5828,7 +5964,7 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 						else
 						{
 							UE_LOG(LogSavePackage, Error, TEXT("%s"), *FString::Printf( TEXT("Error saving '%s'"), Filename ) );
-							Error->Logf(ELogVerbosity::Warning, *FText::Format( NSLOCTEXT( "Core", "SaveWarning", "Error saving '{0}'" ), FText::FromString( FString( Filename ) ) ).ToString() );
+							Error->Logf(ELogVerbosity::Warning, TEXT("%s"), *FText::Format( NSLOCTEXT( "Core", "SaveWarning", "Error saving '{0}'" ), FText::FromString( FString( Filename ) ) ).ToString() );
 						}
 					}
 					else
@@ -5881,7 +6017,7 @@ ESavePackageResult UPackage::Save(UPackage* InOuter, UObject* Base, EObjectFlags
 									FFormatNamedArguments Arguments;
 									Arguments.Add(TEXT("FileName"), FText::FromString( BaseFilename ));
 									Arguments.Add(TEXT("MaxLength"), FText::AsNumber( MaxFilenameLength ));
-									Error->Logf(ELogVerbosity::Warning, *FText::Format( NSLOCTEXT( "Core", "Error_FilenameIsTooLongForCooking", "Filename '{FileName}' is too long; this may interfere with cooking for consoles.  Unreal filenames should be no longer than {MaxLength} characters." ), Arguments ).ToString() );
+									Error->Logf(ELogVerbosity::Warning, TEXT("%s"), *FText::Format( NSLOCTEXT( "Core", "Error_FilenameIsTooLongForCooking", "Filename '{FileName}' is too long; this may interfere with cooking for consoles.  Unreal filenames should be no longer than {MaxLength} characters." ), Arguments ).ToString() );
 								}
 							}
 						}

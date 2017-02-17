@@ -45,6 +45,7 @@
 #include "ShaderCompiler.h"
 #include "HAL/MemoryMisc.h"
 #include "ProfilingDebugging/CookStats.h"
+#include "Engine/AssetManager.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogCookCommandlet, Log, All);
 
@@ -1471,11 +1472,31 @@ bool UCookCommandlet::NewCook( const TArray<ITargetPlatform*>& Platforms, TArray
 		MapList.Add(MapName);
 	}
 
+	
+	TArray<FString> MapIniSections;
+	FString SectionStr;
+	if (FParse::Value(*Params, TEXT("MAPINISECTION="), SectionStr))
+	{
+		if (SectionStr.Contains(TEXT("+")))
+		{
+			TArray<FString> Sections;
+			SectionStr.ParseIntoArray(Sections, TEXT("+"), true);
+			for (int32 Index = 0; Index < Sections.Num(); Index++)
+			{
+				MapIniSections.Add(Sections[Index]);
+			}
+		}
+		else
+		{
+			MapIniSections.Add(SectionStr);
+		}
+	}
+	
 	// If we still don't have any mapsList check if the allmaps ini section is filled out
 	// this is for backwards compatibility
-	if (MapList.Num() == 0)
+	if (MapList.Num() == 0 && MapIniSections.Num() == 0)
 	{
-		GEditor->ParseMapSectionIni(TEXT("-MAPINISECTION=AllMaps"), MapList);
+		MapIniSections.Add(FString(TEXT("AllMaps")));
 	}
 
 	if (!bCookSinglePackage)
@@ -1523,6 +1544,7 @@ bool UCookCommandlet::NewCook( const TArray<ITargetPlatform*>& Platforms, TArray
 	Swap( StartupOptions.DLCName, DLCName );
 	Swap( StartupOptions.BasedOnReleaseVersion, BasedOnReleaseVersion );
 	Swap( StartupOptions.CreateReleaseVersion, CreateReleaseVersion );
+	Swap( StartupOptions.IniMapSections, MapIniSections);
 	StartupOptions.CookOptions = CookOptions;
 	StartupOptions.bErrorOnEngineContentUse = bErrorOnEngineContentUse;
 	StartupOptions.bGenerateDependenciesForMaps = Switches.Contains(TEXT("GenerateDependenciesForMaps"));
@@ -1785,6 +1807,11 @@ bool UCookCommandlet::Cook(const TArray<ITargetPlatform*>& Platforms, TArray<FSt
 
 	// allow the game to fill out the asset registry, as well as get a list of objects to always cook
 	FGameDelegates::Get().GetCookModificationDelegate().ExecuteIfBound(FilesInPath);
+
+	if (UAssetManager::IsValid())
+	{
+		UAssetManager::Get().ModifyCook(FilesInPath);
+	}
 
 	// always generate the asset registry before starting to cook, for either method
 	GenerateAssetRegistry(Platforms);

@@ -35,13 +35,17 @@ struct FPluginTemplateDescription
 	/** What is the expected ModuleDescriptor type for this plugin?*/
 	EHostType::Type ModuleDescriptorType;
 
+	/** What is the expected Loading Phase for this plugin? */
+	ELoadingPhase::Type LoadingPhase;
+
 	/** Constructor */
-	FPluginTemplateDescription(FText InName, FText InDescription, FString InOnDiskPath, bool InCanContainContent, EHostType::Type InModuleDescriptorType)
+	FPluginTemplateDescription(FText InName, FText InDescription, FString InOnDiskPath, bool InCanContainContent, EHostType::Type InModuleDescriptorType, ELoadingPhase::Type InLoadingPhase = ELoadingPhase::Default)
 		: Name(InName)
 		, Description(InDescription)
 		, OnDiskPath(InOnDiskPath)
 		, bCanContainContent(InCanContainContent)
 		, ModuleDescriptorType(InModuleDescriptorType)
+		, LoadingPhase(InLoadingPhase)
 	{
 	}
 };
@@ -87,6 +91,20 @@ public:
 
 	/** Gets the icon path for the current template selection. Returns true if the plugin requires a default icon */
 	virtual bool GetPluginIconPath(FString& OutIconPath) const = 0;
+
+	/** Gets the ModuleDescriptor for the plugin based on the selection  */
+	virtual EHostType::Type GetPluginModuleDescriptor() const 
+	{
+		// @todo: make this a pure virtual function
+		return EHostType::Runtime;
+	}
+
+	/** Gets the LoadingPhase for the plugin based on the selection */
+	virtual ELoadingPhase::Type GetPluginLoadingPhase() const
+	{
+		// @todo: make this a pure virtual function
+		return ELoadingPhase::Default;
+	}
 
 	/** Gets the icon path for the specified template. Returns true if it requires a default icon */
 	virtual bool GetTemplateIconPath(TSharedRef<FPluginTemplateDescription> InTemplate, FString& OutIconPath) const = 0;

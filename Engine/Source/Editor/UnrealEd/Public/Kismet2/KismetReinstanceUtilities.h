@@ -1,9 +1,5 @@
 // Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
-
-#ifndef __KismetReinstanceUtilities_h__
-#define __KismetReinstanceUtilities_h__
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -43,6 +39,7 @@ public:
 	static FCDODuplicatesProvider& GetCDODuplicatesProviderDelegate();
 
 protected:
+	friend struct FBlueprintCompilationManagerImpl;
 
 	static TSet<TWeakObjectPtr<UBlueprint>> DependentBlueprintsToRefresh;
 	static TSet<TWeakObjectPtr<UBlueprint>> DependentBlueprintsToRecompile;
@@ -73,9 +70,6 @@ protected:
 
 	/** Whether or not this resinstancer has already reinstanced  */
 	bool bHasReinstanced;
-
-	/** Don't call GC */
-	bool bSkipGarbageCollection;
 
 	/** Cached value, mostly used to determine if we're explicitly targeting the skeleton class or not */
 	enum EReinstClassType
@@ -165,7 +159,6 @@ protected:
 		, DuplicatedClass(NULL)
 		, OriginalCDO(NULL)
 		, bHasReinstanced(false)
-		, bSkipGarbageCollection(false)
 		, ReinstClassType(RCT_Unknown)
 		, ClassToReinstanceDefaultValuesCRC(0)
 		, bIsRootReinstancer(false)
@@ -201,6 +194,3 @@ private:
 	/** Handles the work of ReplaceInstancesOfClass, handling both normal replacement of instances and batch */
 	static void ReplaceInstancesOfClass_Inner(TMap<UClass*, UClass*>& InOldToNewClassMap, UObject* InOriginalCDO, TSet<UObject*>* ObjectsThatShouldUseOldStuff = NULL, bool bClassObjectReplaced = false, bool bPreserveRootComponent = true);
 };
-
-
-#endif//__KismetEditorUtilities_h__

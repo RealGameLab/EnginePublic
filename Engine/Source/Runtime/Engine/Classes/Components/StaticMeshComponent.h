@@ -417,7 +417,7 @@ public:
 	virtual bool HasValidSettingsForStaticLighting(bool bOverlookInvalidComponents) const override;
 
 	virtual void GetLightAndShadowMapMemoryUsage( int32& LightMapMemoryUsage, int32& ShadowMapMemoryUsage ) const override;
-	virtual void GetUsedMaterials(TArray<UMaterialInterface*>& OutMaterials) const override;
+	virtual void GetUsedMaterials(TArray<UMaterialInterface*>& OutMaterials, bool bGetDebugMaterials = false) const override;
 	virtual UMaterialInterface* GetMaterial(int32 MaterialIndex) const override;
 	virtual int32 GetMaterialIndex(FName MaterialSlotName) const override;
 	virtual TArray<FName> GetMaterialSlotNames() const override;
@@ -536,6 +536,9 @@ public:
 
 	/** Whether or not the component supports default collision from its static mesh asset */
 	virtual bool SupportsDefaultCollision();
+
+	/** Whether we can support dithered LOD transitions (default behavior checks all materials). Used for HISMC LOD. */
+	virtual bool SupportsDitheredLODTransitions();
 
 private:
 	/** Initializes the resources used by the static mesh component. */

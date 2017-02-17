@@ -25,16 +25,6 @@ public partial class Project : CommandUtils
 
 	private static readonly object SyncLock = new object();
 
-	private static readonly object EncryptionKeysLock = new object();
-	
-	private static void GetEncryptionKeys(ProjectParams InParams, UnrealTargetPlatform InTargetPlatform, out string[] OutRSAKeys, out string OutAESKey)
-	{
-		lock (EncryptionKeysLock)
-		{
-			UEBuildTarget.ParseEncryptionIni(new DirectoryReference(CommandUtils.GetDirectoryName(InParams.RawProjectPath.FullName)), InTargetPlatform, out OutRSAKeys, out OutAESKey);
-		}
-	}
-
 	/// <returns>The path for the BuildPatchTool executable depending on host platform.</returns>
 	private static string GetBuildPatchToolExecutable()
 	{
@@ -450,8 +440,8 @@ public partial class Project : CommandUtils
 				List<PluginInfo> AvailablePlugins = Plugins.ReadAvailablePlugins(new DirectoryReference(CombinePaths(SC.LocalRoot, "Engine")), new FileReference(CombinePaths(SC.ProjectRoot, Params.ShortProjectName + ".uproject")), Project.AdditionalPluginDirectories);
 				foreach (var Plugin in AvailablePlugins)
 				{
-					if (!UProjectInfo.IsPluginEnabledForProject(Plugin, Project, SC.StageTargetPlatform.PlatformType, TargetRules.TargetType.Game) &&
-						UProjectInfo.IsPluginEnabledForProject(Plugin, Project, SC.StageTargetPlatform.PlatformType, TargetRules.TargetType.Client))
+					if (!UProjectInfo.IsPluginEnabledForProject(Plugin, Project, SC.StageTargetPlatform.PlatformType, TargetType.Game) &&
+						UProjectInfo.IsPluginEnabledForProject(Plugin, Project, SC.StageTargetPlatform.PlatformType, TargetType.Client))
 					{
 						// skip editor plugins
 						continue;
@@ -567,10 +557,9 @@ public partial class Project : CommandUtils
                 if (string.IsNullOrEmpty(Architecture))
                 {
                     Architecture = "";
-                    var BuildPlatform = UEBuildPlatform.GetBuildPlatform(SC.StageTargetPlatform.PlatformType, true);
-                    if (BuildPlatform != null)
+                    if (PlatformExports.IsPlatformAvailable(SC.StageTargetPlatform.PlatformType))
                     {
-                        Architecture = BuildPlatform.CreateContext(Params.RawProjectPath, null).GetActiveArchitecture();
+                        Architecture = PlatformExports.GetDefaultArchitecture(SC.StageTargetPlatform.PlatformType, Params.RawProjectPath);
                     }
                 }
 
@@ -1003,6 +992,22 @@ public partial class Project : CommandUtils
 				{
 					Log("Copying source pak from {0} to {1} instead of creating new pak", SourceOutputLocation, OutputLocation);
 					bCopiedExistingPak = true;
+
+					string InSigFile = Path.ChangeExtension(SourceOutputLocation, ".sig");
+
+					if (File.Exists(InSigFile))
+					{
+						string OutSigFile = Path.ChangeExtension(OutputLocation, ".sig");
+
+						Log("Copying pak sig from {0} to {1}", InSigFile, OutSigFile);
+
+						if (!InternalUtils.SafeCopyFile(InSigFile, OutSigFile))
+						{
+							Log("Failed to copy pak sig {0} to {1}, creating new pak", InSigFile, InSigFile);
+							bCopiedExistingPak = false;
+						}
+					}
+
 				}
 			}
 			if (!bCopiedExistingPak)
@@ -1781,10 +1786,9 @@ public partial class Project : CommandUtils
                         if (string.IsNullOrEmpty(Architecture))
                         {
                             Architecture = "";
-                            var BuildPlatform = UEBuildPlatform.GetBuildPlatform(ReceiptPlatform, true);
-                            if (BuildPlatform != null)
-                            {
-                                Architecture = BuildPlatform.CreateContext(Params.RawProjectPath, null).GetActiveArchitecture();
+							if(PlatformExports.IsPlatformAvailable(ReceiptPlatform))
+							{
+                                Architecture = PlatformExports.GetDefaultArchitecture(ReceiptPlatform, Params.RawProjectPath);
                             }
                         }
 						string ReceiptFileName = TargetReceipt.GetDefaultPath(ReceiptBaseDir, Target, ReceiptPlatform, Config, Architecture);

@@ -45,6 +45,7 @@ FSceneViewport::FSceneViewport( FViewportClient* InViewportClient, TSharedPtr<SV
 	, NumBufferedFrames(1)
 	, CurrentBufferedTargetIndex(0)
 	, NextBufferedTargetIndex(0)
+	, NumTouches(0)
 {
 	bIsSlateViewport = true;
 	RenderThreadSlateTexture = new FSlateRenderTargetRHI(nullptr, 0, 0);
@@ -56,6 +57,7 @@ FSceneViewport::FSceneViewport( FViewportClient* InViewportClient, TSharedPtr<SV
 
 	if(FSlateApplication::IsInitialized())
 	{
+		FSlateApplication::Get().GetRenderer()->OnSlateWindowDestroyed().AddRaw(this, &FSceneViewport::OnWindowBackBufferResourceDestroyed);
 		FSlateApplication::Get().GetRenderer()->OnPreResizeWindowBackBuffer().AddRaw(this, &FSceneViewport::OnPreResizeWindowBackbuffer);
 		FSlateApplication::Get().GetRenderer()->OnPostResizeWindowBackBuffer().AddRaw(this, &FSceneViewport::OnPostResizeWindowBackbuffer);
 	}
@@ -69,6 +71,7 @@ FSceneViewport::~FSceneViewport()
 
 	if(FSlateApplication::IsInitialized())
 	{
+		FSlateApplication::Get().GetRenderer()->OnSlateWindowDestroyed().RemoveAll(this);
 		FSlateApplication::Get().GetRenderer()->OnPreResizeWindowBackBuffer().RemoveAll(this);
 		FSlateApplication::Get().GetRenderer()->OnPostResizeWindowBackBuffer().RemoveAll(this);
 	}
@@ -314,6 +317,10 @@ void FSceneViewport::OnDrawViewport( const FGeometry& AllottedGeometry, const FS
 	if (ViewportClient && ViewportClient->GetWorld() && ViewportClient->GetWorld()->Scene)
 	{
 		FSlateApplication::Get().GetRenderer()->RegisterCurrentScene(ViewportClient->GetWorld()->Scene);
+	}
+	else
+	{
+		FSlateApplication::Get().GetRenderer()->RegisterCurrentScene(nullptr);
 	}
 	
 	/** Check to see if the viewport should be resized */
@@ -715,10 +722,11 @@ FReply FSceneViewport::OnTouchStarted( const FGeometry& MyGeometry, const FPoint
 {
 	// Start a new reply state
 	CurrentReplyState = FReply::Handled().PreventThrottling(); 
+	++NumTouches;
 
 	UpdateCachedMousePos(MyGeometry, TouchEvent);
 	UpdateCachedGeometry(MyGeometry);
-
+	
 	if( ViewportClient )
 	{
 		// Switch to the viewport clients world before processing input
@@ -764,7 +772,14 @@ FReply FSceneViewport::OnTouchEnded( const FGeometry& MyGeometry, const FPointer
 	// Start a new reply state
 	CurrentReplyState = FReply::Handled(); 
 
-	UpdateCachedMousePos(MyGeometry, TouchEvent);
+	if (--NumTouches > 0)
+	{
+		UpdateCachedMousePos(MyGeometry, TouchEvent);
+	}
+	else
+	{
+		CachedMousePos = FIntPoint(-1, -1);
+	}
 	UpdateCachedGeometry(MyGeometry);
 
 	if( ViewportClient )
@@ -836,6 +851,15 @@ FPopupMethodReply FSceneViewport::OnQueryPopupMethod() const
 	{
 		return FPopupMethodReply::Unhandled();
 	}
+}
+
+bool FSceneViewport::HandleNavigation(const uint32 InUserIndex, TSharedPtr<SWidget> InDestination)
+{
+	if (ViewportClient != nullptr)
+	{
+		return ViewportClient->HandleNavigation(InUserIndex, InDestination);
+	}
+	return false;
 }
 
 TOptional<bool> FSceneViewport::OnQueryShowFocus(const EFocusCause InFocusCause) const
@@ -1604,7 +1628,7 @@ void FSceneViewport::WindowRenderTargetUpdate(FSlateRenderer* Renderer, SWindow*
 	}
 }
 
-void FSceneViewport::OnPreResizeWindowBackbuffer(void* Backbuffer)
+void FSceneViewport::OnWindowBackBufferResourceDestroyed(void* Backbuffer)
 {
 	check(IsInGameThread());
 	FViewportRHIRef TestReference = *(FViewportRHIRef*)Backbuffer;
@@ -1615,11 +1639,16 @@ void FSceneViewport::OnPreResizeWindowBackbuffer(void* Backbuffer)
 	}
 }
 
+void FSceneViewport::OnPreResizeWindowBackbuffer(void* Backbuffer)
+{
+	OnWindowBackBufferResourceDestroyed(Backbuffer);
+}
+
 void FSceneViewport::OnPostResizeWindowBackbuffer(void* Backbuffer)
 {
 	check(IsInGameThread());
 
-	if(!UseSeparateRenderTarget() && !IsValidRef(ViewportRHI))
+	if(!UseSeparateRenderTarget() && !IsValidRef(ViewportRHI) && ViewportWidget.IsValid())
 	{
 		TSharedPtr<FSlateRenderer> Renderer = FSlateApplication::Get().GetRenderer();
 		FWidgetPath WidgetPath;
