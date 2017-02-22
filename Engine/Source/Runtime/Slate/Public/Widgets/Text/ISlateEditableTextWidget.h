@@ -244,8 +244,4 @@ public:
 
 	/** Called when the fraction and offset of the vertical scroll area has been recalculated. This function should apply the new values to any scrollbars, and return a clamped vertical scroll value */
 	virtual float UpdateAndClampVerticalScrollBar(const float InViewOffset, const float InViewFraction, const EVisibility InVisiblityOverride) = 0;
-
-	// @wutongfei
-	virtual const bool IsWidgetValid() const = 0;
-	//
 };

@@ -394,9 +394,4 @@ protected:
 
 	/** The type of virtual keyboard to use for editing this text on mobile */
 	TAttribute<EKeyboardType> VirtualKeyboardType;
-// @wutongfei
-public:
-	virtual const bool IsWidgetValid() const override;
-// 
-
 };
