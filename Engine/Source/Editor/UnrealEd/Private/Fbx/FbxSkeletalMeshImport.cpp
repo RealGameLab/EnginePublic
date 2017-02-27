@@ -1401,6 +1401,7 @@ USkeletalMesh* UnFbx::FFbxImporter::ImportSkeletalMesh(UObject* InParent, TArray
 		ExistSkelMeshDataPtr = SaveExistingSkelMeshData(ExistingSkelMesh, !ImportOptions->bImportMaterials);
 	}
 	
+
 	if (SkeletalMesh == nullptr)
 	{
 		// Create the new mesh after saving the old data, since it will replace the old skeletalmesh
@@ -1448,13 +1449,13 @@ USkeletalMesh* UnFbx::FFbxImporter::ImportSkeletalMesh(UObject* InParent, TArray
 	FStaticLODModel& LODModel = ImportedResource->LODModels[0];
 	
 	// Pass the number of texture coordinate sets to the LODModel.  Ensure there is at least one UV coord
-	LODModel.NumTexCoords = FMath::Max<uint32>(1,SkelMeshImportDataPtr->NumTexCoords);
+	LODModel.NumTexCoords = FMath::Max<uint32>(1, SkelMeshImportDataPtr->NumTexCoords);
 
 	// Array of re-import contexts for components using this mesh
 	// Will unregister before import, then re-register afterwards
 	TIndirectArray<FComponentReregisterContext> ComponentContexts;
 
-	if( bCreateRenderData )
+	if (bCreateRenderData)
 	{
 		TArray<FVector> LODPoints;
 		TArray<FMeshWedge> LODWedges;
@@ -1515,10 +1516,10 @@ USkeletalMesh* UnFbx::FFbxImporter::ImportSkeletalMesh(UObject* InParent, TArray
 		SkeletalMesh->MarkPackageDirty();
 
 		// Now iterate over all skeletal mesh components re-initialising them.
-		for(TObjectIterator<USkinnedMeshComponent> It; It; ++It)
+		for (TObjectIterator<USkinnedMeshComponent> It; It; ++It)
 		{
 			USkinnedMeshComponent* SkinComp = *It;
-			if(SkinComp->SkeletalMesh == SkeletalMesh)
+			if (SkinComp->SkeletalMesh == SkeletalMesh)
 			{
 				new(ComponentContexts) FComponentReregisterContext(SkinComp);
 			}
@@ -1681,6 +1682,8 @@ USkeletalMesh* UnFbx::FFbxImporter::ImportSkeletalMesh(UObject* InParent, TArray
 			}
 		}
 	}
+
+	// ComponentContexts will now go out of scope, causing components to be re-registered
 
 	// ComponentContexts will now go out of scope, causing components to be re-registered
 
@@ -2095,7 +2098,7 @@ void UnFbx::FFbxImporter::SetMaterialOrderByName(FSkeletalMeshImportData& Import
 	TMap<int32, int32> NameIndexGreaterThenMaterialArraySize;
 	{
 		int32 MaterialCount = ImportData.Materials.Num();
-
+		int32 MaxMaterialOrderedCount = 0;
 		bool bNeedsReorder = false;
 		for (int32 MaterialIndex = 0; MaterialIndex < MaterialCount; ++MaterialIndex)
 		{
@@ -2112,6 +2115,7 @@ void UnFbx::FFbxImporter::SetMaterialOrderByName(FSkeletalMeshImportData& Import
 				{
 					if (OrderedIndex < MaterialCount)
 					{
+						MaxMaterialOrderedCount = FMath::Max(MaxMaterialOrderedCount, OrderedIndex+1);
 						NameIndexToMaterialIndex.Add(OrderedIndex, MaterialIndex);
 					}
 					else
@@ -2126,6 +2130,7 @@ void UnFbx::FFbxImporter::SetMaterialOrderByName(FSkeletalMeshImportData& Import
 			if (!bFoundValidName)
 			{
 				MissingNameSuffixMaterial.Add(MaterialIndex);
+				MaxMaterialOrderedCount = FMath::Max(MaxMaterialOrderedCount, MaterialIndex+1);
 			}
 		}
 
@@ -2133,18 +2138,22 @@ void UnFbx::FFbxImporter::SetMaterialOrderByName(FSkeletalMeshImportData& Import
 		{
 			//Add the missing name material at the end to not disturb the existing order
 			TArray<int32> OrderedListMissing;
-			OrderedListMissing.AddZeroed(NameIndexToMaterialIndex.Num() + MissingNameSuffixMaterial.Num());
+			OrderedListMissing.AddZeroed(MaxMaterialOrderedCount);
 			for (auto Kvp : NameIndexToMaterialIndex)
 			{
 				OrderedListMissing[Kvp.Key] = -1;
 			}
 			for (int32 OrderedListMissingIndex = 0; OrderedListMissingIndex < OrderedListMissing.Num(); ++OrderedListMissingIndex)
 			{
+				if (MissingNameSuffixMaterial.Num() <= 0)
+				{
+					break;
+				}
+
 				if (OrderedListMissing[OrderedListMissingIndex] != 0)
 					continue;
 
 				NameIndexToMaterialIndex.Add(OrderedListMissingIndex, MissingNameSuffixMaterial.Pop());
-				
 			}
 		}
 

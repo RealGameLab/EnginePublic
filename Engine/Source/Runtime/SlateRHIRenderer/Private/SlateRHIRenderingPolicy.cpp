@@ -218,6 +218,13 @@ static FSceneView* CreateSceneView( FSceneViewFamilyContext* ViewFamilyContext, 
 
 	ViewUniformShaderParameters.WorldViewOrigin = View->ViewMatrices.GetViewOrigin();
 
+	ERHIFeatureLevel::Type RHIFeatureLevel = View->GetFeatureLevel();
+
+	ViewUniformShaderParameters.MobilePreviewMode =
+		(GIsEditor &&
+		(RHIFeatureLevel == ERHIFeatureLevel::ES2 || RHIFeatureLevel == ERHIFeatureLevel::ES3_1) &&
+		GMaxRHIFeatureLevel > ERHIFeatureLevel::ES3_1) ? 1.0f : 0.0f;
+
 	UpdateNoiseTextureParameters(ViewUniformShaderParameters);
 
 	View->ViewUniformBuffer = TUniformBufferRef<FViewUniformShaderParameters>::CreateUniformBufferImmediate(ViewUniformShaderParameters, UniformBuffer_SingleFrame);
@@ -510,8 +517,10 @@ void FSlateRHIRenderingPolicy::DrawElements(FRHICommandListImmediate& RHICmdList
 					// MaterialParameterCollections will not be correct for this scene, should they be
 					// used.
 					ActiveSceneIndex = NumScenes - 1;
-#if WITH_EDITOR
+#if UE_BUILD_DEBUG
+	#if WITH_EDITOR
 					UE_LOG(LogSlate, Error, TEXT("Invalid scene index in batch: %d of %d known scenes!"), RenderBatch.SceneIndex, ResourceManager->GetSceneCount());
+	#endif
 #endif
 				}
 
