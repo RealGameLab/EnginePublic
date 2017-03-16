@@ -1814,7 +1814,7 @@ EAsyncPackageState::Type FAsyncPackage::SetupImports_Event()
 			if (!ImportPackage)
 			{
 				ImportPackage = FindObjectFast<UPackage>(NULL, Import.ObjectName, false, false);
-				checkf(ImportPackage || FLinkerLoad::IsKnownMissingPackage(Import.ObjectName), TEXT("%s ImportPackage || FLinkerLoad::IsKnownMissingPackage(Import.ObjectName)"), Import.ObjectName.ToString()); // We should have packages created for all imports by now
+				checkf(ImportPackage || FLinkerLoad::IsKnownMissingPackage(Import.ObjectName), TEXT("%s ImportPackage || FLinkerLoad::IsKnownMissingPackage(Import.ObjectName)"), *Import.ObjectName.ToString()); // We should have packages created for all imports by now
 				Import.XObject = ImportPackage; // this is an optimization to avoid looking up import packages multiple times, also, later we assume these are already filled in
 				if (Import.XObject)
 				{
