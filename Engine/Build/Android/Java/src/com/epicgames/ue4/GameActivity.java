@@ -1076,7 +1076,11 @@ public class GameActivity extends NativeActivity implements SurfaceHolder.Callba
 			}
 
 			adPopupWindow.showAtLocation(activityLayout, adGravity, 0, 0);
-			adPopupWindow.update();
+			// don't call update on 7.0 to work around this issue: https://code.google.com/p/android/issues/detail?id=221001
+			if (ANDROID_BUILD_VERSION != 24)
+			{
+				adPopupWindow.update();
+			}
 		}
 		else
 		{
