@@ -1108,9 +1108,14 @@ void UResavePackagesCommandlet::PerformAdditionalOperations(class UWorld* World,
 
 						if (FPackageName::TryConvertLongPackageNameToFilename(MapBuildDataPackageName, MapBuildDataFilename, FPackageName::GetAssetPackageExtension()))
 						{
-							SavePackageHelper(MapBuildDataPackage, MapBuildDataFilename);
 							if (IFileManager::Get().FileExists(*MapBuildDataFilename))
 							{
+								CheckoutFile(MapBuildDataFilename, true);
+								SavePackageHelper(MapBuildDataPackage, MapBuildDataFilename); 
+							}
+							else
+							{
+								SavePackageHelper(MapBuildDataPackage, MapBuildDataFilename);
 								CheckoutFile(MapBuildDataFilename, true);
 							}
 						}

@@ -156,6 +156,8 @@ void UEditorEngine::EndPlayMap()
 
 	TGuardValue<bool> GuardIsEndingPlay(bIsEndingPlay, true);
 
+	FEditorDelegates::PrePIEEnded.Broadcast( bIsSimulatingInEditor );
+
 	FlushAsyncLoading();
 
 	// Monitoring when PIE corrupts references between the World and the PIE generated World for UE-20486
@@ -185,7 +187,7 @@ void UEditorEngine::EndPlayMap()
 		}
 	}
 
-	if (GEngine->HMDDevice.IsValid())
+	if (GEngine->HMDDevice.IsValid() && !bIsSimulatingInEditor)
 	{
 		GEngine->HMDDevice->OnEndPlay(*GEngine->GetWorldContextFromWorld(PlayWorld));
 	}
@@ -588,8 +590,8 @@ void UEditorEngine::TeardownPlaySession(FWorldContext& PieWorldContext)
 
 				if( !bIsSimulatingInEditor)
 				{
-					// Set the editor viewport location to match that of Play in Viewport if we aren't simulating in the editor, we have a valid player to get the location from 
-					if (bLastViewAndLocationValid == true)
+					// Set the editor viewport location to match that of Play in Viewport if we aren't simulating in the editor, we have a valid player to get the location from (unless we're going back to VR Editor, in which case we won't teleport the user.)
+					if (bLastViewAndLocationValid == true && !GEngine->IsStereoscopic3D( Viewport->GetActiveViewport() ) )
 					{
 						bLastViewAndLocationValid = false;
 						Viewport->GetLevelViewportClient().SetViewLocation( LastViewLocation );
@@ -1080,7 +1082,7 @@ FString GenerateCmdLineForNextPieInstance(FIntPoint &WinPos, int32 &InstanceNum,
 		// Make sure the window is going to fit where we want it
 		FitWindowPositionToWorkArea(WinPos, WinSize, WindowBorderSize);
 
-		// Set the size, incase it was modified
+		// Set the size, in case it was modified
 		SetWindowSizeForInstanceType(WinSize, GetMutableDefault<ULevelEditorPlaySettings>());
 
 		// Listen server or clients: specify default win position and SAVEWINPOS so the final positions are saved
@@ -1415,8 +1417,7 @@ void UEditorEngine::PlayStandaloneLocalPc(FString MapNameOverride, FIntPoint* Wi
 	}
 
 	FString AdditionalParameters(TEXT(" -messaging -SessionName=\"Play in Standalone Game\""));
-	bool bRunningDebug = FParse::Param(FCommandLine::Get(), TEXT("debug"));
-	if (bRunningDebug)
+	if (FApp::IsRunningDebug())
 	{
 		AdditionalParameters += TEXT(" -debug");
 	}
@@ -1463,6 +1464,16 @@ void UEditorEngine::PlayStandaloneLocalPc(FString MapNameOverride, FIntPoint* Wi
 
 	FIntPoint WinSize(0, 0);
 	GetWindowSizeForInstanceType(WinSize, PlayInSettings);
+
+	// Get desktop metrics
+	FDisplayMetrics DisplayMetrics;
+	FSlateApplication::Get().GetDisplayMetrics(DisplayMetrics);
+
+	// Force resolution
+	if ((WinSize.X <= 0 || WinSize.X > DisplayMetrics.PrimaryDisplayWidth) || (WinSize.Y <= 0 || WinSize.Y > DisplayMetrics.PrimaryDisplayHeight))
+	{
+		AdditionalParameters += TEXT(" -ForceRes");
+	}
 	
 	// Check if centered
 	FString Params;
@@ -2413,7 +2424,7 @@ void UEditorEngine::PlayInEditor( UWorld* InWorld, bool bInSimulateInEditor )
 		OutputLogErrorsToMessageLogProxyPtr = MakeShareable(new FOutputLogErrorsToMessageLogProxy());
 	}
 
-	if (GEngine->HMDDevice.IsValid())
+	if (GEngine->HMDDevice.IsValid() && !bInSimulateInEditor)
 	{
 		GEngine->HMDDevice->OnBeginPlay(*GEngine->GetWorldContextFromWorld(InWorld));
 	}
@@ -2565,6 +2576,13 @@ void UEditorEngine::PlayInEditor( UWorld* InWorld, bool bInSimulateInEditor )
 		}
 	}
 
+	// Make sure to focus the game viewport.
+	if (!bInSimulateInEditor)
+	{
+		FSlateApplication::Get().SetAllUserFocusToGameViewport();
+	}
+
+	FEditorDelegates::PostPIEStarted.Broadcast( bInSimulateInEditor );
 }
 
 void UEditorEngine::SpawnIntraProcessPIEWorlds(bool bAnyBlueprintErrors, bool bStartInSpectatorMode)
@@ -3137,7 +3155,7 @@ UGameInstance* UEditorEngine::CreatePIEGameInstance(int32 InPIEInstance, bool bI
 	UGameViewportClient* ViewportClient = NULL;
 	ULocalPlayer *NewLocalPlayer = NULL;
 	
-	if (GEngine->HMDDevice.IsValid())
+	if (GEngine->HMDDevice.IsValid() && !bInSimulateInEditor )
 	{
 		GEngine->HMDDevice->OnBeginPlay(*PieWorldContext);
 	}
@@ -3505,6 +3523,8 @@ FViewport* UEditorEngine::GetPIEViewport()
 void UEditorEngine::ToggleBetweenPIEandSIE( bool bNewSession )
 {
 	bIsToggleBetweenPIEandSIEQueued = false;
+
+	FEditorDelegates::OnPreSwitchBeginPIEAndSIE.Broadcast(bIsSimulatingInEditor);
 
 	// The first PIE world context is the one that can toggle between PIE and SIE
 	// Network PIE/SIE toggling is not really meant to be supported.

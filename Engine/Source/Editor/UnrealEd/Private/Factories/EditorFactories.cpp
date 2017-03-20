@@ -107,7 +107,6 @@
 #include "Factories/StructureFactory.h"
 #include "Factories/StringTableFactory.h"
 #include "Factories/SubsurfaceProfileFactory.h"
-#include "Factories/SubDSurfaceFactory.h"
 #include "Factories/Texture2dFactoryNew.h"
 #include "Engine/Texture.h"
 #include "Factories/TextureFactory.h"
@@ -137,7 +136,6 @@
 #include "Sound/SoundWave.h"
 #include "GameFramework/DefaultPhysicsVolume.h"
 #include "Engine/SubsurfaceProfile.h"
-#include "Engine/SubDSurface.h"
 #include "Misc/ConfigCacheIni.h"
 #include "Misc/FeedbackContext.h"
 #include "GameFramework/WorldSettings.h"
@@ -5002,6 +5000,12 @@ EReimportResult::Type UReimportFbxStaticMeshFactory::Reimport( UObject* Obj )
 		GetImportOptions( FFbxImporter, ReimportUI, bShowOptionDialog, bIsAutomated, Obj->GetPathName(), bOperationCanceled, bOutImportAll, bIsObjFormat, bForceImportType, FBXIT_StaticMesh );
 	}
 
+	//We do not touch bAutoComputeLodDistances when we re-import, setting it to true will make sure we do not change anything.
+	//We set the LODDistance only when the value is false.
+	ImportOptions->bAutoComputeLodDistances = true;
+	ImportOptions->LodNumber = 0;
+	ImportOptions->MinimumLodNumber = 0;
+
 	if( !bOperationCanceled && ensure(ImportData) )
 	{
 		const FString Filename = ImportData->GetFirstFilename();
@@ -6661,25 +6665,6 @@ USubsurfaceProfileFactory::USubsurfaceProfileFactory(const FObjectInitializer& O
 UObject* USubsurfaceProfileFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn)
 {
 	return NewObject<USubsurfaceProfile>(InParent, InName, Flags);
-}
-
-
-/*-----------------------------------------------------------------------------
-USubDSurfaceFactory implementation.
------------------------------------------------------------------------------*/
-USubDSurfaceFactory::USubDSurfaceFactory(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
-{
-
-	SupportedClass = USubDSurface::StaticClass();
-	bCreateNew = true;
-	bEditorImport = false;
-	bEditAfterNew = true;
-}
-
-UObject* USubDSurfaceFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn)
-{
-	return NewObject<USubDSurface>(InParent, USubDSurface::StaticClass(), InName, Flags);
 }
 
 /*-----------------------------------------------------------------------------

@@ -1085,7 +1085,23 @@ void UWidgetComponent::GetUsedMaterials(TArray<UMaterialInterface*>& OutMaterial
 	}
 }
 
-#if WITH_EDITORONLY_DATA
+#if WITH_EDITOR
+
+bool UWidgetComponent::CanEditChange(const UProperty* InProperty) const
+{
+	if ( InProperty )
+	{
+		FString PropertyName = InProperty->GetName();
+
+		if ( PropertyName == GET_MEMBER_NAME_STRING_CHECKED(UWidgetComponent, CylinderArcAngle) )
+		{
+			return GeometryMode == EWidgetGeometryMode::Cylinder;
+		}
+	}
+
+	return Super::CanEditChange(InProperty);
+}
+
 void UWidgetComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	UProperty* Property = PropertyChangedEvent.MemberProperty;
@@ -1136,6 +1152,7 @@ void UWidgetComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyCha
 
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 }
+
 #endif
 
 void UWidgetComponent::InitWidget()
@@ -1223,11 +1240,14 @@ void UWidgetComponent::UpdateWidget()
 				NewSlateWidget = Widget->TakeWidget();
 			}
 
+			bool bNeededNewWindow = false;
 			if ( !SlateWindow.IsValid() )
 			{
 				SlateWindow = SNew(SVirtualWindow).Size(DrawSize);
 				SlateWindow->SetIsFocusable(bWindowFocusable);
 				RegisterWindow();
+
+				bNeededNewWindow = true;
 			}
 
 			if ( !HitTestGrid.IsValid() )
@@ -1239,7 +1259,7 @@ void UWidgetComponent::UpdateWidget()
 
 			if ( NewSlateWidget.IsValid() )
 			{
-				if ( NewSlateWidget != CurrentSlateWidget )
+				if ( NewSlateWidget != CurrentSlateWidget || bNeededNewWindow )
 				{
 					CurrentSlateWidget = NewSlateWidget;
 					SlateWindow->SetContent(NewSlateWidget.ToSharedRef());
@@ -1247,7 +1267,7 @@ void UWidgetComponent::UpdateWidget()
 			}
 			else if( SlateWidget.IsValid() )
 			{
-				if ( SlateWidget != CurrentSlateWidget )
+				if ( SlateWidget != CurrentSlateWidget || bNeededNewWindow )
 				{
 					CurrentSlateWidget = SlateWidget;
 					SlateWindow->SetContent(SlateWidget.ToSharedRef());

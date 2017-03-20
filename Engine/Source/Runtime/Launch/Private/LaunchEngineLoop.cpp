@@ -1847,6 +1847,11 @@ int32 FEngineLoop::PreInit( const TCHAR* CmdLine )
 	}
 #endif // !PLATFORM_SUPPORTS_EARLY_MOVIE_PLAYBACK
 	
+	{
+		FCoreUObjectDelegates::PreGarbageCollectConditionalBeginDestroy.AddStatic(StartRenderCommandFenceBundler);
+		FCoreUObjectDelegates::PostGarbageCollectConditionalBeginDestroy.AddStatic(StopRenderCommandFenceBundler);
+	}
+
 #if WITH_EDITOR
 	// We need to mount the shared resources for templates (if there are any) before we try and load and game classes
 	FUnrealEdMisc::Get().MountTemplateSharedPaths();
@@ -3029,15 +3034,28 @@ void FEngineLoop::Tick()
 
 		// @todo vreditor urgent: Temporary hack to allow world-to-meters to be set before
 		// input is polled for motion controller devices each frame.
-#if WITH_ENGINE
 		extern ENGINE_API float GNewWorldToMetersScale;
-		UWorld* HackGWorld = GWorld;
-		if( GNewWorldToMetersScale != 0.0f && HackGWorld != nullptr )
+		if( GNewWorldToMetersScale != 0.0f  )
 		{
-			if( GNewWorldToMetersScale != HackGWorld->GetWorldSettings()->WorldToMeters )
+#if WITH_ENGINE
+			UWorld* WorldToScale = GWorld;
+
+#if WITH_EDITOR
+			if( GIsEditor && GEditor->PlayWorld != nullptr && GEditor->bIsSimulatingInEditor )
 			{
-				HackGWorld->GetWorldSettings()->WorldToMeters = GNewWorldToMetersScale;
+				WorldToScale = GEditor->PlayWorld;
 			}
+#endif	// WITH_EDITOR
+
+			if( WorldToScale != nullptr )
+			{
+				if( GNewWorldToMetersScale != WorldToScale->GetWorldSettings()->WorldToMeters )
+				{
+					WorldToScale->GetWorldSettings()->WorldToMeters = GNewWorldToMetersScale;
+				}
+			}
+
+			GNewWorldToMetersScale = 0.0f;
 		}
 #endif	// WITH_ENGINE
 

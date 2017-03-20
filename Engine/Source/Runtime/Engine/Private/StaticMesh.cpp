@@ -1671,6 +1671,14 @@ void UStaticMesh::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 	UProperty* PropertyThatChanged = PropertyChangedEvent.Property;
 	const FName PropertyName = PropertyThatChanged ? PropertyThatChanged->GetFName() : NAME_None;
 	
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(UStaticMesh, LODGroup))
+	{
+		// Force an update of LOD group settings
+
+		// Dont rebuild inside here.  We're doing that below.
+		bool bRebuild = false;
+		SetLODGroup(LODGroup, bRebuild);
+	}
 	LightMapResolution = FMath::Max(LightMapResolution, 0);
 
 	if (PropertyChangedEvent.MemberProperty 
@@ -1714,7 +1722,7 @@ void UStaticMesh::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedE
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 }
 
-void UStaticMesh::SetLODGroup(FName NewGroup)
+void UStaticMesh::SetLODGroup(FName NewGroup, bool bRebuildImmediately)
 {
 #if WITH_EDITORONLY_DATA
 	const bool bBeforeDerivedDataCached = (RenderData == nullptr);
@@ -1754,6 +1762,11 @@ void UStaticMesh::SetLODGroup(FName NewGroup)
 	if (!bBeforeDerivedDataCached)
 	{
 		bAutoComputeLODScreenSize = true;
+		
+	}
+
+	if (bRebuildImmediately && !bBeforeDerivedDataCached)
+	{
 		PostEditChange();
 	}
 #endif
@@ -1953,12 +1966,18 @@ int32 FMeshSectionInfoMap::GetSectionNumber(int32 LODIndex) const
 	int SectionCount = 0;
 	for (auto kvp : Map)
 	{
-		if (((kvp.Key & 0xffff) >> 16) == LODIndex)
+		if (((kvp.Key & 0xffff0000) >> 16) == LODIndex)
 		{
 			SectionCount++;
 		}
 	}
 	return SectionCount;
+}
+
+bool FMeshSectionInfoMap::IsValidSection(int32 LODIndex, int32 SectionIndex) const
+{
+	uint32 Key = GetMeshMaterialKey(LODIndex, SectionIndex);
+	return (Map.Find(Key) != nullptr);
 }
 
 FMeshSectionInfo FMeshSectionInfoMap::Get(int32 LODIndex, int32 SectionIndex) const
@@ -2496,6 +2515,26 @@ void UStaticMesh::PostLoad()
 	{
 		CalculateExtendedBounds();
 	}
+
+	if (SectionInfoMap.Map.Num() == 0)
+	{
+		// Before this serialization issue was fixed, some assets were resaved and permanently lost their section info map.
+		// This attempts to recreate it based on the render data.
+		SectionInfoMap.Clear();
+		for (int32 LODResourceIndex = 0; LODResourceIndex < RenderData->LODResources.Num(); ++LODResourceIndex)
+		{
+			FStaticMeshLODResources& LOD = RenderData->LODResources[LODResourceIndex];
+			const int32 NumSections = LOD.Sections.Num();
+			for (int32 SectionIndex = 0; SectionIndex < NumSections; ++SectionIndex)
+			{
+				const int32 MaterialIndex = LOD.Sections[SectionIndex].MaterialIndex;
+				if (StaticMaterials.IsValidIndex(MaterialIndex))
+				{
+					SectionInfoMap.Set(LODResourceIndex, SectionIndex, FMeshSectionInfo(MaterialIndex));
+				}
+			}
+		}
+	}
 #endif // #if WITH_EDITOR
 
 	// We want to always have a BodySetup, its used for per-poly collision as well
@@ -2504,7 +2543,13 @@ void UStaticMesh::PostLoad()
 		CreateBodySetup();
 	}
 
+
 	CreateNavCollision();
+}
+
+bool UStaticMesh::CanBeClusterRoot() const
+{
+	return false;
 }
 
 //

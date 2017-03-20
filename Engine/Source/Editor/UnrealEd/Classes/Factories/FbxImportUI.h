@@ -22,8 +22,6 @@ enum EFBXImportType
 	FBXIT_SkeletalMesh UMETA(DisplayName="Skeletal Mesh"),
 	/** Select Animation if you'd like to import only animation. */
 	FBXIT_Animation UMETA(DisplayName="Animation"),
-	/** Subdivision Surface (Experimental, Early work in progress) */
-	FBXIT_SubDSurface UMETA(DisplayName="SubDSurface"),
 
 	FBXIT_MAX,
 };
@@ -55,9 +53,6 @@ public:
 	bool bImportAsSkeletal;
 	
 	/** Whether to import the incoming FBX as a Subdivision Surface (could be made a combo box together with bImportAsSkeletal) (Experimental, Early work in progress) */
-	UPROPERTY(EditAnywhere, AdvancedDisplay, Category = Mesh, meta = (ImportType = "StaticMesh|SkeletalMesh", DisplayName="Subdivison Surface"))
-	bool bImportAsSubDSurface;
-
 	/** Whether to import the mesh. Allows animation only import when importing a skeletal mesh. */
 	UPROPERTY(EditAnywhere, Category=Mesh, meta=(ImportType="SkeletalMesh"))
 	bool bImportMesh;
@@ -73,6 +68,42 @@ public:
 	/** If this is set, use this PhysicsAsset. It is possible bCreatePhysicsAsset == false, and PhysicsAsset == NULL. It is possible they do not like to create anything. */
 	UPROPERTY(EditAnywhere, AdvancedDisplay, Category=Mesh, meta=(ImportType="SkeletalMesh", editcondition="!bCreatePhysicsAsset"))
 	class UPhysicsAsset* PhysicsAsset;
+
+	/** If checked, the static mesh auto compute LOD distance will be turn on. If unchecked user will be able to specify custom LOD distance for every LOD. */
+	UPROPERTY(EditAnywhere, config, Category = LodSettings, meta = (ImportType = "StaticMesh"))
+	uint32 bAutoComputeLodDistances : 1;
+	/** Specify the LOD distance for LOD 0*/
+	UPROPERTY(EditAnywhere, config, Category = LodSettings, meta = (ImportType = "StaticMesh", UIMin = "0.0"))
+	float LodDistance0;
+	/** Specify the LOD distance for LOD 1*/
+	UPROPERTY(EditAnywhere, config, Category = LodSettings, meta = (ImportType = "StaticMesh", UIMin = "0.0"))
+	float LodDistance1;
+	/** Specify the LOD distance for LOD 2*/
+	UPROPERTY(EditAnywhere, config, Category = LodSettings, meta = (ImportType = "StaticMesh", UIMin = "0.0"))
+	float LodDistance2;
+	/** Specify the LOD distance for LOD 3*/
+	UPROPERTY(EditAnywhere, config, Category = LodSettings, meta = (ImportType = "StaticMesh", UIMin = "0.0"))
+	float LodDistance3;
+	/** Specify the LOD distance for LOD 4*/
+	UPROPERTY(EditAnywhere, config, Category = LodSettings, meta = (ImportType = "StaticMesh", UIMin = "0.0"))
+	float LodDistance4;
+	/** Specify the LOD distance for LOD 5*/
+	UPROPERTY(EditAnywhere, config, Category = LodSettings, meta = (ImportType = "StaticMesh", UIMin = "0.0"))
+	float LodDistance5;
+	/** Specify the LOD distance for LOD 6*/
+	UPROPERTY(EditAnywhere, config, Category = LodSettings, meta = (ImportType = "StaticMesh", UIMin = "0.0"))
+	float LodDistance6;
+	/** Specify the LOD distance for LOD 7*/
+	UPROPERTY(EditAnywhere, config, Category = LodSettings, meta = (ImportType = "StaticMesh", UIMin = "0.0"))
+	float LodDistance7;
+
+	/** Set the minimum LOD number. A value of 0 disable the option. */
+	UPROPERTY(EditAnywhere, config, AdvancedDisplay, Category = LodSettings, meta = (ImportType = "StaticMesh", UIMin = "-1"))
+	int32 MinimumLodNumber;
+
+	/** Set the number of LODs. A value of 0 disable the option. */
+	UPROPERTY(EditAnywhere, config, AdvancedDisplay, Category = LodSettings, meta = (ImportType = "StaticMesh", UIMin = "-1"))
+	int32 LodNumber;
 
 	/** True to import animations from the FBX File */
 	UPROPERTY(EditAnywhere, config, Category=Animation, meta=(ImportType="SkeletalMesh|Animation"))
@@ -124,11 +155,6 @@ public:
 	void SetMeshTypeToImport()
 	{
 		MeshTypeToImport = bImportAsSkeletal ? FBXIT_SkeletalMesh : FBXIT_StaticMesh;
-
-		if(bImportAsSubDSurface)
-		{
-			MeshTypeToImport = FBXIT_SubDSurface;
-		}
 	}
 };
 

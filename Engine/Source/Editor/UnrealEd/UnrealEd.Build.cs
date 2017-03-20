@@ -94,7 +94,7 @@ public class UnrealEd : ModuleRules
 				"UnrealAudio",
                 "FunctionalTesting",
 				"AutomationController",
-				"Internationalization",
+				"Localization",
 				"AudioEditor",
 			}
 		);
@@ -222,7 +222,7 @@ public class UnrealEd : ModuleRules
                 "IOSPlatformEditor",
 				"HTML5PlatformEditor",
 				"SizeMap",
-                "PortalProxies",
+				"PortalProxies",
                 "PortalServices",
                 "GeometryCacheEd",
                 "BlueprintNativeCodeGen",
@@ -240,7 +240,9 @@ public class UnrealEd : ModuleRules
 			{
                 "GraphEditor",
 				"Kismet",
-				"AudioEditor"
+				"AudioEditor",
+                "ViewportInteraction",
+                "VREditor"
             }
 		); 
 
