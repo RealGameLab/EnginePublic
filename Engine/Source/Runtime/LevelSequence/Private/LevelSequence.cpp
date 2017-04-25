@@ -34,7 +34,6 @@ void ULevelSequence::Initialize()
 	const bool bForceFixedPlayback = CVarFixedFrameIntervalPlayback.GetValueOnGameThread() != 0;
 
 	MovieScene->SetForceFixedFrameIntervalPlayback( bForceFixedPlayback );
-	MovieScene->SetFixedFrameInterval( 1 / 30.0f );
 }
 
 UObject* ULevelSequence::MakeSpawnableTemplateFromInstance(UObject& InSourceObject, FName ObjectName)
@@ -54,6 +53,11 @@ UObject* ULevelSequence::MakeSpawnableTemplateFromInstance(UObject& InSourceObje
 	}
 
 	return NewInstance;
+}
+
+bool ULevelSequence::CanAnimateObject(UObject& InObject) const 
+{
+	return InObject.IsA<AActor>() || InObject.IsA<UActorComponent>();
 }
 
 void ULevelSequence::PostLoad()
@@ -92,11 +96,6 @@ void ULevelSequence::PostLoad()
 		MovieScene->RemoveSpawnable(ID);
 	}
 #endif
-
-	if ( MovieScene->GetFixedFrameInterval() == 0 )
-	{
-		MovieScene->SetFixedFrameInterval( 1 / 30.0f );
-	}
 }
 
 void ULevelSequence::ConvertPersistentBindingsToDefault(UObject* FixupContext)

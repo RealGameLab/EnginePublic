@@ -926,6 +926,16 @@ void FGenericPlatformMisc::SetOverrideGameDir(const FString& InOverrideDir)
 	OverrideGameDir = InOverrideDir;
 }
 
+bool FGenericPlatformMisc::AllowThreadHeartBeat()
+{
+	if (FParse::Param(FCommandLine::Get(), TEXT("noheartbeatthread")))
+	{
+		return false;
+	}
+
+	return true;
+}
+
 int32 FGenericPlatformMisc::NumberOfCoresIncludingHyperthreads()
 {
 	return FPlatformMisc::NumberOfCores();
@@ -968,6 +978,11 @@ bool FGenericPlatformMisc::GetSHA256Signature(const void* Data, uint32 ByteSize,
 	checkf(false, TEXT("No SHA256 Platform implementation"));
 	FMemory::Memzero(OutSignature.Signature);
 	return false;
+}
+
+FString FGenericPlatformMisc::GetDefaultLanguage()
+{
+	return FPlatformMisc::GetDefaultLocale();
 }
 
 FString FGenericPlatformMisc::GetDefaultLocale()
@@ -1084,4 +1099,29 @@ FString FGenericPlatformMisc::GetOperatingSystemId()
 void FGenericPlatformMisc::RegisterForRemoteNotifications()
 {
 	// not implemented by default
+}
+
+const TArray<FString>& FGenericPlatformMisc::GetConfidentialPlatforms()
+{
+	static bool bHasSearchedForPlatforms = false;
+	static TArray<FString> FoundPlatforms;
+
+	// look on disk for special files
+	if (bHasSearchedForPlatforms == false)
+	{
+		// look for the special files in any congfig subdirectories
+		IFileManager::Get().FindFilesRecursive(FoundPlatforms, *FPaths::EngineConfigDir(), TEXT("ConfidentialPlatform.ini"), true, false);
+
+		// fix up the paths
+		for (int32 PlatformIndex = 0; PlatformIndex < FoundPlatforms.Num(); PlatformIndex++)
+		{
+			// pull the directory name out
+			FoundPlatforms[PlatformIndex] = FPaths::GetCleanFilename(FPaths::GetPath(FoundPlatforms[PlatformIndex]));
+		}
+
+		bHasSearchedForPlatforms = true;
+	}
+
+	// return whatever we have already found
+	return FoundPlatforms;
 }

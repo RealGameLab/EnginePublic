@@ -5,6 +5,11 @@
 #include "AndroidApplication.h"
 #include "HAL/PlatformStackWalk.h"
 #include "Misc/FileHelper.h"
+#include "Misc/App.h"
+#include "Misc/ConfigCacheIni.h"
+#include "Misc/FeedbackContext.h"
+#include "Misc/OutputDeviceRedirector.h"
+#include "HAL/IConsoleManager.h"
 #include <android/log.h>
 #include <cpu-features.h>
 #include "ModuleManager.h"
@@ -112,6 +117,7 @@ void FAndroidMisc::LoadPreInitModules()
 {
 	FModuleManager::Get().LoadModule(TEXT("OpenGLDrv"));
 	FModuleManager::Get().LoadModule(TEXT("AndroidAudio"));
+	FModuleManager::Get().LoadModule(TEXT("AudioMixerAndroid"));
 }
 
 // Test for device vulkan support.
@@ -223,7 +229,11 @@ void FAndroidMisc::PlatformInit()
 
 extern void AndroidThunkCpp_DismissSplashScreen();
 
-void FAndroidMisc::PlatformPostInit(bool ShowSplashScreen)
+void FAndroidMisc::PlatformPostInit()
+{
+}
+
+void FAndroidMisc::PlatformHandleSplashScreen(bool ShowSplashScreen)
 {
 	if (!ShowSplashScreen)
 	{
@@ -975,6 +985,9 @@ uint32 FAndroidMisc::GetKeyMap( uint32* KeyCodes, FString* KeyNames, uint32 MaxM
 
 		//ADDKEYMAP( VK_INSERT, TEXT("Insert") );
 		//ADDKEYMAP( AKEYCODE_DEL, TEXT("Delete") );
+
+		ADDKEYMAP( AKEYCODE_AT, TEXT("At"));
+		ADDKEYMAP( AKEYCODE_POUND, TEXT("Pound"));
 
 		ADDKEYMAP( AKEYCODE_STAR, TEXT("Multiply") );
 		ADDKEYMAP( AKEYCODE_PLUS, TEXT("Add") );

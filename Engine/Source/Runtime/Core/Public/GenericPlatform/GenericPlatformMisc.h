@@ -196,7 +196,12 @@ struct CORE_API FGenericPlatformMisc
 	 */
 	static void PlatformPreInit();
 	static void PlatformInit() { }
-	static void PlatformPostInit(bool ShowSplashScreen = false) { }
+	static void PlatformPostInit() { }
+
+	/**
+	* Called to dismiss splash screen
+	*/
+	static void PlatformHandleSplashScreen(bool ShowSplashScreen = false) { }
 
 	/**
 	 * Called during AppExit(). Log, Config still exist at this point, but not much else does.
@@ -451,6 +456,27 @@ public:
 	{
 	}
 
+    /**
+	* Platform specific function for initializing storage of tagged memory buffers
+	*/
+	FORCEINLINE static void InitTaggedStorage(uint32 NumTags)
+	{
+	}
+
+    /**
+	* Platform specific function for freeing storage of tagged memory buffers
+	*/
+	FORCEINLINE static void ShutdownTaggedStorage()
+	{
+	}
+
+    /**
+	* Platform specific function for tagging a memory buffer with a label. Helps see memory access in profilers
+	*/
+	FORCEINLINE static void TagBuffer(const char* Label, uint32 Category, const void* Buffer, size_t BufferSize)
+	{
+	}
+
 	/** 
 	 *	Set the value for the given section and key in the platform specific key->value store
 	 *  Note: The key->value store is user-specific, but may be used to share data between different applications for the same user
@@ -643,11 +669,7 @@ public:
 	 *
 	 * @return true if allows, false if shouldn't allow thread heartbeat hang detection
 	 */
-	static bool AllowThreadHeartBeat()
-	{
-		// allow if not overridden
-		return true;
-	}
+	static bool AllowThreadHeartBeat();
 
 	/**
 	 * return the number of hardware CPU cores
@@ -806,6 +828,23 @@ public:
 	*/
 	static bool GetSHA256Signature(const void* Data, uint32 ByteSize, FSHA256Signature& OutSignature);	
 
+	/**
+	 * Get the default language (for localization) used by this platform.
+	 * @note This is typically the same as GetDefaultLocale unless the platform distinguishes between the two.
+	 * @note This should be returned in IETF language tag form:
+	 *  - A two-letter ISO 639-1 language code (eg, "zh").
+	 *  - An optional four-letter ISO 15924 script code (eg, "Hans").
+	 *  - An optional two-letter ISO 3166-1 country code (eg, "CN").
+	 */
+	static FString GetDefaultLanguage();
+
+	/**
+	 * Get the default locale (for internationalization) used by this platform.
+	 * @note This should be returned in IETF language tag form:
+	 *  - A two-letter ISO 639-1 language code (eg, "zh").
+	 *  - An optional four-letter ISO 15924 script code (eg, "Hans").
+	 *  - An optional two-letter ISO 3166-1 country code (eg, "CN").
+	 */
 	static FString GetDefaultLocale();
 
 	/**
@@ -1056,6 +1095,21 @@ public:
 	static bool ShouldDisablePluginAtRuntime(const FString& PluginName)
 	{
 		return false;
+	}
+
+	/**
+	 * Returns a list of platforms that are confidential in nature. To avoid hardcoding the list, this
+	 * looks on disk the first time for special files, so it is non-instant.
+	 */
+	static const TArray<FString>& GetConfidentialPlatforms();
+
+	
+	/**
+	 * Returns true if the platform allows network traffic for anonymous end user usage data
+	 */
+	static bool AllowSendAnonymousGameUsageDataToEpic()
+	{
+		return true;
 	}
 
 #if !UE_BUILD_SHIPPING

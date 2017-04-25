@@ -4,10 +4,10 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogSceneUtils,All,All);
 
-#if HAS_GPU_STATS
-
 // Only exposed for debugging. Disabling this carries a severe performance penalty
 #define RENDER_QUERY_POOLING_ENABLED 1
+
+#if HAS_GPU_STATS
 
 // If this is enabled, the child stat timings will be included in their parents' times.
 // This presents problems for non-hierarchical stats if we're expecting them to add up
@@ -28,10 +28,6 @@ static TAutoConsoleVariable<int> CVarGPUStatsMaxQueriesPerFrame(
 
 
 DECLARE_FLOAT_COUNTER_STAT(TEXT("[TOTAL]"), Stat_GPU_Total, STATGROUP_GPU);
-
-#else //HAS_GPU_STATS
-
-#define RENDER_QUERY_POOLING_ENABLED 0
 
 #endif //HAS_GPU_STATS
 
@@ -96,7 +92,7 @@ bool IsMobileHDR()
 bool IsMobileHDR32bpp()
 {
 	static auto* MobileHDR32bppModeCvar = IConsoleManager::Get().FindTConsoleVariableDataInt(TEXT("r.MobileHDR32bppMode"));
-	return IsMobileHDR() && (GSupportsRenderTargetFormat_PF_FloatRGBA == false || MobileHDR32bppModeCvar->GetValueOnRenderThread() != 0);
+	return IsMobileHDR() && (GSupportsRenderTargetFormat_PF_FloatRGBA == false || MobileHDR32bppModeCvar->GetValueOnAnyThread() != 0);
 }
 
 bool IsMobileHDRMosaic()
@@ -105,7 +101,7 @@ bool IsMobileHDRMosaic()
 		return false;
 
 	static auto* MobileHDR32bppMode = IConsoleManager::Get().FindTConsoleVariableDataInt(TEXT("r.MobileHDR32bppMode"));
-	switch (MobileHDR32bppMode->GetValueOnRenderThread())
+	switch (MobileHDR32bppMode->GetValueOnAnyThread())
 	{
 		case 1:
 			return true;
@@ -362,7 +358,13 @@ public:
 
 		if (!bAllQueriesAllocated)
 		{
-			UE_LOG(LogSceneUtils, Warning, TEXT("Ran out of GPU queries! Results for this frame will be incomplete"));
+			static bool bWarned = false;
+
+			if (!bWarned)
+			{
+				bWarned = true;
+				UE_LOG(LogSceneUtils, Warning, TEXT("Ran out of GPU queries! Results for this frame will be incomplete"));
+			}
 		}
 
 		float TotalMS = 0.0f;
