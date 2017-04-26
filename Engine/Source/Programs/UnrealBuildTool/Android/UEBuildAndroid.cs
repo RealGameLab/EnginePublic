@@ -181,8 +181,8 @@ namespace UnrealBuildTool
 
 			UEBuildConfiguration.bCompileSimplygon = false;
 			UEBuildConfiguration.bCompileSimplygonSSF = false;
-			BuildConfiguration.bDeployAfterCompile = true;
-		}
+            //BuildConfiguration.bDeployAfterCompile = true;
+        }
 
 		private bool UseTegraGraphicsDebugger(UEBuildTarget InBuildTarget)
 		{
@@ -402,6 +402,14 @@ namespace UnrealBuildTool
 		/// <param name="Target">Information about the target being deployed</param>
 		public override void Deploy(UEBuildDeployTarget Target)
 		{
+			bool NoDeploy = System.Environment.GetCommandLineArgs().FirstOrDefault(x => x == "-nodeploy") != null;
+
+			if (NoDeploy == true)
+			{
+				Console.WriteLine("Skip deploy");
+				return;
+			}
+
 			new UEDeployAndroid(Target.ProjectFile).PrepTargetForDeployment(Target);
 		}
 	}

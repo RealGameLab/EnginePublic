@@ -465,6 +465,9 @@ protected:
 	/** Returns if we have access to property guids */
 	virtual bool ArePropertyGuidsAvailable() const { return false; }
 
+public:
+	// Lua register mark by:lixingtong
+	int32 LuaRegisterRef;
 };
 
 enum EStructFlags

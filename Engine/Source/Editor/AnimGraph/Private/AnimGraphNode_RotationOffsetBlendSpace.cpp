@@ -150,7 +150,12 @@ void UAnimGraphNode_RotationOffsetBlendSpace::ValidateAnimNodeDuringCompilation(
 
 	if (BlendSpaceToCheck == NULL)
 	{
-		MessageLog.Error(TEXT("@@ references an unknown blend space"), this);
+		//修改@roger.
+		// we may have a connected node
+		if (BlendSpacePin == nullptr || BlendSpacePin->LinkedTo.Num() == 0)
+		{
+			MessageLog.Error(TEXT("@@ references an unknown blend space"), this);
+		}
 	}
 	else if (Cast<UAimOffsetBlendSpace>(BlendSpaceToCheck) == NULL &&
 			 Cast<UAimOffsetBlendSpace1D>(BlendSpaceToCheck) == NULL)

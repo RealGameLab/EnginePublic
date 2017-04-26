@@ -9504,7 +9504,16 @@ EBrowseReturnVal::Type UEngine::Browse( FWorldContext& WorldContext, FURL URL, F
 			ShutdownWorldNetDriver(WorldContext.World());
 		}
 
-		WorldContext.PendingNetGame = NewObject<UPendingNetGame>();
+		//修改@roger.
+		FStringClassReference PendingNetClassPath = GetDefault<UGameMapsSettings>()->PendingNetGameClass;
+		UClass* PendingNetClass = (PendingNetClassPath.IsValid() ? LoadObject<UClass>(NULL, *PendingNetClassPath.ToString()) : UPendingNetGame::StaticClass());
+		if (PendingNetClass == nullptr)
+		{
+			PendingNetClass = UPendingNetGame::StaticClass();
+		}
+		WorldContext.PendingNetGame = NewObject<UPendingNetGame>(this, PendingNetClass);
+
+		//WorldContext.PendingNetGame = NewObject<UPendingNetGame>();
 		WorldContext.PendingNetGame->Initialize(URL);
 		WorldContext.PendingNetGame->InitNetDriver();
 		if( !WorldContext.PendingNetGame->NetDriver )

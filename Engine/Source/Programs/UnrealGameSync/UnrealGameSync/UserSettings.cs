@@ -36,7 +36,11 @@ namespace UnrealGameSync
 
 		// Expanded archives in the workspace
 		public string[] ExpandedArchiveTypes;
-	}
+
+        // 上次Archive路径，#changelist 结尾，所以每个版本都不同
+        public string LastArchivePath;
+
+    }
 
 	class UserProjectSettings
 	{
@@ -267,8 +271,10 @@ namespace UnrealGameSync
 
 				CurrentWorkspace.LastSyncDurationSeconds = WorkspaceSection.GetValue("LastSyncDuration", 0);
 				CurrentWorkspace.LastBuiltChangeNumber = WorkspaceSection.GetValue("LastBuiltChangeNumber", 0);
-				CurrentWorkspace.ExpandedArchiveTypes = WorkspaceSection.GetValues("ExpandedArchiveName", new string[0]);			
-			}
+				CurrentWorkspace.ExpandedArchiveTypes = WorkspaceSection.GetValues("ExpandedArchiveName", new string[0]);	
+                
+                CurrentWorkspace.LastArchivePath = WorkspaceSection.GetValue("LastArchivePath", "");
+            }
 
 			// Read the project settings
 			CurrentProjectKey = ClientProjectFileName; 
@@ -359,7 +365,10 @@ namespace UnrealGameSync
 				WorkspaceSection.SetValue("LastSyncResult", CurrentWorkspace.LastSyncResult.ToString());
 				WorkspaceSection.SetValue("LastSyncResultMessage", EscapeText(CurrentWorkspace.LastSyncResultMessage));
 				WorkspaceSection.SetValue("LastSyncChangeNumber", CurrentWorkspace.LastSyncChangeNumber);
-				if(CurrentWorkspace.LastSyncTime.HasValue)
+
+                WorkspaceSection.SetValue("LastArchivePath", CurrentWorkspace.LastArchivePath);
+
+                if (CurrentWorkspace.LastSyncTime.HasValue)
 				{
 					WorkspaceSection.SetValue("LastSyncTime", CurrentWorkspace.LastSyncTime.ToString());
 				}

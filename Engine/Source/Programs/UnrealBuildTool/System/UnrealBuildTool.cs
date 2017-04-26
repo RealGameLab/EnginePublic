@@ -1699,7 +1699,7 @@ namespace UnrealBuildTool
 								ActionGraph.FinalizeActionGraph();
 								List<Action> ActionsToExecute = ActionGraph.AllActions;
 
-								ActionGraph.ActionGraphVisualizationType VisualizationType = ActionGraph.ActionGraphVisualizationType.OnlyCPlusPlusFilesAndHeaders;
+								ActionGraph.ActionGraphVisualizationType VisualizationType = ActionGraph.ActionGraphVisualizationType.ActionsWithFilesAndHeaders;
 								ActionGraph.SaveActionGraphVisualization(Target, Path.Combine(BuildConfiguration.BaseIntermediatePath, Target.GetTargetName() + ".gexf"), Target.GetTargetName(), VisualizationType, ActionsToExecute);
 							}
 						}

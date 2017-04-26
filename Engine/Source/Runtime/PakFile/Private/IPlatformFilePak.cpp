@@ -3879,7 +3879,12 @@ void FPakPlatformFile::FindPakFilesInDirectory(IPlatformFile* LowLevelFile, cons
 			if (bIsDirectory == false)
 			{
 				FString Filename(FilenameOrDirectory);
+#ifdef USE_ANDROID_HOTRELOAD
+				// 只加载 main.pak, 其他 pak 要通过 mount 加载 by: lixingtong 
+				if (FPaths::GetCleanFilename(Filename) == TEXT("main.pak"))
+#else
 				if (FPaths::GetExtension(Filename) == TEXT("pak"))
+#endif
 				{
 					// if a platform supports chunk style installs, make sure that the chunk a pak file resides in is actually fully installed before accepting pak files from it
 					if (ChunkInstall)

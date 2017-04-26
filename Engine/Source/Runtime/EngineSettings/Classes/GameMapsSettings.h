@@ -137,6 +137,12 @@ public:
 	UPROPERTY(config, noclear, EditAnywhere, Category=GameInstance, meta=(MetaClass="GameInstance"))
 	FStringClassReference GameInstanceClass;
 
+	UPROPERTY(config, noclear, EditAnywhere, Category = GameInstance, meta = (MetaClass = "PendingNetGame"))
+	FStringClassReference PendingNetGameClass;//修改@roger.
+
+	UPROPERTY(config, noclear, EditAnywhere, Category = GameInstance, meta = (MetaClass = "PackageMapClient"))
+	FStringClassReference ClientPackageMapClass;//修改@roger.
+
 private:
 
 	/** The map that will be loaded by default when no other map is loaded. */

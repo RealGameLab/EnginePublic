@@ -9,7 +9,9 @@ public class UnrealHeaderToolTarget : TargetRules
 	{
 		Type = TargetType.Program;
 		LinkType = TargetLinkType.Modular;
-	}
+
+        AdditionalPlugins.Add("LuaGeneraterPlugin");
+    }
 
 	//
 	// TargetRules interface.

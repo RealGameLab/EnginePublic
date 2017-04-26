@@ -21,7 +21,7 @@
 
 // do not do a root privilege check on non-x86-64 platforms (assume an embedded device)
 #if defined(_M_X64) || defined(__x86_64__) || defined (__amd64__) 
-	#define UE4_DO_ROOT_PRIVILEGE_CHECK	 1
+	#define UE4_DO_ROOT_PRIVILEGE_CHECK	 0
 #else
 	#define UE4_DO_ROOT_PRIVILEGE_CHECK	 0
 #endif // defined(_M_X64) || defined(__x86_64__) || defined (__amd64__) 

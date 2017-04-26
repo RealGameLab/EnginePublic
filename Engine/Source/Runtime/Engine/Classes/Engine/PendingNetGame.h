@@ -88,7 +88,7 @@ public:
 };
 
 UCLASS(customConstructor, transient)
-class UPendingNetGame :
+class ENGINE_API UPendingNetGame :
 	public UObject,
 	public FNetworkNotify
 {

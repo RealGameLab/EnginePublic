@@ -93,9 +93,11 @@ namespace UnrealGameSync
 		bool bSyncing;
 		ProgressValue Progress = new ProgressValue();
 
-		public event Action<WorkspaceUpdateContext, WorkspaceUpdateResult, string> OnUpdateComplete;
+        UserSettings Settings;
 
-		public Workspace(PerforceConnection InPerforce, string InLocalRootPath, string InSelectedLocalFileName, string InClientRootPath, string InSelectedClientFileName, int InInitialChangeNumber, int InLastBuiltChangeNumber, string InTelemetryProjectPath, TextWriter InLog)
+        public event Action<WorkspaceUpdateContext, WorkspaceUpdateResult, string> OnUpdateComplete;
+
+		public Workspace(PerforceConnection InPerforce, string InLocalRootPath, string InSelectedLocalFileName, string InClientRootPath, string InSelectedClientFileName, int InInitialChangeNumber, int InLastBuiltChangeNumber, string InTelemetryProjectPath, TextWriter InLog, UserSettings InSettings)
 		{
 			Perforce = InPerforce;
 			LocalRootPath = InLocalRootPath;
@@ -107,6 +109,7 @@ namespace UnrealGameSync
 			LastBuiltChangeNumber = InLastBuiltChangeNumber;
 			TelemetryProjectPath = InTelemetryProjectPath;
 			Log = InLog;
+            Settings = InSettings;
 
 			List<string> SyncPaths = new List<string>();
 			if(SelectedClientFileName.EndsWith(".uproject", StringComparison.InvariantCultureIgnoreCase))
@@ -477,6 +480,13 @@ namespace UnrealGameSync
 					// Sync and extract (or just remove) the given archives
 					foreach(KeyValuePair<string, string> ArchiveTypeAndDepotPath in Context.ArchiveTypeToDepotPath)
 					{
+                        // 如果Archive更新过了，不用重新更新
+                        if (Settings.CurrentWorkspace.LastArchivePath != null && Settings.CurrentWorkspace.LastArchivePath.Equals(ArchiveTypeAndDepotPath.Value))
+                        {
+                            Log.WriteLine("Skip Sync Archive {0}", ArchiveTypeAndDepotPath.Value);
+                            continue;
+                        }
+
 						// Remove any existing binaries
 						string ManifestFileName = Path.Combine(ManifestDirectoryName, String.Format("{0}.zipmanifest", ArchiveTypeAndDepotPath.Key));
 						if(File.Exists(ManifestFileName))
@@ -502,7 +512,10 @@ namespace UnrealGameSync
 								}
 								ArchiveUtils.ExtractFiles(TempZipFileName, LocalRootPath, ManifestFileName, Progress, Log);
 								Log.WriteLine();
-							}
+
+                                // 更新成功后修改LastArchivePath
+                                Settings.CurrentWorkspace.LastArchivePath = ArchiveTypeAndDepotPath.Value;
+                            }
 							finally
 							{
 								File.SetAttributes(TempZipFileName, FileAttributes.Normal);

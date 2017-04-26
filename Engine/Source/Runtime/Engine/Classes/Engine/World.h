@@ -475,6 +475,7 @@ struct ENGINE_API FActorSpawnParameters
 private:
 
 	friend class UPackageMapClient;
+	friend class UPackageMapClientActorPool;
 
 	/* Is the actor remotely owned. This should only be set true by the package map when it is creating an actor on a client that was replicated from the server. */
 	uint16	bRemoteOwned:1;
@@ -2279,7 +2280,11 @@ public:
 			, bCreatePhysicsScene(true)
 			, bCreateNavigation(true)
 			, bCreateAISystem(true)
+        #ifdef ODIN_ANDROID
+			, bShouldSimulatePhysics(false)
+        #else
 			, bShouldSimulatePhysics(true)
+        #endif // ODIN_ANDROID
 			, bEnableTraceCollision(false)
 			, bTransactional(true)
 			, bCreateFXSystem(true)

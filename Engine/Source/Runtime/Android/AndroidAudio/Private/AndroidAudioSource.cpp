@@ -6,6 +6,7 @@
 
 #include "AndroidAudioDevice.h"
 #include "AudioDecompress.h"
+#include "ActiveSound.h"
 
 // Callback that is registered if the source needs to loop
 void OpenSLBufferQueueCallback( SLAndroidSimpleBufferQueueItf InQueueInterface, void* pContext ) 
@@ -123,7 +124,10 @@ bool FSLESSoundSource::CreatePlayer()
 	// buffer system
 	result = (*SL_PlayerObject)->GetInterface(SL_PlayerObject, SL_IID_BUFFERQUEUE, &SL_PlayerBufferQueue);
 	if (result != SL_RESULT_SUCCESS) { UE_LOG(LogAndroidAudio, Warning, TEXT("FAILED OPENSL BUFFER GetInterface SL_IID_BUFFERQUEUE 0x%x"), result); bFailedSetup |= true; }
-	
+	// enable stereo
+	result = (*SL_VolumeInterface)->EnableStereoPosition(SL_VolumeInterface, SL_BOOLEAN_TRUE);
+	if (result != SL_RESULT_SUCCESS) { UE_LOG(LogAndroidAudio, Warning, TEXT("FAILED OPENSL EnableStereoPosition 0x%x"), result); bFailedSetup |= true; }
+
 	return bFailedSetup == false;
 }
 
@@ -406,17 +410,17 @@ void FSLESSoundSource::ReleaseResources()
  * Updates the source specific parameter like e.g. volume and pitch based on the associated
  * wave instance.	
  */
-void FSLESSoundSource::Update( void )
+void FSLESSoundSource::Update(void)
 {
-	SCOPE_CYCLE_COUNTER( STAT_AudioUpdateSources );
-	
-	if( !WaveInstance || Paused )
+	SCOPE_CYCLE_COUNTER(STAT_AudioUpdateSources);
+
+	if (!WaveInstance || Paused)
 	{
 		return;
 	}
 
 	FSoundSource::UpdateCommon();
-	
+
 	float Volume = WaveInstance->Volume * WaveInstance->VolumeMultiplier;
 	if (SetStereoBleed())
 	{
@@ -425,34 +429,72 @@ void FSLESSoundSource::Update( void )
 	}
 	Volume *= AudioDevice->GetPlatformAudioHeadroom();
 	Volume = FMath::Clamp(Volume, 0.0f, MAX_VOLUME);
-	
+
 	Volume = FSoundSource::GetDebugVolume(Volume);
 
 	// Set whether to apply reverb
 	SetReverbApplied(true);
 
 	SetFilterFrequency();
-	
+
 	FVector Location;
 	FVector	Velocity;
-	
+
 	// See file header for coordinate system explanation.
 	Location.X = WaveInstance->Location.X;
 	Location.Y = WaveInstance->Location.Z; // Z/Y swapped to match UE coordinate system
 	Location.Z = WaveInstance->Location.Y; // Z/Y swapped to match UE coordinate system
-	
+
 	Velocity.X = WaveInstance->Velocity.X;
 	Velocity.Y = WaveInstance->Velocity.Z; // Z/Y swapped to match UE coordinate system
 	Velocity.Z = WaveInstance->Velocity.Y; // Z/Y swapped to match UE coordinate system
-	
+
 	// We're using a relative coordinate system for un- spatialized sounds.
-	if( !WaveInstance->bUseSpatialization )
+	if (!WaveInstance->bUseSpatialization)
 	{
-		Location = FVector( 0.f, 0.f, 0.f );
+		Location = FVector(0.f, 0.f, 0.f);
 	}
-	
+
 	// Set volume (Pitch changes are not supported on current Android platforms!)
 	// also Location & Velocity
+
+	struct FActiveSound* ActiveSound = WaveInstance->ActiveSound;
+	FAudioDevice* AudioDevice = nullptr;
+	const FListener* Listener = nullptr;
+	int32 StereoPosition = 0;
+
+	if (WaveInstance->bUseSpatialization)
+	{
+		if (ActiveSound != nullptr && (AudioDevice = ActiveSound->AudioDevice) != nullptr)
+		{
+			const TArray<FListener>& Listeners = AudioDevice->GetListeners();
+			if (Listeners.Num() == 1)
+			{
+				Listener = &Listeners[0];
+			}
+			else if (Listeners.Num() > 1)
+			{
+				SCOPE_CYCLE_COUNTER(STAT_AudioFindNearestLocation);
+				const int32 ClosestListenerIndex = ActiveSound->FindClosestListener(Listeners);
+				Listener = &Listeners[ClosestListenerIndex];
+			}
+		}
+
+		if (Listener != nullptr)
+		{
+			FVector ListenerLocation = Listener->Transform.GetLocation();
+			FRotator ListenerRotator = Listener->Transform.GetRotation().Rotator();
+
+			const FRotator RotToSound = (WaveInstance->Location - ListenerLocation).Rotation();
+			FRotator DeltaRot = RotToSound - ListenerRotator;
+			FVector DirectionNormal = DeltaRot.Vector().GetSafeNormal();
+
+			// -1000完全在左边
+			StereoPosition = (int32)(DirectionNormal.Y * 1000);
+		}
+	}
+
+	SLresult StereoResult = (*SL_VolumeInterface)->SetStereoPosition(SL_VolumeInterface, StereoPosition);
 	
 	// Avoid doing the log calculation each update by only doing it if the volume changed
 	if (Volume != VolumePreviousUpdate)

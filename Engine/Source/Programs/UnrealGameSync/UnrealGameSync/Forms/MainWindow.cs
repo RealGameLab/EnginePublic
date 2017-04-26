@@ -1,4 +1,5 @@
 ﻿// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
+//#define ODIN_EDITOR
 
 using System;
 using System.Collections.Generic;
@@ -20,6 +21,7 @@ using System.Windows.Forms.VisualStyles;
 using Microsoft.Win32;
 
 using EventWaitHandle = System.Threading.EventWaitHandle;
+
 
 namespace UnrealGameSync
 {
@@ -399,7 +401,7 @@ namespace UnrealGameSync
 
 				string TelemetryProjectIdentifier = PerforceUtils.GetClientOrDepotDirectoryName(DetectSettings.NewSelectedProjectIdentifier);
 
-				Workspace = new Workspace(PerforceClient, BranchDirectoryName, SelectedFileName, DetectSettings.BranchClientPath, DetectSettings.NewSelectedClientFileName, CurrentChangeNumber, Settings.CurrentWorkspace.LastBuiltChangeNumber, TelemetryProjectIdentifier, new LogControlTextWriter(SyncLog));
+				Workspace = new Workspace(PerforceClient, BranchDirectoryName, SelectedFileName, DetectSettings.BranchClientPath, DetectSettings.NewSelectedClientFileName, CurrentChangeNumber, Settings.CurrentWorkspace.LastBuiltChangeNumber, TelemetryProjectIdentifier, new LogControlTextWriter(SyncLog), Settings);
 				Workspace.OnUpdateComplete += UpdateCompleteCallback;
 
 				PerforceMonitor = new PerforceMonitor(PerforceClient, DetectSettings.BranchClientPath, DetectSettings.NewSelectedClientFileName, SelectedProjectIdentifier, ProjectLogBaseName + ".p4.log");
@@ -1528,9 +1530,13 @@ namespace UnrealGameSync
 				List<string> ReceiptPaths = GetEditorReceiptPaths(EditorBuildConfig);
 
 				string EditorExe = GetEditorExePath(EditorBuildConfig);
-				if(ReceiptPaths.Any(x => File.Exists(x)) && File.Exists(EditorExe))
-				{
-					StringBuilder LaunchArguments = new StringBuilder();
+#if ODIN_EDITOR
+                if (File.Exists(EditorExe))
+#else
+                if (ReceiptPaths.Any(x => File.Exists(x)) && File.Exists(EditorExe))
+#endif
+                {
+                    StringBuilder LaunchArguments = new StringBuilder();
 					if(SelectedFileName.EndsWith(".uproject", StringComparison.InvariantCultureIgnoreCase))
 					{
 						LaunchArguments.AppendFormat("\"{0}\"", SelectedFileName);

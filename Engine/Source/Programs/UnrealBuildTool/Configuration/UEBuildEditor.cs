@@ -76,6 +76,11 @@ namespace UnrealBuildTool
 
             // Tag it as a 'Editor' build
             OutCPPEnvironmentConfiguration.Definitions.Add("UE_EDITOR=1");
-		}
+
+            /// @wutongfei ODIN
+            OutCPPEnvironmentConfiguration.Definitions.Add("ODIN");
+            //OutCPPEnvironmentConfiguration.Definitions.Add("ODIN_CAMERA");
+            OutCPPEnvironmentConfiguration.Definitions.Add("ODIN_EDITOR");
+        }
 	}
 }

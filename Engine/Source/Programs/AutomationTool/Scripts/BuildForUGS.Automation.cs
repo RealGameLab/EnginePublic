@@ -59,8 +59,10 @@ namespace AutomationTool
 				Builder.AddUBTFilesToBuildProducts();
 			}
 
-			// Archive the build products
-			if(ArchivePath != null)
+            bool WithSymbols = ParseParam("WithSymbols");
+
+            // Archive the build products
+            if (ArchivePath != null)
 			{
 				// Create an output folder
 				string OutputFolder = Path.Combine(CommandUtils.CmdEnv.LocalRoot, "ArchiveForUGS");
@@ -84,10 +86,13 @@ namespace AutomationTool
 					}
 					if(BuildProduct.EndsWith(".pdb", StringComparison.InvariantCultureIgnoreCase))
 					{
-						string StrippedFileName = CommandUtils.MakeRerootedFilePath(BuildProduct, CommandUtils.CmdEnv.LocalRoot, SymbolsFolder);
-						Directory.CreateDirectory(Path.GetDirectoryName(StrippedFileName));
-						WindowsToolChain.StripSymbols(BuildProduct, StrippedFileName);
-						Zip.AddFile(StrippedFileName, Path.GetDirectoryName(CommandUtils.StripBaseDirectory(StrippedFileName, SymbolsFolder)));
+                        if (WithSymbols)
+                        {
+                            string StrippedFileName = CommandUtils.MakeRerootedFilePath(BuildProduct, CommandUtils.CmdEnv.LocalRoot, SymbolsFolder);
+                            Directory.CreateDirectory(Path.GetDirectoryName(StrippedFileName));
+                            WindowsToolChain.StripSymbols(BuildProduct, StrippedFileName);
+                            Zip.AddFile(StrippedFileName, Path.GetDirectoryName(CommandUtils.StripBaseDirectory(StrippedFileName, SymbolsFolder)));
+                        }
 					}
 					else
 					{

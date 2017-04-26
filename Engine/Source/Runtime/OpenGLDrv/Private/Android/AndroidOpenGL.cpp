@@ -159,9 +159,20 @@ void* PlatformGetWindow(FPlatformOpenGLContext* Context, void** AddParam)
 	return (void*)&Context->eglContext;
 }
 
+TAutoConsoleVariable<int32> CVarRequestAndroidBackBuffer(
+	TEXT("r.rab"),
+	0,
+	TEXT("Request Android BackBuffer")
+	);
+
 bool PlatformBlitToViewport( FPlatformOpenGLDevice* Device, const FOpenGLViewport& Viewport, uint32 BackbufferSizeX, uint32 BackbufferSizeY, bool bPresent,bool bLockToVsync, int32 SyncInterval )
 {
 	FOpenGLViewport& NoConstViewport = (FOpenGLViewport&)Viewport;
+
+	// @Mashiyuan
+	// 半永久开关r.rab, 理论上请求BackBuffer时会有额外消耗，但红米3（Adreno 405）上却性能更好，有待进一步测试。
+	*((bool*)&Viewport.PendingRequestAndroidBackBuffer) = CVarRequestAndroidBackBuffer.GetValueOnAnyThread();
+
 	if (Viewport.PendingRequestAndroidBackBuffer != Viewport.RequestAndroidBackBuffer)
 	{
 		NoConstViewport.CurrentFrameRequestAndroidBackBuffer = Viewport.PendingRequestAndroidBackBuffer;
@@ -496,6 +507,7 @@ void FAndroidOpenGL::ProcessExtensions(const FString& ExtensionsString)
 	}
 	
 	const bool bIsAdrenoBased = RendererString.Contains(TEXT("Adreno"));
+#ifndef ODIN_ANDROID
 	if (bIsAdrenoBased)
 	{
 		// This is to avoid a bug in Adreno drivers that define GL_EXT_shader_framebuffer_fetch even when device does not support this extension
@@ -510,6 +522,7 @@ void FAndroidOpenGL::ProcessExtensions(const FString& ExtensionsString)
 			bSupportsPackedDepthStencil = false;
 		}
 	}
+#endif // !ODIN_ANDROID
 
 	if (bES30Support)
 	{

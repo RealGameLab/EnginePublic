@@ -76,7 +76,7 @@ private:
 };
 
 FICULineBreakIterator::FICULineBreakIterator()
-	: ICULineBreakIteratorHandle(FICUBreakIteratorManager::Get().CreateLineBreakIterator())
+	: ICULineBreakIteratorHandle(FICUBreakIteratorManager::Get().CreateCharacterBoundaryIterator())
 	, CurrentPosition(0)
 {
 }

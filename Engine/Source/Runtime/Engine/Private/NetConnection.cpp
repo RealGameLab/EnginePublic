@@ -26,6 +26,7 @@
 
 #include "Net/PerfCountersHelpers.h"
 #include "GameDelegates.h"
+#include "GameMapsSettings.h"
 
 #if !UE_BUILD_SHIPPING
 static TAutoConsoleVariable<int32> CVarPingExcludeFrameTime( TEXT( "net.PingExcludeFrameTime" ), 0, TEXT( "Calculate RTT time between NIC's of server and client." ) );
@@ -166,8 +167,23 @@ void UNetConnection::InitBase(UNetDriver* InDriver,class FSocket* InSocket, cons
 		CurrentNetSpeed = FMath::Max<int32>(CurrentNetSpeed, 1800);
 	}
 
+	//修改@roger.
+#if defined(USE_CLIENT_NETWORK_ACTOR_POOL) || WITH_EDITOR
+	UClass* ClientPkgMapClass = UPackageMapClient::StaticClass();
+	if (InDriver->ServerConnection == this)
+	{
+		FStringClassReference ClientPkgMapClassPath = GetDefault<UGameMapsSettings>()->ClientPackageMapClass;
+		ClientPkgMapClass = (ClientPkgMapClassPath.IsValid() ? LoadObject<UClass>(NULL, *ClientPkgMapClassPath.ToString()) : UPackageMapClient::StaticClass());
+		if (ClientPkgMapClass == nullptr)
+		{
+			ClientPkgMapClass = UPackageMapClient::StaticClass();
+		}
+	}
+	auto PackageMapClient = NewObject<UPackageMapClient>(this, ClientPkgMapClass);
+#else
 	// Create package map.
 	auto PackageMapClient = NewObject<UPackageMapClient>(this);
+#endif
 	PackageMapClient->Initialize(this, Driver->GuidCache);
 	PackageMap = PackageMapClient;
 

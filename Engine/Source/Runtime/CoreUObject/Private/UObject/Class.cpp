@@ -470,6 +470,7 @@ UStruct::UStruct( EStaticConstructor, int32 InSize, EObjectFlags InFlags )
 ,	RefLink			( NULL )
 ,	DestructorLink	( NULL )
 , PostConstructLink( NULL )
+, LuaRegisterRef(0)
 {
 }
 
@@ -483,6 +484,7 @@ UStruct::UStruct(UStruct* InSuperStruct, SIZE_T ParamsSize, SIZE_T Alignment)
 	, RefLink(NULL)
 	, DestructorLink(NULL)
 	, PostConstructLink(NULL)
+	, LuaRegisterRef(0)
 {
 }
 
@@ -496,6 +498,7 @@ UStruct::UStruct(const FObjectInitializer& ObjectInitializer, UStruct* InSuperSt
 ,	RefLink			( NULL )
 ,	DestructorLink	( NULL )
 , PostConstructLink( NULL )
+, LuaRegisterRef(0)
 {
 }
 

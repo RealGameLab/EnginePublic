@@ -468,8 +468,18 @@ namespace UnrealGameSync
 
 		public bool TryGetArchivePathForChangeNumber(int ChangeNumber, out string ArchivePath)
 		{
-			return ChangeNumberToZippedBinaries.TryGetValue(ChangeNumber, out ArchivePath);
-		}
+#if ODIN_EDITOR
+            bool Flag = false;
+            ArchivePath = null;
+			while (ChangeNumber > 0 && !Flag)
+            {
+                Flag = ChangeNumberToZippedBinaries.TryGetValue(ChangeNumber--, out ArchivePath);
+            }
+            return Flag;
+#else
+            return ChangeNumberToZippedBinaries.TryGetValue(ChangeNumber, out ArchivePath);
+#endif
+        }
 
 		public void Refresh()
 		{
