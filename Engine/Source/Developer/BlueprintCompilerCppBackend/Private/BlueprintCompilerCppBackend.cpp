@@ -162,7 +162,7 @@ void FBlueprintCompilerCppBackend::EmitAssignmentStatment(FEmitterLocalContext& 
 
 	FString BeginCast;
 	FString EndCast;
-	FEmitHelper::GenerateAutomaticCast(EmitterContext, Statement.LHS->Type, Statement.RHS[0]->Type, BeginCast, EndCast);
+	FEmitHelper::GenerateAutomaticCast(EmitterContext, Statement.LHS->Type, Statement.RHS[0]->Type, Statement.LHS->AssociatedVarProperty, Statement.RHS[0]->AssociatedVarProperty, BeginCast, EndCast);
 	const FString RHS = FString::Printf(TEXT("%s%s%s"), *BeginCast, *SourceExpression, *EndCast);
 	EmitterContext.AddLine(SetterExpression.BuildFull(RHS));
 }
@@ -509,7 +509,7 @@ FString FBlueprintCompilerCppBackend::EmitSwitchValueStatmentInner(FEmitterLocal
 			FEdGraphPinType LType;
 			if (Schema->ConvertPropertyToPinType(DefaultValueTerm->AssociatedVarProperty, LType))
 			{
-				FEmitHelper::GenerateAutomaticCast(EmitterContext, LType, Term->Type, BeginCast, EndCast, true);
+				FEmitHelper::GenerateAutomaticCast(EmitterContext, LType, Term->Type, DefaultValueTerm->AssociatedVarProperty, Term->AssociatedVarProperty, BeginCast, EndCast, true);
 			}
 
 			const FString TermEvaluation = TermToText(EmitterContext, Term, ENativizedTermUsage::UnspecifiedOrReference); //should bGetter be false ?
@@ -642,7 +642,7 @@ FString FBlueprintCompilerCppBackend::EmitMethodInputParameterList(FEmitterLocal
 				{
 					CastWildCard.FillWildcardType(FuncParamProperty, LType);
 
-					FEmitHelper::GenerateAutomaticCast(EmitterContext, LType, Term->Type, BeginCast, CloseCast);
+					FEmitHelper::GenerateAutomaticCast(EmitterContext, LType, Term->Type, FuncParamProperty, Term->AssociatedVarProperty, BeginCast, CloseCast);
 					TermUsage = LType.bIsReference ? ENativizedTermUsage::UnspecifiedOrReference : ENativizedTermUsage::Getter;
 				}
 				VarName += BeginCast;
@@ -775,7 +775,7 @@ FString FBlueprintCompilerCppBackend::EmitCallStatmentInner(FEmitterLocalContext
 			check(Schema);
 			if (Schema->ConvertPropertyToPinType(FuncToCallReturnProperty, RType))
 			{
-				FEmitHelper::GenerateAutomaticCast(EmitterContext, Statement.LHS->Type, RType, BeginCast, CloseCast);
+				FEmitHelper::GenerateAutomaticCast(EmitterContext, Statement.LHS->Type, RType, Statement.LHS->AssociatedVarProperty, FuncToCallReturnProperty, BeginCast, CloseCast);
 			}
 			Result += BeginCast;
 		}
@@ -806,6 +806,7 @@ FString FBlueprintCompilerCppBackend::EmitCallStatmentInner(FEmitterLocalContext
 			ensure(!Statement.bIsParentContext); //unsupported yet
 			ensure(bCallOnDifferentObject); //unexpected
 			const FString WrapperName = FString::Printf(TEXT("FUnconvertedWrapper__%s"), *FEmitHelper::GetCppName(OwnerBPGC));
+			EmitterContext.MarkUnconvertedClassAsNecessary(OwnerBPGC);
 			const FString CalledObject = bCallOnDifferentObject ? TermToText(EmitterContext, Statement.FunctionContext, ENativizedTermUsage::UnspecifiedOrReference, false) : TEXT("this");
 			Result += FString::Printf(TEXT("%s(%s)."), *WrapperName, *CalledObject);
 		}
@@ -834,7 +835,7 @@ FString FBlueprintCompilerCppBackend::EmitCallStatmentInner(FEmitterLocalContext
 			Result += CustomThunkFunctionPostfix(Statement);
 		}
 
-		if (Statement.bIsParentContext && bNativeEvent)
+		if ((Statement.bIsParentContext || Statement.bIsInterfaceContext) && bNativeEvent)
 		{
 			ensure(!bCallOnDifferentObject);
 			Result += TEXT("_Implementation");
@@ -1003,6 +1004,7 @@ FString FBlueprintCompilerCppBackend::TermToText(FEmitterLocalContext& EmitterCo
 					, *FEmitHelper::GetCppName(MinimalBPGC)
 					, *ContextStr
 					, *UnicodeToCPPIdentifier(Term->AssociatedVarProperty->GetName(), false, nullptr));
+				EmitterContext.MarkUnconvertedClassAsNecessary(MinimalBPGC);
 			}
 			else if (!bIsAccessible)
 			{
@@ -1289,7 +1291,8 @@ bool FBlueprintCompilerCppBackend::SortNodesInUberGraphExecutionGroup(FKismetFun
 					}
 					break;
 
-				case KCST_GotoReturn: // what about KCST_EndOfThread?
+				case KCST_GotoReturn:
+				case KCST_EndOfThread:
 					{
 						ensure(StatementIndex == (StatementList->Num() - 1)); // it should be the last statement generated from the node
 						bReturnExpected = true;

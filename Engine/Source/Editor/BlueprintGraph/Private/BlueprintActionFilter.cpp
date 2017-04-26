@@ -399,6 +399,16 @@ namespace BlueprintActionFilterImpl
 	 * @return True if the action is stale (associated with a TRASH or REINST class).
 	 */
 	static bool IsStaleFieldAction(FBlueprintActionFilter const& Filter, FBlueprintActionInfo& BlueprintAction);
+
+	/**
+	* Rejection test whether editor module functionality should be filtered out for 
+	* this specific blueprint (relies on whether or not base class is part of an editor module).
+	*
+	* @param  Filter			Holds the action/field context for this test.
+	* @param  BlueprintAction	The action you wish to query.
+	* @return True if the action is invalid to use in the current blueprint
+	*/
+	static bool IsHiddenInNonEditorBlueprint(FBlueprintActionFilter const& Filter, FBlueprintActionInfo& BlueprintAction);
 };
 
 //------------------------------------------------------------------------------
@@ -802,17 +812,19 @@ static bool BlueprintActionFilterImpl::IsPermissionNotGranted(FBlueprintActionFi
 //------------------------------------------------------------------------------
 static bool BlueprintActionFilterImpl::IsDeprecated(FBlueprintActionFilter const& /*Filter*/, FBlueprintActionInfo& BlueprintAction)
 {
-	checkSlow(BlueprintAction.GetNodeClass() != nullptr);
+	bool bIsFilteredOut = false;
 
-	bool bIsFilteredOut = false;	
-	if (BlueprintAction.GetNodeClass()->HasAnyClassFlags(CLASS_Deprecated))
+	ensure(BlueprintAction.GetNodeClass() != nullptr);
+	if (UClass const* NodeClass = BlueprintAction.GetNodeClass())
 	{
-		bIsFilteredOut = true;
+		bIsFilteredOut |= NodeClass->HasAnyClassFlags(CLASS_Deprecated);
 	}
-	else if (UClass const* ActionClass = BlueprintAction.GetOwnerClass())
+	
+	if (UClass const* ActionClass = BlueprintAction.GetOwnerClass())
 	{
-		bIsFilteredOut = ActionClass->HasAnyClassFlags(CLASS_Deprecated);
+		bIsFilteredOut |= ActionClass->HasAnyClassFlags(CLASS_Deprecated);
 	}
+
 	return bIsFilteredOut;
 }
 
@@ -1111,33 +1123,53 @@ static bool BlueprintActionFilterImpl::IsSchemaIncompatible(FBlueprintActionFilt
 	UEdGraphNode const* NodeCDO = CastChecked<UEdGraphNode>(NodeClass->ClassDefaultObject);
 	checkSlow(NodeCDO != nullptr);
 
-	auto IsSchemaIncompatibleLambda = [NodeCDO](TArray<UEdGraph*> const& GraphList)->bool
-	{
-		bool bIsCompatible = true;
-		for (UEdGraph const* Graph : GraphList)
-		{
-			if (!NodeCDO->CanCreateUnderSpecifiedSchema(Graph->GetSchema()))
-			{
-				bIsCompatible = false;
-				break;
-			}
-		}
-		return !bIsCompatible;
-	};
+
 	
 	if (FilterContext.Graphs.Num() > 0)
 	{
+		auto IsSchemaIncompatibleLambda = [NodeCDO](TArray<UEdGraph*> const& GraphList)->bool
+		{
+			bool bIsCompatible = true;
+			for (UEdGraph const* Graph : GraphList)
+			{
+				if (!NodeCDO->CanCreateUnderSpecifiedSchema(Graph->GetSchema()))
+				{
+					bIsCompatible = false;
+					break;
+				}
+			}
+			return !bIsCompatible;
+		};
+
 		bIsFilteredOut = IsSchemaIncompatibleLambda(FilterContext.Graphs);
 	}
 	else
 	{
+		// When we are in a non-graph context, we may need to account for some graphs 
+		// being incompatible. In this case the code to place a node will take care of
+		// any issues, but we dont filter here if a schema is rejected, only if all schemas
+		// are incompatible.
+		auto AreAnySchemasCompatibleLambda = [NodeCDO](TArray<UEdGraph*> const& GraphList)->bool
+		{
+			bool bIsCompatible = false;
+			for (UEdGraph const* Graph : GraphList)
+			{
+				if (NodeCDO->CanCreateUnderSpecifiedSchema(Graph->GetSchema()))
+				{
+					bIsCompatible = true;
+					break;
+				}
+			}
+			return bIsCompatible;
+		};
+
 		bIsFilteredOut = true;
 		for (UBlueprint const* Blueprint : FilterContext.Blueprints)
 		{
 			TArray<UEdGraph*> BpGraphList;
 			Blueprint->GetAllGraphs(BpGraphList);
 
-			if (!IsSchemaIncompatibleLambda(BpGraphList))
+			if (AreAnySchemasCompatibleLambda(BpGraphList))
 			{
 				bIsFilteredOut = false;
 				break;
@@ -1167,6 +1199,7 @@ static bool BlueprintActionFilterImpl::HasMatchingPin(FBlueprintActionInfo& Blue
 
 		UClass const* CallingContext = GetAuthoritativeBlueprintClass(Blueprint);
 		UK2Node* K2TemplateNode = Cast<UK2Node>(TemplateNode);
+		UK2Node* OwningK2Node = Cast<UK2Node>(Pin->GetOwningNode());
 		
 		for (int32 PinIndex = 0; !bHasCompatiblePin && (PinIndex < TemplateNode->Pins.Num()); ++PinIndex)
 		{
@@ -1181,7 +1214,8 @@ static bool BlueprintActionFilterImpl::HasMatchingPin(FBlueprintActionInfo& Blue
 			{
 				FString DisallowedReason;
 				// to catch wildcard connections that are prevented
-				bHasCompatiblePin = !K2TemplateNode->IsConnectionDisallowed(TemplatePin, Pin, DisallowedReason);
+				bHasCompatiblePin = !K2TemplateNode->IsConnectionDisallowed(TemplatePin, Pin, DisallowedReason)
+					&& (!OwningK2Node || !OwningK2Node->IsConnectionDisallowed(Pin, TemplatePin, DisallowedReason));
 			}
 		}
 	}	
@@ -1560,7 +1594,8 @@ static bool BlueprintActionFilterImpl::IsExtraneousInterfaceCall(FBlueprintActio
 		UClass* InterfaceClass = Function->GetOwnerClass();
 		checkSlow(InterfaceClass->IsChildOf<UInterface>());
 
-		bool const bCanBeAddedToBlueprints = !InterfaceClass->HasMetaData(FBlueprintMetadata::MD_CannotImplementInterfaceInBlueprint);
+		bool const bIsAbstractCppClass = InterfaceClass->GetCppTypeInfo()->IsAbstract();
+		bool const bCanBeAddedToBlueprints = !bIsAbstractCppClass && !InterfaceClass->HasMetaData(FBlueprintMetadata::MD_CannotImplementInterfaceInBlueprint);
 
 		bIsFilteredOut = (Filter.TargetClasses.Num() > 0);
 		for (const auto& ClassData : Filter.TargetClasses)
@@ -1654,6 +1689,31 @@ static bool BlueprintActionFilterImpl::IsStaleFieldAction(FBlueprintActionFilter
 	bool const bIsFilteredOut = FBlueprintNodeSpawnerUtils::IsStaleFieldAction(BlueprintAction.NodeSpawner);
 	ensureMsgf(!bIsFilteredOut, TEXT("Invalid BlueprintActionDatabase entry (for %s). Was the database properly updated when this class was compiled?"), *BlueprintAction.GetOwnerClass()->GetName());
 	return bIsFilteredOut;
+}
+
+//------------------------------------------------------------------------------
+static bool BlueprintActionFilterImpl::IsHiddenInNonEditorBlueprint(FBlueprintActionFilter const& Filter, FBlueprintActionInfo& BlueprintAction)
+{
+	const UFunction* Function = BlueprintAction.GetAssociatedFunction();
+
+	bool bVisible = true;
+
+	if (Function)
+	{
+		const bool bIsEditorOnlyFunction = IsEditorOnlyObject(Function);
+		
+		if (bIsEditorOnlyFunction)
+		{
+			for (const UBlueprint* Blueprint : Filter.Context.Blueprints)
+			{
+				const UClass* BlueprintClass = Blueprint->ParentClass;
+				const bool bIsEditorBlueprintClass = (BlueprintClass != nullptr) && IsEditorOnlyObject(BlueprintClass);
+				bVisible &= bIsEditorBlueprintClass;
+			}
+		}
+	}
+	
+	return !bVisible;
 }
 
 /*******************************************************************************
@@ -1858,6 +1918,8 @@ FBlueprintActionFilter::FBlueprintActionFilter(uint32 Flags/*= 0x00*/)
 	AddRejectionTest(FRejectionTestDelegate::CreateStatic(IsUnBoundBindingSpawner));
 	AddRejectionTest(FRejectionTestDelegate::CreateStatic(IsOutOfScopeLocalVariable));
 	AddRejectionTest(FRejectionTestDelegate::CreateStatic(IsLevelScriptActionValid));
+
+	AddRejectionTest(FRejectionTestDelegate::CreateStatic(IsHiddenInNonEditorBlueprint));	
 
 
 	// added as the first rejection test, so that we don't operate on stale 

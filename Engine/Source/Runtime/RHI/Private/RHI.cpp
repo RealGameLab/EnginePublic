@@ -30,6 +30,7 @@ DEFINE_STAT(STAT_IndexBufferMemory);
 DEFINE_STAT(STAT_VertexBufferMemory);
 DEFINE_STAT(STAT_StructuredBufferMemory);
 DEFINE_STAT(STAT_PixelBufferMemory);
+DEFINE_STAT(STAT_GetOrCreatePSO);
 
 static FAutoConsoleVariable CVarUseVulkanRealUBs(
 	TEXT("r.Vulkan.UseRealUBs"),
@@ -44,6 +45,8 @@ const FString FResourceTransitionUtility::ResourceTransitionAccessStrings[(int32
 	FString(TEXT("EWritable")),	
 	FString(TEXT("ERWBarrier")),
 	FString(TEXT("ERWNoBarrier")),
+	FString(TEXT("ERWSubResBarrier")),
+	FString(TEXT("EMetaData")),
 	FString(TEXT("EMaxAccess")),
 };
 
@@ -107,8 +110,8 @@ void FRHIResource::FlushPendingDeletes()
 	SCOPE_CYCLE_COUNTER(STAT_DeleteResources);
 
 	check(IsInRenderingThread());
-	FRHICommandListExecutor::CheckNoOutstandingCmdLists();
 	FRHICommandListExecutor::GetImmediateCommandList().ImmediateFlush(EImmediateFlushType::FlushRHIThread);
+	FRHICommandListExecutor::CheckNoOutstandingCmdLists();
 
 	auto Delete = [](TArray<FRHIResource*>& ToDelete)
 	{
@@ -387,6 +390,7 @@ static FName NAME_GLSL_ES2_WEBGL(TEXT("GLSL_ES2_WEBGL"));
 static FName NAME_GLSL_ES2_IOS(TEXT("GLSL_ES2_IOS"));
 static FName NAME_SF_METAL(TEXT("SF_METAL"));
 static FName NAME_SF_METAL_MRT(TEXT("SF_METAL_MRT"));
+static FName NAME_SF_METAL_MRT_MAC(TEXT("SF_METAL_MRT_MAC"));
 static FName NAME_GLSL_310_ES_EXT(TEXT("GLSL_310_ES_EXT"));
 static FName NAME_GLSL_ES3_1_ANDROID(TEXT("GLSL_ES3_1_ANDROID"));
 static FName NAME_SF_METAL_SM5(TEXT("SF_METAL_SM5"));
@@ -440,6 +444,8 @@ FName LegacyShaderPlatformToShaderFormat(EShaderPlatform Platform)
 		return NAME_SF_METAL;
 	case SP_METAL_MRT:
 		return NAME_SF_METAL_MRT;
+	case SP_METAL_MRT_MAC:
+		return NAME_SF_METAL_MRT_MAC;
 	case SP_METAL_SM4:
 		return NAME_SF_METAL_SM4;
 	case SP_METAL_SM5:
@@ -493,6 +499,7 @@ EShaderPlatform ShaderFormatToLegacyShaderPlatform(FName ShaderFormat)
 	if (ShaderFormat == NAME_GLSL_ES2_IOS)			return SP_OPENGL_ES2_IOS;
 	if (ShaderFormat == NAME_SF_METAL)				return SP_METAL;
 	if (ShaderFormat == NAME_SF_METAL_MRT)			return SP_METAL_MRT;
+	if (ShaderFormat == NAME_SF_METAL_MRT_MAC)		return SP_METAL_MRT_MAC;
 	if (ShaderFormat == NAME_GLSL_310_ES_EXT)		return SP_OPENGL_ES31_EXT;
 	if (ShaderFormat == NAME_SF_METAL_SM5)			return SP_METAL_SM5;
 	if (ShaderFormat == NAME_VULKAN_SM4)			return SP_VULKAN_SM4;
@@ -522,7 +529,6 @@ RHI_API bool IsRHIDeviceIntel()
 {
 	check(GRHIVendorId != 0);
 	// Intel GPUs are integrated and use both DedicatedVideoMemory and SharedSystemMemory.
-	// The hardware has fast clears so we disable exclude rects (see r.ClearWithExcludeRects)
 	return GRHIVendorId == 0x8086;
 }
 

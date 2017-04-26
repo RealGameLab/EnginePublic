@@ -1176,7 +1176,13 @@ bool FTexturePlatformData::TryLoadMips(int32 FirstMipToLoad, void** OutMipData)
 			if (OutMipData)
 			{
 				OutMipData[MipIndex - FirstMipToLoad] = FMemory::Malloc(Mip.BulkData.GetBulkDataSize());
+#if 0
 				checkSlow(!Mip.BulkData.GetFilename().EndsWith(TEXT(".ubulk"))); // We want to make sure that any non-streamed mips are coming from the texture asset file, and not from an external bulk file
+#else
+				UE_CLOG(Mip.BulkData.GetFilename().EndsWith(TEXT(".ubulk")), LogTexture, Error, TEXT("Loading non-streamed mips from an external bulk file.  This is not desireable.  File %s"), *(Mip.BulkData.GetFilename() ) );
+#endif
+				
+				
 				Mip.BulkData.GetCopy(&OutMipData[MipIndex - FirstMipToLoad]);
 			}
 			NumMipsCached++;
@@ -1311,7 +1317,7 @@ static void SerializePlatformData(
 	}
 	else if (Ar.IsSaving())
 	{
-		FString PixelFormatString = PixelFormatEnum->GetEnum(PlatformData->PixelFormat).GetPlainNameString();
+		FString PixelFormatString = PixelFormatEnum->GetNameByValue(PlatformData->PixelFormat).GetPlainNameString();
 		Ar << PixelFormatString;
 	}
 	
@@ -1467,10 +1473,13 @@ void UTexture2D::GetMipData(int32 FirstMipToLoad, void** OutMipData)
 		UE_LOG(LogTexture,Warning,TEXT("GetMipData failed for %s (%s)"),
 			*GetPathName(), GPixelFormats[GetPixelFormat()].Name);
 #if WITH_EDITOR
-		ForceRebuildPlatformData();
-		if (PlatformData->TryLoadMips(FirstMipToLoad, OutMipData) == false)
+		if (!GetOutermost()->bIsCookedForEditor)
 		{
-			UE_LOG(LogTexture,Error,TEXT("Failed to build texture %s."), *GetPathName());
+			ForceRebuildPlatformData();
+			if (PlatformData->TryLoadMips(FirstMipToLoad, OutMipData) == false)
+			{
+				UE_LOG(LogTexture, Error, TEXT("Failed to build texture %s."), *GetPathName());
+			}
 		}
 #endif // #if WITH_EDITOR
 	}
@@ -1966,7 +1975,7 @@ void UTexture::SerializeCookedPlatformData(FArchive& Ar)
 			{
 				FTexturePlatformData* PlatformDataToSave = PlatformDataToSerialize[i];
 				PlatformDataToSave->FinishCache();
-				FName PixelFormatName = PixelFormatEnum->GetEnum(PlatformDataToSave->PixelFormat);
+				FName PixelFormatName = PixelFormatEnum->GetNameByValue(PlatformDataToSave->PixelFormat);
 				Ar << PixelFormatName;
 				int32 SkipOffsetLoc = Ar.Tell();
 				int32 SkipOffset = 0;

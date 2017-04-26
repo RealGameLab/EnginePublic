@@ -54,6 +54,7 @@
 #include "Slate/SGameLayerManager.h"
 #include "ActorEditorUtils.h"
 #include "ComponentRecreateRenderStateContext.h"
+#include "Framework/Application/HardwareCursor.h"
 
 #define LOCTEXT_NAMESPACE "GameViewport"
 
@@ -137,6 +138,7 @@ UGameViewportClient::UGameViewportClient(const FObjectInitializer& ObjectInitial
 	, MouseLockMode(EMouseLockMode::LockOnCapture)
 	, AudioDeviceHandle(INDEX_NONE)
 	, bHasAudioFocus(false)
+	, bMouseEnter(false)
 {
 
 	TitleSafeZone.MaxPercentX = 0.9f;
@@ -184,7 +186,6 @@ UGameViewportClient::UGameViewportClient(const FObjectInitializer& ObjectInitial
 	}
 }
 
-#if WITH_HOT_RELOAD_CTORS
 UGameViewportClient::UGameViewportClient(FVTableHelper& Helper)
 	: Super(Helper)
 	, EngineShowFlags(ESFIM_Game)
@@ -199,7 +200,6 @@ UGameViewportClient::UGameViewportClient(FVTableHelper& Helper)
 {
 
 }
-#endif // WITH_HOT_RELOAD_CTORS
 
 UGameViewportClient::~UGameViewportClient()
 {
@@ -349,14 +349,18 @@ void UGameViewportClient::Init(struct FWorldContext& WorldContext, UGameInstance
 			}
 		}
 	}
-	
-	AddCursor(EMouseCursor::Default, UISettings->DefaultCursor);
-	AddCursor(EMouseCursor::TextEditBeam, UISettings->TextEditBeamCursor);
-	AddCursor(EMouseCursor::Crosshairs, UISettings->CrosshairsCursor);
-	AddCursor(EMouseCursor::Hand, UISettings->HandCursor);
-	AddCursor(EMouseCursor::GrabHand, UISettings->GrabHandCursor);
-	AddCursor(EMouseCursor::GrabHandClosed, UISettings->GrabHandClosedCursor);
-	AddCursor(EMouseCursor::SlashedCircle, UISettings->SlashedCircleCursor);
+
+	// Set all the software cursors.
+	for ( auto& Entry : UISettings->SoftwareCursors )
+	{
+		AddSoftwareCursor(Entry.Key, Entry.Value);
+	}
+
+	// Set all the hardware cursors.
+	for ( auto& Entry : UISettings->HardwareCursors )
+	{
+		SetHardwareCursor(Entry.Key, Entry.Value.CursorPath, Entry.Value.HotSpot);
+	}
 }
 
 UWorld* UGameViewportClient::GetWorld() const
@@ -594,6 +598,18 @@ void UGameViewportClient::MouseEnter(FViewport* InViewport, int32 x, int32 y)
 	{
 		FSlateApplication::Get().SetGameIsFakingTouchEvents(true);
 	}
+
+	// Replace all the cursors.
+	TSharedPtr<ICursor> PlatformCursor = FSlateApplication::Get().GetPlatformCursor();
+	if ( ICursor* Cursor = PlatformCursor.Get() )
+	{
+		for ( auto& Entry : HardwareCursors )
+		{
+			Cursor->SetTypeShape(Entry.Key, Entry.Value->GetHandle());
+		}
+	}
+
+	bMouseEnter = true;
 }
 
 void UGameViewportClient::MouseLeave(FViewport* InViewport)
@@ -611,6 +627,28 @@ void UGameViewportClient::MouseLeave(FViewport* InViewport)
 			FSlateApplication::Get().SetGameIsFakingTouchEvents(false, &CursorPos);
 		}
 	}
+
+#if WITH_EDITOR
+
+	bMouseEnter = true;
+
+	// NOTE: Only do this in editor builds where the editor is running.
+	// We don't care about bothering to clear them otherwise, and it may negatively impact
+	// things like drag/drop, since those would 'leave' the viewport.
+	if ( !FSlateApplication::Get().IsDragDropping() )
+	{
+		// clear all the overridden hardware cursors
+		TSharedPtr<ICursor> PlatformCursor = FSlateApplication::Get().GetPlatformCursor();
+		if ( ICursor* Cursor = PlatformCursor.Get() )
+		{
+			for ( auto& Entry : HardwareCursors )
+			{
+				Cursor->SetTypeShape(Entry.Key, nullptr);
+			}
+		}
+	}
+
+#endif
 }
 
 bool UGameViewportClient::GetMousePosition(FVector2D& MousePosition) const
@@ -677,7 +715,7 @@ EMouseCursor::Type UGameViewportClient::GetCursor(FViewport* InViewport, int32 X
 	return FViewportClient::GetCursor(InViewport, X, Y);
 }
 
-void UGameViewportClient::AddCursor(EMouseCursor::Type Cursor, const FStringClassReference& CursorClass)
+void UGameViewportClient::AddSoftwareCursor(EMouseCursor::Type Cursor, const FStringClassReference& CursorClass)
 {
 	if ( CursorClass.IsValid() )
 	{
@@ -707,6 +745,7 @@ TOptional<TSharedRef<SWidget>> UGameViewportClient::MapCursor(FViewport* InViewp
 			return *CursorWidgetPtr;
 		}
 	}
+
 	return TOptional<TSharedRef<SWidget>>();
 }
 
@@ -851,11 +890,7 @@ static void GatherViewExtensions(FViewport* InViewport, TArray<TSharedPtr<class 
 {
 	if (GEngine->HMDDevice.IsValid() && GEngine->IsStereoscopic3D(InViewport))
 	{
-		auto HmdViewExt = GEngine->HMDDevice->GetViewExtension();
-		if (HmdViewExt.IsValid())
-		{
-			OutViewExtensions.Add(HmdViewExt);
-		}
+		GEngine->HMDDevice->GatherViewExtensions(OutViewExtensions);
 	}
 
 	for (auto ViewExt : GEngine->ViewExtensions)
@@ -1529,7 +1564,7 @@ void UGameViewportClient::CloseRequested(FViewport* InViewport)
 	FSlateApplication::Get().SetGameIsFakingTouchEvents(false);
 	
 	// broadcast close request to anyone that registered an interest
-	CloseRequestedDelegate.ExecuteIfBound(InViewport);
+	CloseRequestedDelegate.Broadcast(InViewport);
 
 	SetViewportFrame(NULL);
 
@@ -1647,7 +1682,7 @@ ULocalPlayer* UGameViewportClient::SetupInitialLocalPlayer(FString& OutError)
 ULocalPlayer* UGameViewportClient::CreatePlayer(int32 ControllerId, FString& OutError, bool bSpawnActor)
 {
 	UGameInstance * ViewportGameInstance = GEngine->GetWorldContextFromGameViewportChecked(this).OwningGameInstance;
-	return (ViewportGameInstance != NULL) ? ViewportGameInstance->CreateLocalPlayer(ControllerId, OutError, bSpawnActor) : NULL;
+	return ( ViewportGameInstance != NULL ) ? ViewportGameInstance->CreateLocalPlayer(ControllerId, OutError, bSpawnActor) : NULL;
 }
 
 bool UGameViewportClient::RemovePlayer(class ULocalPlayer* ExPlayer)
@@ -2410,6 +2445,15 @@ FPopupMethodReply UGameViewportClient::OnQueryPopupMethod() const
 		.SetShouldThrottle(EShouldThrottle::No);
 }
 
+bool UGameViewportClient::HandleNavigation(const uint32 InUserIndex, TSharedPtr<SWidget> InDestination)
+{
+	if (CustomNavigationEvent.IsBound())
+	{
+		return CustomNavigationEvent.Execute(InUserIndex, InDestination);
+	}
+	return false;
+}
+
 void UGameViewportClient::ToggleShowVolumes()
 {
 	// Don't allow 'show collision' and 'show volumes' at the same time, so turn collision off
@@ -3121,44 +3165,43 @@ bool UGameViewportClient::HandlePauseRenderClockCommand( const TCHAR* Cmd, FOutp
 
 bool UGameViewportClient::RequestBugScreenShot(const TCHAR* Cmd, bool bDisplayHUDInfo)
 {
-	// find where these are really defined
-	const static int32 MaxFilenameLen = 100;
+	// Path/name is the first (and only supported) argument
+	FString FileName = Cmd;
 
-	if( Viewport != NULL )
+	// Handle just a plain console command (e.g. "BUGSCREENSHOT").
+	if (FileName.Len() == 0)
 	{
-		TCHAR File[MAX_SPRINTF] = TEXT("");
-		for( int32 TestBitmapIndex = 0; TestBitmapIndex < 9; ++TestBitmapIndex )
-		{ 
-			const FString DescPlusExtension = FString::Printf( TEXT("%s%i.png"), Cmd, TestBitmapIndex );
-			const FString SSFilename = CreateProfileFilename( DescPlusExtension, false );
+		FileName = TEXT("BugScreenShot.png");
+	}
 
-			const FString OutputDir = FPaths::BugItDir() + FString::Printf( TEXT("%s"), Cmd) + TEXT("/");
+	// Handle a console command and name (e.g. BUGSCREENSHOT FOO)
+	if (FileName.Contains(TEXT("/")) == false)
+	{
+		// Path will be <gamename>/bugit/<platform>/desc_
+		const FString BaseFile = FString::Printf(TEXT("%s%s_"), *FPaths::BugItDir(), *FPaths::GetBaseFilename(FileName));
 
-			//UE_LOG(LogPlayerManagement, Warning, TEXT( "BugIt Looking: %s" ), *(OutputDir + SSFilename) );
-			FCString::Sprintf( File, TEXT("%s"), *(OutputDir + SSFilename) );
-			if( IFileManager::Get().FileSize(File) == INDEX_NONE )
+		// find the next filename in the sequence, e.g <gamename>/bugit/<platform>/desc_00000.png
+		FFileHelper::GenerateNextBitmapFilename(BaseFile, TEXT("png"), FileName);
+	}
+
+	if (Viewport != NULL)
+	{
+		UWorld* const ViewportWorld = GetWorld();
+		if (bDisplayHUDInfo && (ViewportWorld != nullptr))
+		{
+			for (FConstPlayerControllerIterator Iterator = ViewportWorld->GetPlayerControllerIterator(); Iterator; ++Iterator)
 			{
-				UWorld* const ViewportWorld = GetWorld();
-				if ( bDisplayHUDInfo && (ViewportWorld != nullptr) )
-				{
-					for( FConstPlayerControllerIterator Iterator = ViewportWorld->GetPlayerControllerIterator(); Iterator; ++Iterator )
-					{
 						APlayerController* PlayerController = Iterator->Get();
-						if (PlayerController && PlayerController->GetHUD() )
-						{
-							PlayerController->GetHUD()->HandleBugScreenShot();
-						}
-					}
+				if (PlayerController && PlayerController->GetHUD())
+				{
+					PlayerController->GetHUD()->HandleBugScreenShot();
 				}
-
-				GScreenshotBitmapIndex = TestBitmapIndex; // this is safe as the UnMisc.cpp ScreenShot code will test each number before writing a file
-
-				const bool bShowUI = true;
-				const bool bAddFilenameSuffix = false;
-				FScreenshotRequest::RequestScreenshot( File, bShowUI, bAddFilenameSuffix );
-				break;
 			}
 		}
+
+		const bool bShowUI = true;
+		const bool bAddFilenameSuffix = false;
+		FScreenshotRequest::RequestScreenshot(FileName, true, bAddFilenameSuffix);
 	}
 
 	return true;
@@ -3203,6 +3246,35 @@ void UGameViewportClient::HandleViewportStatDisableAll(const bool bInAnyViewport
 	{
 		SetStatEnabled(NULL, false, true);
 	}
+}
+
+bool UGameViewportClient::SetHardwareCursor(EMouseCursor::Type CursorShape, FName GameContentPath, FVector2D HotSpot)
+{
+	TSharedPtr<FHardwareCursor> HardwareCursor = HardwareCursorCache.FindRef(GameContentPath);
+	if ( HardwareCursor.IsValid() == false )
+	{
+		HardwareCursor = MakeShared<FHardwareCursor>(FPaths::GameContentDir() / GameContentPath.ToString(), HotSpot);
+		if ( HardwareCursor->GetHandle() == nullptr )
+		{
+			return false;
+		}
+
+		HardwareCursorCache.Add(GameContentPath, HardwareCursor);
+	}
+
+	HardwareCursors.Add(CursorShape, HardwareCursor);
+
+	if ( bMouseEnter )
+	{
+		// clear all the overridden hardware cursors
+		TSharedPtr<ICursor> PlatformCursor = FSlateApplication::Get().GetPlatformCursor();
+		if ( ICursor* Cursor = PlatformCursor.Get() )
+		{
+			Cursor->SetTypeShape(CursorShape, HardwareCursor->GetHandle());
+		}
+	}
+	
+	return true;
 }
 
 #undef LOCTEXT_NAMESPACE

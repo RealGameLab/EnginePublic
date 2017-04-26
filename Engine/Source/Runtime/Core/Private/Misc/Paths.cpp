@@ -86,7 +86,7 @@ namespace UE4Paths_Private
 
 bool FPaths::ShouldSaveToUserDir()
 {
-	static bool bShouldSaveToUserDir = FApp::IsInstalled() || FParse::Param(FCommandLine::Get(), TEXT("SaveToUserDir"));
+	static bool bShouldSaveToUserDir = FApp::IsInstalled() || FParse::Param(FCommandLine::Get(), TEXT("SaveToUserDir")) || FPlatformProcess::ShouldSaveToUserDir();
 	return bShouldSaveToUserDir;
 }
 
@@ -170,7 +170,12 @@ FString FPaths::GameUserDir()
 		FString UserDir;
 		if (FParse::Value(FCommandLine::Get(), TEXT("UserDir="), UserDir))
 		{
-			return FPaths::Combine(*FPaths::GameDir(), *UserDir) + TEXT("/");
+			if (FPaths::IsRelative(UserDir))
+			{
+				return FPaths::Combine(*FPaths::GameDir(), *UserDir) + TEXT("/");
+			}
+			FPaths::NormalizeDirectoryName(UserDir);
+			return UserDir + TEXT("/");
 		}
 
 		return FPaths::GameDir();
@@ -574,6 +579,23 @@ FString FPaths::ChangeExtension(const FString& InPath, const FString& InNewExten
 	return InPath;
 }
 
+FString FPaths::SetExtension(const FString& InPath, const FString& InNewExtension)
+{
+	int32 Pos = INDEX_NONE;
+	InPath.FindLastChar('.', Pos);
+
+	FString Result = Pos == INDEX_NONE ? InPath : InPath.Left(Pos);
+
+	if (InNewExtension.Len() && InNewExtension[0] != '.')
+	{
+		Result += '.';
+	}
+
+	Result += InNewExtension;
+
+	return Result;
+}
+
 bool FPaths::FileExists(const FString& InPath)
 {
 	return IFileManager::Get().FileExists(*InPath);
@@ -686,7 +708,9 @@ bool FPaths::IsDrive(const FString& InPath)
 }
 
 #if WITH_EDITOR
+#ifndef ODIN
 FString FPaths::RootPrefix = TEXT("root:/");
+#endif
 #endif // WITH_EDITOR
 
 // wutongfei http://coconutlizard.co.uk/blog/ue4/using-the-disassembler/
@@ -694,11 +718,13 @@ bool FPaths::IsRelative(const FString& InPath)
 {
 	// The previous implementation of this function seemed to handle normalized and unnormalized paths, so this one does too for legacy reasons.
 
-	//const bool IsRooted = InPath.StartsWith(TEXT("\\"), ESearchCase::CaseSensitive)	||					// Root of the current directory on Windows. Also covers "\\" for UNC or "network" paths.
-	//					  InPath.StartsWith(TEXT("/"), ESearchCase::CaseSensitive)	||					// Root of the current directory on Windows, root on UNIX-likes.  Also covers "\\", considering normalization replaces "\\" with "//".						
-	//					  InPath.StartsWith(TEXT("root:/")) |											// Feature packs use this
-	//					  (InPath.Len() >= 2 && FChar::IsAlpha(InPath[0]) && InPath[1] == TEXT(':'));	// Starts with "<DriveLetter>:"
+#ifndef ODIN
+	const bool IsRooted = InPath.StartsWith(TEXT("\\"), ESearchCase::CaseSensitive)	||					// Root of the current directory on Windows. Also covers "\\" for UNC or "network" paths.
+						  InPath.StartsWith(TEXT("/"), ESearchCase::CaseSensitive)	||					// Root of the current directory on Windows, root on UNIX-likes.  Also covers "\\", considering normalization replaces "\\" with "//".						
+						  InPath.StartsWith(TEXT("root:/"), ESearchCase::IgnoreCase) ||					// Feature packs use this
+						  (InPath.Len() >= 2 && FChar::IsAlpha(InPath[0]) && InPath[1] == TEXT(':'));	// Starts with "<DriveLetter>:"
 
+#else
 	const uint32 PathLen = InPath.Len();
 	const bool IsRooted = PathLen &&
 		((InPath[0] == '/') ||
@@ -710,6 +736,8 @@ bool FPaths::IsRelative(const FString& InPath)
 #endif // WITH_EDITOR
 				))
 			);
+
+#endif
 
 	return !IsRooted;
 }

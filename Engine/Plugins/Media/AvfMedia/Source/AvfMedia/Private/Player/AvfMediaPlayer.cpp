@@ -4,7 +4,9 @@
 #include "HAL/PlatformProcess.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Paths.h"
+#if !PLATFORM_MAC
 #include "IOS/IOSAsyncTask.h"
+#endif
 
 /**
  * Cocoa class that can help us with reading player item information.
@@ -145,6 +147,10 @@ FAvfMediaPlayer::FAvfMediaPlayer()
 	bPrerolled = false;
 }
 
+FAvfMediaPlayer::~FAvfMediaPlayer()
+{
+	Close();
+}
 
 void FAvfMediaPlayer::HandleStatusNotification(AVPlayerItemStatus Status)
 {
@@ -416,6 +422,12 @@ void FAvfMediaPlayer::Close()
 		{
 			[MediaHelper release];
 			MediaHelper = nil;
+		}
+
+		if (MediaPlayer != nil)
+		{
+			[MediaPlayer release];
+			MediaPlayer = nil;
 		}
 	
 		Tracks.Reset();

@@ -5,6 +5,7 @@
 #include "GameFramework/Actor.h"
 #include "UObject/Package.h"
 #include "UObject/ObjectMacros.h"
+#include "MovieSceneFwd.h"
 
 FLevelSequenceObjectReference::FLevelSequenceObjectReference(UObject* InObject, UObject* InContext)
 {
@@ -23,6 +24,11 @@ FLevelSequenceObjectReference::FLevelSequenceObjectReference(UObject* InObject, 
 			ObjectPath = InObject->GetPathName(InContext);
 		}
 	}
+	else if(InObject->GetOuter() && InObject->GetOuter()->IsA<UActorComponent>())
+	{
+		ObjectId = FLazyObjectPtr(InObject).GetUniqueID();
+		ObjectPath = InObject->GetPathName(InContext);
+	}
 }
 
 FLevelSequenceObjectReference::FLevelSequenceObjectReference(const FUniqueObjectGuid& InObjectId, const FString& InObjectPath)
@@ -37,7 +43,20 @@ UObject* FLevelSequenceObjectReference::Resolve(UObject* InContext) const
 	{
 		int32 PIEInstanceID = InContext->GetOutermost()->PIEInstanceID;
 		FUniqueObjectGuid FixedUpId = PIEInstanceID == -1 ? ObjectId : ObjectId.FixupForPIE(PIEInstanceID);
-		
+
+		if (PIEInstanceID != -1 && FixedUpId == ObjectId)
+		{
+			if (!ObjectPath.IsEmpty())
+			{
+				if (UObject* FoundObject = FindObject<UObject>(InContext, *ObjectPath, false))
+				{
+					return FoundObject;
+				}
+			}
+
+			UE_LOG(LogMovieScene, Warning, TEXT("Attempted to resolve object with a PIE instance that has not been fixed up yet. This is probably due to a streamed level not being available yet. %s"), *ObjectPath);
+			return nullptr;
+		}
 
 		FLazyObjectPtr LazyPtr;
 		LazyPtr = FixedUpId;
@@ -51,11 +70,6 @@ UObject* FLevelSequenceObjectReference::Resolve(UObject* InContext) const
 	if (!ObjectPath.IsEmpty())
 	{
 		if (UObject* FoundObject = FindObject<UObject>(InContext, *ObjectPath, false))
-		{
-			return FoundObject;
-		}
-
-		if (UObject* FoundObject = FindObject<UObject>(ANY_PACKAGE, *ObjectPath, false))
 		{
 			return FoundObject;
 		}
