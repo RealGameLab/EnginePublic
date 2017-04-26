@@ -1,0 +1,30 @@
+#pragma once
+
+struct OdinUIVertexToPixelInterpolants
+{
+	float4 Position : SV_POSITION;
+	half4 Color : COLOR0;
+	float2 MaterialTexCoords : TEXCOORD2;
+	float4 TextureCoordinates[NUM_SLATE_TEXCOORDS] : TEXCOORD3;
+	half2 ClipMask : TEXCOORD4;
+};
+
+half2 MakeClipMask(float2 p, float2 a, float4 bc)
+{
+	float2 o = p - a;
+	float invD = 2/cross(bc.xy, bc.zw);
+	float2 st = (o.x * bc.yw - o.y * bc.xz) * float2(-invD, invD) - 1;
+	return st;
+}
+
+float2 OdinUIGetUV(OdinUIVertexToPixelInterpolants Interpolants, int UVIndex)
+{
+#if ES2_PROFILE
+	// Only support 2 uv coords on ES2 for now.  It doesnt support modulo operations
+	float4 UVVector = Interpolants.TextureCoordinates[UVIndex / 2];
+	return UVIndex == 1 ? UVVector.zw : UVVector.xy;
+#else
+	float4 UVVector = Interpolants.TextureCoordinates[UVIndex / 2];
+	return UVIndex % 2 ? UVVector.zw : UVVector.xy;
+#endif
+}
