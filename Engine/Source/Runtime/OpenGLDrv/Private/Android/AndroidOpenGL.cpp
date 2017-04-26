@@ -507,7 +507,6 @@ void FAndroidOpenGL::ProcessExtensions(const FString& ExtensionsString)
 	}
 	
 	const bool bIsAdrenoBased = RendererString.Contains(TEXT("Adreno"));
-#ifndef ODIN_ANDROID
 	if (bIsAdrenoBased)
 	{
 		// This is to avoid a bug in Adreno drivers that define GL_ARM_shader_framebuffer_fetch_depth_stencil even when device does not support this extension
@@ -521,7 +520,6 @@ void FAndroidOpenGL::ProcessExtensions(const FString& ExtensionsString)
 			bSupportsPackedDepthStencil = false;
 		}
 	}
-#endif // !ODIN_ANDROID
 
 	if (bES30Support)
 	{
