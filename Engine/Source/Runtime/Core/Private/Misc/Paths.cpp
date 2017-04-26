@@ -708,7 +708,7 @@ bool FPaths::IsDrive(const FString& InPath)
 }
 
 #if WITH_EDITOR
-#ifndef ODIN
+#ifdef ODIN
 FString FPaths::RootPrefix = TEXT("root:/");
 #endif
 #endif // WITH_EDITOR
