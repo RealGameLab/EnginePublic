@@ -181,8 +181,8 @@ namespace UnrealBuildTool
 
 			UEBuildConfiguration.bCompileSimplygon = false;
 			UEBuildConfiguration.bCompileSimplygonSSF = false;
-			BuildConfiguration.bDeployAfterCompile = true;
-		}
+            //BuildConfiguration.bDeployAfterCompile = true;
+        }
 
 		private bool UseTegraGraphicsDebugger(UEBuildTarget InBuildTarget)
 		{

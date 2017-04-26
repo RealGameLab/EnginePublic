@@ -111,7 +111,11 @@ void FMerge::StartupModule()
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(MergeToolTabId, FOnSpawnTab::CreateStatic([] (const FSpawnTabArgs&) { return SNew(SDockTab); }))
 		.SetDisplayName(NSLOCTEXT("MergeTool", "TabTitle", "Merge Tool"))
 		.SetTooltipText(NSLOCTEXT("MergeTool", "TooltipText", "Used to display several versions of a blueprint that need to be merged into a single version."))
+#ifndef ODIN_EDITOR
 		.SetAutoGenerateMenuEntry(false);
+#else
+		.SetAutoGenerateMenuEntry(true);
+#endif
 }
 
 void FMerge::ShutdownModule()

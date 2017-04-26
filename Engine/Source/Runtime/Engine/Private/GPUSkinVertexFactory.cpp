@@ -872,6 +872,7 @@ struct FRHICommandUpdateClothBuffer : public FRHICommand<FRHICommandUpdateClothB
 bool FGPUBaseSkinAPEXClothVertexFactory::ClothShaderType::UpdateClothSimulData(FRHICommandListImmediate& RHICmdList, const TArray<FVector4>& InSimulPositions,
 	const TArray<FVector4>& InSimulNormals, uint32 FrameNumberToPrepare, ERHIFeatureLevel::Type FeatureLevel)
 {
+#ifndef ODIN_ANDROID
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_FGPUBaseSkinAPEXClothVertexFactory_UpdateClothSimulData);
 
 	uint32 NumSimulVerts = InSimulPositions.Num();
@@ -930,13 +931,16 @@ bool FGPUBaseSkinAPEXClothVertexFactory::ClothShaderType::UpdateClothSimulData(F
 	{
 		UpdateClothUniformBuffer(InSimulPositions, InSimulNormals);
 	}
+#endif
 	return false;
 }
 
 /*-----------------------------------------------------------------------------
 	TGPUSkinAPEXClothVertexFactory
 -----------------------------------------------------------------------------*/
+#ifndef ODIN_ANDROID
 TGlobalResource<FClothBufferPool> FGPUBaseSkinAPEXClothVertexFactory::ClothSimulDataBufferPool;
+#endif
 
 void FGPUBaseSkinAPEXClothVertexFactory::ClothShaderType::UpdateClothUniformBuffer(const TArray<FVector4>& InSimulPositions, const TArray<FVector4>& InSimulNormals)
 {

@@ -689,11 +689,13 @@ void StartRenderingThread()
 	Fence.BeginFence();
 	Fence.Wait();
 
+#ifndef ODIN_ANDROID
 	GRunRenderingThreadHeartbeat = true;
 	// Create the rendering thread heartbeat
 	GRenderingThreadRunnableHeartbeat = new FRenderingThreadTickHeartbeat();
 
 	GRenderingThreadHeartbeat = FRunnableThread::Create(GRenderingThreadRunnableHeartbeat, *FString::Printf(TEXT("RTHeartBeat %d"), ThreadCount), 16 * 1024, TPri_AboveNormal, FPlatformAffinity::GetRTHeartBeatMask());
+#endif // !ODIN_ANDROID
 
 	ThreadCount++;
 }
@@ -951,7 +953,8 @@ void FRenderCommandFence::Wait(bool bProcessGameThreadTasks) const
 {
 	if (!IsFenceComplete())
 	{
-#if 0
+#if 1
+    #ifdef ODIN_CAMERA
 		// on most platforms this is a better solution because it doesn't spin
 		// windows needs to pump messages
 		if (bProcessGameThreadTasks)
@@ -959,6 +962,7 @@ void FRenderCommandFence::Wait(bool bProcessGameThreadTasks) const
 			QUICK_SCOPE_CYCLE_COUNTER(STAT_FRenderCommandFence_Wait);
 			FTaskGraphInterface::Get().WaitUntilTaskCompletes(CompletionEvent, ENamedThreads::GameThread);
 		}
+    #endif // ODIN_CAMERA
 #endif
 		GameThreadWaitForTask(CompletionEvent, bProcessGameThreadTasks);
 	}

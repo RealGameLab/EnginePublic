@@ -627,6 +627,19 @@ void USceneComponent::PropagateTransformUpdate(bool bTransformChanged, EUpdateTr
 	}
 	const TArray<USceneComponent*>& AttachedChildren = GetAttachChildren();
 	FPlatformMisc::Prefetch(AttachedChildren.GetData());
+
+    #ifdef ODIN_ANDROID
+    bool isBoundsChanged = false;
+    FBoxSphereBounds OldBounds = Bounds;
+    auto IsEqualToBound = [](FBoxSphereBounds const& A, FBoxSphereBounds const& B)
+     {
+         bool Checkbox = (A.BoxExtent - B.BoxExtent).IsNearlyZero();
+         bool Checkorigin = (A.Origin - B.Origin).IsNearlyZero();
+         bool Checksphere = FMath::IsNearlyZero(A.SphereRadius - B.SphereRadius);
+         return Checkbox && Checkorigin && Checksphere;
+    };
+    #endif // ODIN_ANDROID
+
 	if (bTransformChanged)
 	{
 		//QUICK_SCOPE_CYCLE_COUNTER(STAT_USceneComponent_PropagateTransformUpdate_TransformChanged);
@@ -683,6 +696,11 @@ void USceneComponent::PropagateTransformUpdate(bool bTransformChanged, EUpdateTr
 			//QUICK_SCOPE_CYCLE_COUNTER(STAT_USceneComponent_PropagateTransformUpdate_UpdateBounds);
 			// We update bounds even if transform doesn't change, as shape/mesh etc might have done
 			UpdateBounds();
+
+        #ifdef ODIN_ANDROID
+            isBoundsChanged = !(IsEqualToBound(Bounds, OldBounds));
+        #endif // ODIN_ANDROID
+
 		}
 
 		{
@@ -695,7 +713,11 @@ void USceneComponent::PropagateTransformUpdate(bool bTransformChanged, EUpdateTr
 		}
 
 		// If registered, tell subsystems about the change in transform
+        #ifndef ODIN_ANDROID
 		if (bRegistered)
+        #else
+		if (bRegistered && isBoundsChanged)
+        #endif
 		{
 			//QUICK_SCOPE_CYCLE_COUNTER(STAT_USceneComponent_PropagateTransformUpdate_MarkRenderTransformDirty);
 			// Need to flag as dirty so new bounds are sent to render thread

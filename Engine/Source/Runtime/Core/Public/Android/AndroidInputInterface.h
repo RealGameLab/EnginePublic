@@ -125,6 +125,10 @@ struct TouchInput
 	TouchType Type;
 	FVector2D LastPosition;
 	FVector2D Position;
+	#ifdef ODIN_CAMERA
+	FVector2D DeviceTouchLocation;
+	int64 EventTime;
+	#endif
 };
 
 #define MAX_NUM_CONTROLLERS					8  // reasonable limit for now
@@ -275,4 +279,47 @@ private:
 
 	/** List of input devices implemented in external modules. */
 	TArray<TSharedPtr<class IInputDevice>> ExternalInputDevices;
+
+	#ifdef ODIN_CAMERA
+public:
+	static TArray<TouchInput> GetTouchInputStack();
+
+	// 获取CurrentTouchInputInfo
+	// 警告: 仅能在许在FSlateApplication.OnTouchStarted OnTouchMoved OnTouchEnded执行过程中调用
+	static const TouchInput& GetCurrentTouchInput()
+	{
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+		// check, 本函数只能在FSlateApplication.OnTouchStarted OnTouchMoved OnTouchEnded执行过程中调用
+		checkf(CurrentTouchInputInfo.DeviceId != INDEX_NONE, TEXT("Invok GetCurrentTouchInput failed!"));
+#endif // !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+		return CurrentTouchInputInfo;
+	}
+
+	static const TouchInput& GetTouchInputInfo(const int32 Handle)
+	{
+		return TouchInputInfo[Handle];
+	}
+protected:
+	// 重置CurrentTouchInput
+	static void ResetCurrentTouchInputInfo()
+	{
+		CurrentTouchInputInfo.DeviceId = INDEX_NONE;
+		CurrentTouchInputInfo.Handle = INDEX_NONE;
+		CurrentTouchInputInfo.Type = TouchEnded;
+		CurrentTouchInputInfo.LastPosition = FVector2D::ZeroVector;
+		CurrentTouchInputInfo.Position = FVector2D::ZeroVector;
+		CurrentTouchInputInfo.DeviceTouchLocation = FVector2D::ZeroVector;
+		CurrentTouchInputInfo.EventTime = 0;
+	}
+	static void SetCurrentTouchInputInfo(const TouchInput& InTouchInput)
+	{
+		CurrentTouchInputInfo = InTouchInput;
+		TouchInputInfo[InTouchInput.Handle] = InTouchInput;
+	}
+private:
+	// 当前Touch事件的详细信息, 提供Android端高精度Touch信息
+	static TouchInput CurrentTouchInputInfo;
+
+	static TStaticArray<TouchInput, 10> TouchInputInfo;
+	#endif
 };

@@ -498,8 +498,12 @@ void FOpenGLBase::ProcessExtensions( const FString& ExtensionsString )
 	bSupportsCopyImage = ExtensionsString.Contains(TEXT("GL_ARB_copy_image"));
 
 	bSupportsSeamlessCubemap = ExtensionsString.Contains(TEXT("GL_ARB_seamless_cube_map"));
-	
-	bSupportsTextureFilterAnisotropic = ExtensionsString.Contains(TEXT("GL_EXT_texture_filter_anisotropic"));
+
+#ifndef ODIN_ANDROID
+    bSupportsTextureFilterAnisotropic = ExtensionsString.Contains(TEXT("GL_EXT_texture_filter_anisotropic"));
+#else
+	bSupportsTextureFilterAnisotropic = false;
+#endif // !ODIN_ANDROID
 
 	bSupportsDrawBuffersBlend = ExtensionsString.Contains(TEXT("GL_ARB_draw_buffers_blend"));
 

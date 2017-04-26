@@ -165,6 +165,10 @@ void FOpenGLDynamicRHI::RHIEndDrawingViewport(FViewportRHIParamRef ViewportRHI,b
 	// Don't wait on the GPU when using SLI, let the driver determine how many frames behind the GPU should be allowed to get
 	if (GNumActiveGPUsForRendering == 1)
 	{
+    #ifdef ODIN_ANDROID
+        QUICK_SCOPE_CYCLE_COUNTER(STAT_OpenGL_FlushTime);
+    #endif // ODIN_ANDROID
+
 		if (bNeedFinishFrame)
 		{
 			static const auto CFinishFrameVar = IConsoleManager::Get().FindTConsoleVariableDataInt(TEXT("r.FinishCurrentFrame"));

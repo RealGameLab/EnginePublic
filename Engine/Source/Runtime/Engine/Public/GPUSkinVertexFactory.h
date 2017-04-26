@@ -662,6 +662,7 @@ public:
 
 		void ReleaseClothSimulData()
 		{
+#ifndef ODIN_ANDROID
 			APEXClothUniformBuffer.SafeRelease();
 
 			for(uint32 i = 0; i < 2; ++i)
@@ -673,6 +674,7 @@ public:
 				}
 			}
 			Reset();
+#endif
 		}
 
 		TUniformBufferRef<FAPEXClothUniformShaderParameters> GetClothUniformBuffer() const
@@ -812,8 +814,10 @@ public:
 protected:
 	ClothShaderType ClothShaderData;
 
+#ifndef ODIN_ANDROID
 	/** Pool of buffers for clothing simulation data */
 	static TGlobalResource<FClothBufferPool> ClothSimulDataBufferPool;
+#endif // !ODIN_ANDROID
 };
 
 /** Vertex factory with vertex stream components for GPU-skinned and morph target streams */
