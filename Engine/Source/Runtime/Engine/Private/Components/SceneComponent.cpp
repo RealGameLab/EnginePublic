@@ -169,6 +169,9 @@ static int32 SetDescendantMobility(USceneComponent const* SceneComponentObject, 
 				{
 					ChildSceneComponent->Mobility = NewMobilityType;
 				}
+
+				ChildSceneComponent->RecreatePhysicsState();
+
 				++NumDescendantsChanged;
 			}
 			NumDescendantsChanged += SetDescendantMobility(ChildSceneComponent, NewMobilityType, ShouldOverrideMobility);
@@ -235,6 +238,7 @@ static int32 SetAncestorMobility(USceneComponent const* SceneComponentObject, EC
 				AttachedParent->Mobility = NewMobilityType;
 			}
 
+			AttachedParent->RecreatePhysicsState();
 			++MobilityAlteredCount;
 		}
 		SceneComponentObject = AttachedParent;
@@ -760,6 +764,7 @@ void USceneComponent::EndScopedMovementUpdate(class FScopedMovementUpdate& Compl
 				UPrimitiveComponent* PrimitiveThis = Cast<UPrimitiveComponent>(this);
 				if (PrimitiveThis)
 				{
+					// NOTE: UpdateOverlaps filters events to only consider overlaps where bGenerateOverlapEvents is true for both components, so it's ok if we queued up other overlaps.
 					TArray<FOverlapInfo> EndOverlaps;
 					const TArray<FOverlapInfo>* EndOverlapsPtr = CurrentScopedUpdate->GetOverlapsAtEnd(*PrimitiveThis, EndOverlaps, bTransformChanged);
 					UpdateOverlaps(&CurrentScopedUpdate->GetPendingOverlaps(), true, EndOverlapsPtr);
@@ -1323,10 +1328,25 @@ void USceneComponent::SetWorldRotation(const FQuat& NewRotation, bool bSweep, FH
 	// If already attached to something, transform into local space
 	if (GetAttachParent() != nullptr && !bAbsoluteRotation)
 	{
-		const FQuat ParentToWorldQuat = GetAttachParent()->GetSocketQuaternion(GetAttachSocketName());
-		// Quat multiplication works reverse way, make sure you do Parent(-1) * World = Local, not World*Parent(-) = Local (the way matrix does)
-		const FQuat NewRelQuat = ParentToWorldQuat.Inverse() * NewRotation;
-		NewRelRotation = NewRelQuat;
+		const FTransform  ParentToWorld = GetAttachParent()->GetSocketTransform(GetAttachSocketName());
+		// in order to support mirroring, you'll have to use FTransform.GetRelativeTransform
+		// because negative SCALE should flip the rotation
+		if (FTransform::AnyHasNegativeScale(RelativeScale3D, ParentToWorld.GetScale3D()))
+		{	
+			FTransform NewTransform = GetComponentTransform();
+			// set new desired rotation
+			NewTransform.SetRotation(NewRotation);
+			// Get relative transform from ParentToWorld
+			const FQuat NewRelQuat = NewTransform.GetRelativeTransform(ParentToWorld).GetRotation();
+			NewRelRotation = NewRelQuat;
+		}
+		else
+		{
+			const FQuat ParentToWorldQuat = ParentToWorld.GetRotation();
+			// Quat multiplication works reverse way, make sure you do Parent(-1) * World = Local, not World*Parent(-) = Local (the way matrix does)
+			const FQuat NewRelQuat = ParentToWorldQuat.Inverse() * NewRotation;
+			NewRelRotation = NewRelQuat;		
+		}
 	}
 
 	SetRelativeRotation(NewRelRotation, bSweep, OutSweepHitResult, Teleport);
@@ -1815,6 +1835,7 @@ bool USceneComponent::AttachToComponent(USceneComponent* Parent, const FAttachme
 		{
 			Parent->AttachChildren.Add(this);
 		}
+		AddToCluster(Parent, true);
 
 		if (Parent->IsNetSimulating() && !IsNetSimulating())
 		{
@@ -1913,11 +1934,11 @@ bool USceneComponent::AttachToComponent(USceneComponent* Parent, const FAttachme
 
 		UpdateComponentToWorld(EUpdateTransformFlags::None, ETeleportType::TeleportPhysics);
 
-		if (UPrimitiveComponent * PrimitiveComponent = Cast<UPrimitiveComponent>(this))
+		if (AttachmentRules.bWeldSimulatedBodies)
 		{
-			if (FBodyInstance* BI = PrimitiveComponent->GetBodyInstance())
+			if (UPrimitiveComponent * PrimitiveComponent = Cast<UPrimitiveComponent>(this))
 			{
-				if (AttachmentRules.bWeldSimulatedBodies)
+				if (FBodyInstance* BI = PrimitiveComponent->GetBodyInstance())
 				{
 					PrimitiveComponent->WeldToImplementation(GetAttachParent(), GetAttachSocketName(), AttachmentRules.bWeldSimulatedBodies);
 				}
@@ -2078,7 +2099,7 @@ FSceneComponentInstanceData::FSceneComponentInstanceData(const USceneComponent* 
 		USceneComponent* SceneComponent = AttachedChildren[i];
 		if (SceneComponent && SceneComponent->GetOwner() == SourceOwner && !SceneComponent->IsCreatedByConstructionScript() && !SceneComponent->HasAnyFlags(RF_DefaultSubObject))
 		{
-			AttachedInstanceComponents.Add(TPairInitializer<USceneComponent*,const FTransform&>(SceneComponent, FTransform(SceneComponent->RelativeRotation, SceneComponent->RelativeLocation, SceneComponent->RelativeScale3D)));
+			AttachedInstanceComponents.Emplace(SceneComponent, FTransform(SceneComponent->RelativeRotation, SceneComponent->RelativeLocation, SceneComponent->RelativeScale3D));
 		}
 	}
 }
@@ -2522,16 +2543,35 @@ bool USceneComponent::InternalSetWorldLocationAndRotation(FVector NewLocation, c
 	if (GetAttachParent() != nullptr)
 	{
 		FTransform const ParentToWorld = GetAttachParent()->GetSocketTransform(GetAttachSocketName());
-
-		if (!bAbsoluteLocation)
+		// in order to support mirroring, you'll have to use FTransform.GetrelativeTransform
+		// because negative scale should flip the rotation
+		if (FTransform::AnyHasNegativeScale(RelativeScale3D, ParentToWorld.GetScale3D()))
 		{
-			NewLocation = ParentToWorld.InverseTransformPosition(NewLocation);
+			FTransform const WorldTransform = FTransform(RotationQuat, NewLocation, RelativeScale3D*ParentToWorld.GetScale3D());
+			FTransform const RelativeTransform = WorldTransform.GetRelativeTransform(ParentToWorld);
+
+			if (!bAbsoluteLocation)
+			{
+				NewLocation = RelativeTransform.GetLocation();
+			}
+
+			if (!bAbsoluteRotation)
+			{
+				NewRotationQuat = RelativeTransform.GetRotation();
+			}
 		}
-
-		if (!bAbsoluteRotation)
+		else
 		{
-			// Quat multiplication works reverse way, make sure you do Parent(-1) * World = Local, not World*Parent(-) = Local (the way matrix does)
-			NewRotationQuat = ParentToWorld.GetRotation().Inverse() * NewRotationQuat;
+			if (!bAbsoluteLocation)
+			{
+				NewLocation = ParentToWorld.InverseTransformPosition(NewLocation);
+			}
+
+			if (!bAbsoluteRotation)
+			{
+				// Quat multiplication works reverse way, make sure you do Parent(-1) * World = Local, not World*Parent(-) = Local (the way matrix does)
+				NewRotationQuat = ParentToWorld.GetRotation().Inverse() * NewRotationQuat;
+			}
 		}
 	}
 
@@ -2781,21 +2821,23 @@ bool USceneComponent::IsVisible() const
 	return ( bVisible && (!CachedLevelCollection || CachedLevelCollection->IsVisible()) ); 
 }
 
-void USceneComponent::ToggleVisibility(bool bPropagateToChildren)
+void USceneComponent::OnVisibilityChanged()
 {
-	SetVisibility(!bVisible,bPropagateToChildren);
+	MarkRenderStateDirty();
 }
 
-void USceneComponent::SetVisibility(bool bNewVisibility, bool bPropagateToChildren)
+void USceneComponent::SetVisibility(const bool bNewVisibility, const USceneComponent::EVisibilityPropagation PropagateToChildren)
 {
+	bool bRecurseChildren = (PropagateToChildren == EVisibilityPropagation::Propagate);
 	if ( bNewVisibility != bVisible )
 	{
+		bRecurseChildren = bRecurseChildren || (PropagateToChildren == EVisibilityPropagation::DirtyOnly);
 		bVisible = bNewVisibility;
-		MarkRenderStateDirty();
+		OnVisibilityChanged();
 	}
 
 	const TArray<USceneComponent*>& AttachedChildren = GetAttachChildren();
-	if (bPropagateToChildren && AttachedChildren.Num() > 0)
+	if (bRecurseChildren && AttachedChildren.Num() > 0)
 	{
 		// fully traverse down the attachment tree
 		// we do it entirely inline here instead of recursing in case a primitivecomponent is a child of a non-primitivecomponent
@@ -2810,23 +2852,37 @@ void USceneComponent::SetVisibility(bool bNewVisibility, bool bPropagateToChildr
 			if (CurrentComp)
 			{
 				ComponentStack.Append(CurrentComp->GetAttachChildren());
-				// don't propagate, we are handling it already
-				CurrentComp->SetVisibility(bNewVisibility, false);
+
+				if (PropagateToChildren == EVisibilityPropagation::Propagate)
+				{
+					CurrentComp->SetVisibility(bNewVisibility, EVisibilityPropagation::NoPropagation);
+				}
+
+				// Render state must be dirtied if any parent component's visibility has changed. Since we can't easily track whether 
+				// any parent in the hierarchy was dirtied, we have to mark dirty always.
+				CurrentComp->MarkRenderStateDirty();
 			}
 		}
 	}
 }
 
-void USceneComponent::SetHiddenInGame(bool NewHiddenGame, bool bPropagateToChildren)
+void USceneComponent::OnHiddenInGameChanged()
 {
-	if( NewHiddenGame != bHiddenInGame )
+	MarkRenderStateDirty();
+}
+
+void USceneComponent::SetHiddenInGame(const bool bNewHiddenGame, const USceneComponent::EVisibilityPropagation PropagateToChildren)
+{
+	bool bRecurseChildren = (PropagateToChildren == EVisibilityPropagation::Propagate);
+	if ( bNewHiddenGame != bHiddenInGame )
 	{
-		bHiddenInGame = NewHiddenGame;
-		MarkRenderStateDirty();
+		bRecurseChildren = bRecurseChildren || (PropagateToChildren == EVisibilityPropagation::DirtyOnly);
+		bHiddenInGame = bNewHiddenGame;
+		OnHiddenInGameChanged();
 	}
 
 	const TArray<USceneComponent*>& AttachedChildren = GetAttachChildren();
-	if (bPropagateToChildren && AttachedChildren.Num() > 0)
+	if (bRecurseChildren && AttachedChildren.Num() > 0)
 	{
 		// fully traverse down the attachment tree
 		// we do it entirely inline here instead of recursing in case a primitivecomponent is a child of a non-primitivecomponent
@@ -2842,12 +2898,14 @@ void USceneComponent::SetHiddenInGame(bool NewHiddenGame, bool bPropagateToChild
 			{
 				ComponentStack.Append(CurrentComp->GetAttachChildren());
 
-				UPrimitiveComponent* const PrimComp = Cast<UPrimitiveComponent>(CurrentComp);
-				if (PrimComp)
+				if (PropagateToChildren == EVisibilityPropagation::Propagate)
 				{
-					// don't propagate, we are handling it already
-					PrimComp->SetHiddenInGame(NewHiddenGame, false);
+					CurrentComp->SetHiddenInGame(bNewHiddenGame, EVisibilityPropagation::NoPropagation);
 				}
+
+				// Render state must be dirtied if any parent component's visibility has changed. Since we can't easily track whether 
+				// any parent in the hierarchy was dirtied, we have to mark dirty always.
+				CurrentComp->MarkRenderStateDirty();
 			}
 		}
 	}
@@ -3113,12 +3171,13 @@ FScopedPreventAttachedComponentMove::~FScopedPreventAttachedComponentMove()
 
 static uint32 s_ScopedWarningCount = 0;
 
-FScopedMovementUpdate::FScopedMovementUpdate( class USceneComponent* Component, EScopedUpdate::Type ScopeBehavior )
+FScopedMovementUpdate::FScopedMovementUpdate( class USceneComponent* Component, EScopedUpdate::Type ScopeBehavior, bool bRequireOverlapsEventFlagToQueueOverlaps )
 : Owner(Component)
 , OuterDeferredScope(nullptr)
 , bDeferUpdates(ScopeBehavior == EScopedUpdate::DeferredUpdates)
 , bHasMoved(false)
 , bHasTeleported(false)
+, bRequireOverlapsEventFlag(bRequireOverlapsEventFlagToQueueOverlaps)
 , CurrentOverlapState(EOverlapState::eUseParent)
 , FinalOverlapCandidatesIndex(INDEX_NONE)
 {
@@ -3337,6 +3396,16 @@ const TArray<FOverlapInfo>* FScopedMovementUpdate::GetOverlapsAtEnd(class UPrimi
 	}
 
 	return EndOverlapsPtr;
+}
+
+
+bool FScopedMovementUpdate::SetWorldLocationAndRotation(FVector NewLocation, const FQuat& NewQuat, bool bNoPhysics /*= false*/, ETeleportType Teleport /*= ETeleportType::None*/)
+{
+	if (Owner)
+	{
+		return Owner->InternalSetWorldLocationAndRotation(NewLocation, NewQuat, bNoPhysics, Teleport);
+	}
+	return false;
 }
 
 

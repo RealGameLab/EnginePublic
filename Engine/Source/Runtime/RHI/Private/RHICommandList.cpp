@@ -205,6 +205,7 @@ void FRHIAsyncComputeCommandListImmediate::ImmediateDispatch(FRHIAsyncComputeCom
 			static_assert(sizeof(FRHICommandList) == sizeof(FRHIAsyncComputeCommandListImmediate), "We are memswapping FRHICommandList and FRHICommandListImmediate; they need to be swappable.");
 			check(RHIComputeCmdList.IsImmediateAsyncCompute());
 			SwapCmdList->ExchangeCmdList(RHIComputeCmdList);
+			RHIComputeCmdList.PSOContext = SwapCmdList->PSOContext;
 
 			//queue the execution of this async commandlist amongst other commands in the immediate gfx list.
 			//this guarantees resource update commands made on the gfx commandlist will be executed before the async compute.
@@ -341,7 +342,7 @@ public:
 
 void FRHICommandListExecutor::ExecuteInner(FRHICommandListBase& CmdList)
 {
-	check(CmdList.RTTasks.Num() == 0 && CmdList.HasCommands()); 
+	check(CmdList.HasCommands()); 
 
 	bool bIsInRenderingThread = IsInRenderingThread();
 	bool bIsInGameThread = IsInGameThread();
@@ -373,6 +374,8 @@ void FRHICommandListExecutor::ExecuteInner(FRHICommandListBase& CmdList)
 		if (CVarRHICmdUseThread.GetValueOnRenderThread() > 0 && bIsInRenderingThread && !bIsInGameThread)
 		{
 			FRHICommandList* SwapCmdList;
+			FGraphEventArray Prereq;
+			Exchange(Prereq, CmdList.RTTasks); 
 			{
 				QUICK_SCOPE_CYCLE_COUNTER(STAT_FRHICommandListExecutor_SwapCmdLists);
 				SwapCmdList = new FRHICommandList;
@@ -381,6 +384,7 @@ void FRHICommandListExecutor::ExecuteInner(FRHICommandListBase& CmdList)
 				// we should make command lists virtual and transfer ownership rather than this devious approach
 				static_assert(sizeof(FRHICommandList) == sizeof(FRHICommandListImmediate), "We are memswapping FRHICommandList and FRHICommandListImmediate; they need to be swappable.");
 				SwapCmdList->ExchangeCmdList(CmdList);
+				CmdList.PSOContext = SwapCmdList->PSOContext;
 			}
 			QUICK_SCOPE_CYCLE_COUNTER(STAT_FRHICommandListExecutor_SubmitTasks);
 
@@ -389,7 +393,7 @@ void FRHICommandListExecutor::ExecuteInner(FRHICommandListBase& CmdList)
 			//if we use a FExecuteRHIThreadTask directly we pass the same event just to keep things consistent.
 			if (AllOutstandingTasks.Num() || RenderThreadSublistDispatchTask.GetReference())
 			{
-				FGraphEventArray Prereq(AllOutstandingTasks);
+				Prereq.Append(AllOutstandingTasks);
 				AllOutstandingTasks.Reset();
 				if (RenderThreadSublistDispatchTask.GetReference())
 				{
@@ -400,7 +404,6 @@ void FRHICommandListExecutor::ExecuteInner(FRHICommandListBase& CmdList)
 			else
 			{
 				check(!RenderThreadSublistDispatchTask.GetReference()); // if we are doing submits, there better not be any of these in flight since then the RHIThreadTask would get out of order.
-				FGraphEventArray Prereq;
 				if (RHIThreadTask.GetReference())
 				{
 					Prereq.Add(RHIThreadTask);
@@ -432,12 +435,23 @@ void FRHICommandListExecutor::ExecuteInner(FRHICommandListBase& CmdList)
 		}
 		if (bIsInRenderingThread)
 		{
+			if (CmdList.RTTasks.Num())
+			{
+				if (FTaskGraphInterface::Get().IsThreadProcessingTasks(ENamedThreads::RenderThread_Local))
+				{
+					// this is a deadlock. RT tasks must be done by now or they won't be done. We could add a third queue...
+					UE_LOG(LogRHI, Fatal, TEXT("Deadlock in FRHICommandListExecutor::ExecuteInner (RTTasks)."));
+				}
+				FTaskGraphInterface::Get().WaitUntilTasksComplete(CmdList.RTTasks, ENamedThreads::RenderThread_Local);
+				CmdList.RTTasks.Reset();
+
+			}
 			if (RenderThreadSublistDispatchTask.GetReference())
 			{
 				if (FTaskGraphInterface::Get().IsThreadProcessingTasks(ENamedThreads::RenderThread_Local))
 				{
 					// this is a deadlock. RT tasks must be done by now or they won't be done. We could add a third queue...
-					UE_LOG(LogRHI, Fatal, TEXT("Deadlock in FRHICommandListExecutor::ExecuteInner 3."));
+					UE_LOG(LogRHI, Fatal, TEXT("Deadlock in FRHICommandListExecutor::ExecuteInner (RenderThreadSublistDispatchTask)."));
 				}
 				FTaskGraphInterface::Get().WaitUntilTaskCompletes(RenderThreadSublistDispatchTask, ENamedThreads::RenderThread_Local);
 				RenderThreadSublistDispatchTask = nullptr;
@@ -447,7 +461,7 @@ void FRHICommandListExecutor::ExecuteInner(FRHICommandListBase& CmdList)
 				if (FTaskGraphInterface::Get().IsThreadProcessingTasks(ENamedThreads::RenderThread_Local))
 				{
 					// this is a deadlock. RT tasks must be done by now or they won't be done. We could add a third queue...
-					UE_LOG(LogRHI, Fatal, TEXT("Deadlock in FRHICommandListExecutor::ExecuteInner 3."));
+					UE_LOG(LogRHI, Fatal, TEXT("Deadlock in FRHICommandListExecutor::ExecuteInner (RHIThreadTask)."));
 				}
 				FTaskGraphInterface::Get().WaitUntilTaskCompletes(RHIThreadTask, ENamedThreads::RenderThread_Local);
 				if (RHIThreadTask.GetReference() && RHIThreadTask->IsComplete())
@@ -690,9 +704,7 @@ void FRHICommandListExecutor::WaitOnRHIThreadFence(FGraphEventRef& Fence)
 
 
 FRHICommandListBase::FRHICommandListBase()
-	: StrictGraphicsPipelineStateUse(0)
-	, MemManager(0)
-	, CachedNumSimultanousRenderTargets(0)
+	: MemManager(0)
 {
 	GRHICommandList.OutstandingCmdListCount.Increment();
 	Reset();
@@ -991,7 +1003,7 @@ public:
 				}
 				check(Last >= Start);
 
-				IRHICommandContextContainer* ContextContainer =  RHIGetCommandContextContainer();
+				IRHICommandContextContainer* ContextContainer =  RHIGetCommandContextContainer(ThreadIndex, EffectiveThreads);
 				check(ContextContainer);
 
 				FGraphEventRef TranslateCompletionEvent = TGraphTask<FParallelTranslateCommandList>::CreateTask(nullptr, ENamedThreads::RenderThread).ConstructAndDispatchWhenReady(&RHICmdLists[Start], 1 + Last - Start, ContextContainer, bIsPrepass);
@@ -1069,22 +1081,18 @@ void FRHICommandListBase::QueueParallelAsyncCommandListSubmit(FGraphEventRef* An
 			return;
 		}
 		IRHICommandContextContainer* ContextContainer = nullptr;
+		bool bMerge = !!CVarRHICmdMergeSmallDeferredContexts.GetValueOnRenderThread();
+		int32 EffectiveThreads = 0;
+		int32 Start = 0;
+		int32 ThreadIndex = 0;
 		if (GRHISupportsParallelRHIExecute && CVarRHICmdUseDeferredContexts.GetValueOnAnyThread() > 0)
 		{
-			ContextContainer = RHIGetCommandContextContainer();
-		}
-		if (ContextContainer)
-		{
-			bool bMerge = !!CVarRHICmdMergeSmallDeferredContexts.GetValueOnRenderThread();
-
-			int32 EffectiveThreads = 0;
-			int32 Start = 0;
 			// this is pretty silly but we need to know the number of jobs in advance, so we run the merge logic twice
 			while (Start < Num)
 			{
 				int32 Last = Start;
 				int32 DrawCnt = NumDrawsIfKnown[Start];
-
+				
 				if (bMerge && DrawCnt >= 0)
 				{
 					while (Last < Num - 1 && NumDrawsIfKnown[Last + 1] >= 0 && DrawCnt + NumDrawsIfKnown[Last + 1] <= MinDrawsPerTranslate)
@@ -1096,11 +1104,14 @@ void FRHICommandListBase::QueueParallelAsyncCommandListSubmit(FGraphEventRef* An
 				check(Last >= Start);
 				Start = Last + 1;
 				EffectiveThreads++;
-			} 
+			}
+			
 			Start = 0;
-			int32 ThreadIndex = 0;
-
-			while (Start < Num)       
+			ContextContainer = RHIGetCommandContextContainer(ThreadIndex, EffectiveThreads);
+		}
+		if (ContextContainer)
+		{
+			while (Start < Num)
 			{    
 				int32 Last = Start;
 				int32 DrawCnt = NumDrawsIfKnown[Start];
@@ -1120,7 +1131,7 @@ void FRHICommandListBase::QueueParallelAsyncCommandListSubmit(FGraphEventRef* An
 
 				if (!ContextContainer) 
 				{
-					ContextContainer = RHIGetCommandContextContainer();
+					ContextContainer = RHIGetCommandContextContainer(ThreadIndex, EffectiveThreads);
 				}
 				check(ContextContainer);
 
@@ -1268,13 +1279,13 @@ void FRHICommandListBase::QueueRenderThreadCommandListSubmit(FGraphEventRef& Ren
 	new (AllocCommand<FRHICommandWaitForAndSubmitRTSubList>()) FRHICommandWaitForAndSubmitRTSubList(RenderThreadCompletionEvent, CmdList);
 }
 
-#if RHI_PSO_X_VALIDATION
-void FRHICommandListBase::ValidatePsoState(const FBlendStateRHIParamRef BlendState, const FDepthStencilStateRHIParamRef DepthStencilState)
+void FRHICommandListBase::QueueAsyncPipelineStateCompile(FGraphEventRef& AsyncCompileCompletionEvent)
 {
-	ensure(VerifyableDepthStencilState == DepthStencilState);
-	ensure(VerifyableBlendState == BlendState);
+	if (AsyncCompileCompletionEvent.GetReference())
+	{
+		RTTasks.AddUnique(AsyncCompileCompletionEvent);
+	}
 }
-#endif
 
 struct FRHICommandSubmitSubList : public FRHICommand<FRHICommandSubmitSubList>
 {
@@ -1283,6 +1294,7 @@ struct FRHICommandSubmitSubList : public FRHICommand<FRHICommandSubmitSubList>
 		: RHICmdList(InRHICmdList)
 	{
 	}
+
 	void Execute(FRHICommandListBase& CmdList)
 	{
 		INC_DWORD_STAT_BY(STAT_ChainLinkCount, 1);
@@ -1665,7 +1677,7 @@ void FRHICommandListBase::WaitForRHIThreadTasks()
 DECLARE_CYCLE_STAT(TEXT("RTTask completion join"), STAT_HandleRTThreadTaskCompletion_Join, STATGROUP_RHICMDLIST);
 void FRHICommandListBase::HandleRTThreadTaskCompletion(const FGraphEventRef& MyCompletionGraphEvent)
 {
-	check(!IsImmediate() && !IsInActualRenderingThread() && !IsInRHIThread())
+	check(!IsImmediate() && !IsInRHIThread())
 	for (int32 Index = 0; Index < RTTasks.Num(); Index++)
 	{
 		if (!RTTasks[Index]->IsComplete())
@@ -1972,6 +1984,90 @@ FVertexDeclarationRHIRef FDynamicRHI::CreateVertexDeclaration_RenderThread(class
 {
 	FScopedRHIThreadStaller StallRHIThread(RHICmdList);
 	return GDynamicRHI->RHICreateVertexDeclaration(Elements);
+}
+
+FVertexShaderRHIRef FDynamicRHI::CreateVertexShader_RenderThread(class FRHICommandListImmediate& RHICmdList, const TArray<uint8>& Code)
+{
+	FScopedRHIThreadStaller StallRHIThread(RHICmdList);
+	return GDynamicRHI->RHICreateVertexShader(Code);
+}
+
+FVertexShaderRHIRef FDynamicRHI::CreateVertexShader_RenderThread(class FRHICommandListImmediate& RHICmdList, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
+{
+	FScopedRHIThreadStaller StallRHIThread(RHICmdList);
+	return GDynamicRHI->RHICreateVertexShader(Library, Hash);
+}
+
+FPixelShaderRHIRef FDynamicRHI::CreatePixelShader_RenderThread(class FRHICommandListImmediate& RHICmdList, const TArray<uint8>& Code)
+{
+	FScopedRHIThreadStaller StallRHIThread(RHICmdList);
+	return GDynamicRHI->RHICreatePixelShader(Code);
+}
+
+FPixelShaderRHIRef FDynamicRHI::CreatePixelShader_RenderThread(class FRHICommandListImmediate& RHICmdList, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
+{
+	FScopedRHIThreadStaller StallRHIThread(RHICmdList);
+	return GDynamicRHI->RHICreatePixelShader(Library, Hash);
+}
+
+FGeometryShaderRHIRef FDynamicRHI::CreateGeometryShader_RenderThread(class FRHICommandListImmediate& RHICmdList, const TArray<uint8>& Code)
+{
+	FScopedRHIThreadStaller StallRHIThread(RHICmdList);
+	return GDynamicRHI->RHICreateGeometryShader(Code);
+}
+
+FGeometryShaderRHIRef FDynamicRHI::CreateGeometryShader_RenderThread(class FRHICommandListImmediate& RHICmdList, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
+{
+	FScopedRHIThreadStaller StallRHIThread(RHICmdList);
+	return GDynamicRHI->RHICreateGeometryShader(Library, Hash);
+}
+
+FGeometryShaderRHIRef FDynamicRHI::CreateGeometryShaderWithStreamOutput_RenderThread(class FRHICommandListImmediate& RHICmdList, const TArray<uint8>& Code, const FStreamOutElementList& ElementList, uint32 NumStrides, const uint32* Strides, int32 RasterizedStream)
+{
+	FScopedRHIThreadStaller StallRHIThread(RHICmdList);
+	return GDynamicRHI->RHICreateGeometryShaderWithStreamOutput(Code, ElementList, NumStrides, Strides, RasterizedStream);
+}
+
+FGeometryShaderRHIRef FDynamicRHI::CreateGeometryShaderWithStreamOutput_RenderThread(class FRHICommandListImmediate& RHICmdList, const FStreamOutElementList& ElementList, uint32 NumStrides, const uint32* Strides, int32 RasterizedStream, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
+{
+	FScopedRHIThreadStaller StallRHIThread(RHICmdList);
+	return GDynamicRHI->RHICreateGeometryShaderWithStreamOutput(ElementList, NumStrides, Strides, RasterizedStream, Library, Hash);
+}
+
+FComputeShaderRHIRef FDynamicRHI::CreateComputeShader_RenderThread(class FRHICommandListImmediate& RHICmdList, const TArray<uint8>& Code)
+{
+	FScopedRHIThreadStaller StallRHIThread(RHICmdList);
+	return GDynamicRHI->RHICreateComputeShader(Code);
+}
+
+FComputeShaderRHIRef FDynamicRHI::CreateComputeShader_RenderThread(class FRHICommandListImmediate& RHICmdList, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
+{
+	FScopedRHIThreadStaller StallRHIThread(RHICmdList);
+	return GDynamicRHI->RHICreateComputeShader(Library, Hash);
+}
+
+FHullShaderRHIRef FDynamicRHI::CreateHullShader_RenderThread(class FRHICommandListImmediate& RHICmdList, const TArray<uint8>& Code)
+{
+	FScopedRHIThreadStaller StallRHIThread(RHICmdList);
+	return GDynamicRHI->RHICreateHullShader(Code);
+}
+
+FHullShaderRHIRef FDynamicRHI::CreateHullShader_RenderThread(class FRHICommandListImmediate& RHICmdList, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
+{
+	FScopedRHIThreadStaller StallRHIThread(RHICmdList);
+	return GDynamicRHI->RHICreateHullShader(Library, Hash);
+}
+
+FDomainShaderRHIRef FDynamicRHI::CreateDomainShader_RenderThread(class FRHICommandListImmediate& RHICmdList, const TArray<uint8>& Code)
+{
+	FScopedRHIThreadStaller StallRHIThread(RHICmdList);
+	return GDynamicRHI->RHICreateDomainShader(Code);
+}
+
+FDomainShaderRHIRef FDynamicRHI::CreateDomainShader_RenderThread(class FRHICommandListImmediate& RHICmdList, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
+{
+	FScopedRHIThreadStaller StallRHIThread(RHICmdList);
+	return GDynamicRHI->RHICreateDomainShader(Library, Hash);
 }
 
 void FDynamicRHI::UpdateTexture2D_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture, uint32 MipIndex, const struct FUpdateTextureRegion2D& UpdateRegion, uint32 SourcePitch, const uint8* SourceData)

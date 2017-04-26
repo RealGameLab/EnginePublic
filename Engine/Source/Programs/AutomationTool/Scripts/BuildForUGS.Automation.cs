@@ -61,8 +61,8 @@ namespace AutomationTool
 
             bool WithSymbols = ParseParam("WithSymbols");
 
-            // Archive the build products
-            if (ArchivePath != null)
+			// Archive the build products
+			if(ArchivePath != null)
 			{
 				// Create an output folder
 				string OutputFolder = Path.Combine(CommandUtils.CmdEnv.LocalRoot, "ArchiveForUGS");
@@ -73,36 +73,38 @@ namespace AutomationTool
 				Directory.CreateDirectory(SymbolsFolder);
 
 				// Get the Windows toolchain
-				UEToolChain WindowsToolChain = UEBuildPlatform.GetBuildPlatform(UnrealTargetPlatform.Win64).CreateContext(null, null).CreateToolChain(CPPTargetPlatform.Win64);
+				Platform WindowsTargetPlatform = Platform.GetPlatform(UnrealTargetPlatform.Win64);
 
 				// Figure out all the files for the archive
-				Ionic.Zip.ZipFile Zip = new Ionic.Zip.ZipFile();
-				Zip.UseZip64WhenSaving = Ionic.Zip.Zip64Option.Always;
-				foreach(string BuildProduct in Builder.BuildProductFiles)
+				string ZipFileName = Path.Combine(OutputFolder, "Archive.zip");
+				using (Ionic.Zip.ZipFile Zip = new Ionic.Zip.ZipFile())
 				{
-					if(!File.Exists(BuildProduct))
+					Zip.UseZip64WhenSaving = Ionic.Zip.Zip64Option.Always;
+					foreach(string BuildProduct in Builder.BuildProductFiles)
 					{
-						throw new AutomationException("Missing build product: {0}", BuildProduct);
-					}
-					if(BuildProduct.EndsWith(".pdb", StringComparison.InvariantCultureIgnoreCase))
+						if(!File.Exists(BuildProduct))
+						{
+							throw new AutomationException("Missing build product: {0}", BuildProduct);
+						}
+						if(BuildProduct.EndsWith(".pdb", StringComparison.InvariantCultureIgnoreCase))
 					{
                         if (WithSymbols)
-                        {
-                            string StrippedFileName = CommandUtils.MakeRerootedFilePath(BuildProduct, CommandUtils.CmdEnv.LocalRoot, SymbolsFolder);
-                            Directory.CreateDirectory(Path.GetDirectoryName(StrippedFileName));
-                            WindowsToolChain.StripSymbols(BuildProduct, StrippedFileName);
-                            Zip.AddFile(StrippedFileName, Path.GetDirectoryName(CommandUtils.StripBaseDirectory(StrippedFileName, SymbolsFolder)));
+						{
+							string StrippedFileName = CommandUtils.MakeRerootedFilePath(BuildProduct, CommandUtils.CmdEnv.LocalRoot, SymbolsFolder);
+							Directory.CreateDirectory(Path.GetDirectoryName(StrippedFileName));
+							WindowsTargetPlatform.StripSymbols(new FileReference(BuildProduct), new FileReference(StrippedFileName));
+							Zip.AddFile(StrippedFileName, Path.GetDirectoryName(CommandUtils.StripBaseDirectory(StrippedFileName, SymbolsFolder)));
                         }
+						}
+						else
+						{
+							Zip.AddFile(BuildProduct, Path.GetDirectoryName(CommandUtils.StripBaseDirectory(BuildProduct, CommandUtils.CmdEnv.LocalRoot)));
+						}
 					}
-					else
-					{
-						Zip.AddFile(BuildProduct, Path.GetDirectoryName(CommandUtils.StripBaseDirectory(BuildProduct, CommandUtils.CmdEnv.LocalRoot)));
-					}
+					// Create the zip file
+					Console.WriteLine("Writing {0}...", ZipFileName);
+					Zip.Save(ZipFileName);
 				}
-				// Create the zip file
-				string ZipFileName = Path.Combine(OutputFolder, "Archive.zip");
-				Console.WriteLine("Writing {0}...", ZipFileName);
-				Zip.Save(ZipFileName);
 
 				// Submit it to Perforce if required
 				if(CommandUtils.AllowSubmit)

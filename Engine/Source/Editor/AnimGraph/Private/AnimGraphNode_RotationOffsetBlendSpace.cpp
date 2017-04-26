@@ -150,7 +150,6 @@ void UAnimGraphNode_RotationOffsetBlendSpace::ValidateAnimNodeDuringCompilation(
 
 	if (BlendSpaceToCheck == NULL)
 	{
-		//修改@roger.
 		// we may have a connected node
 		if (BlendSpacePin == nullptr || BlendSpacePin->LinkedTo.Num() == 0)
 		{

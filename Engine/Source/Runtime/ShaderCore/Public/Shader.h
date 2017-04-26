@@ -218,11 +218,20 @@ public:
 
 	/** Returns true if and only if TargetPlatform is compatible for use with CurrentPlatform. */
 	SHADERCORE_API static bool ArePlatformsCompatible(EShaderPlatform CurrentPlatform, EShaderPlatform TargetPlatform);
-	
+
+	void GetShaderCode(TArray<uint8>& OutCode) const
+	{
+		UncompressCode(OutCode);
+	}
+
 private:
 	// compression functions
 	void UncompressCode(TArray<uint8>& UncompressedCode) const;
 	void CompressCode(const TArray<uint8>& UncompressedCode);
+	
+
+	/** Conditionally serialize shader code. */
+	void SerializeShaderCode(FArchive& Ar);
 
 	/** Reference to the RHI shader.  Only one of these is ever valid, and it is the one corresponding to Target.Frequency. */
 	FVertexShaderRHIRef VertexShader;
@@ -261,6 +270,10 @@ private:
 
 	/** A 'canary' used to detect when a stale shader resource is being rendered with. */
 	uint32 Canary;
+	
+
+	/** Whether the shader code is stored in a shader library. */
+	bool bCodeInSharedLocation;
 
 	/** Initialize the shader RHI resources. */
 	SHADERCORE_API void InitializeShaderRHI();
@@ -704,6 +717,13 @@ public:
 	{
 		CheckShaderIsValid();
 		return this;
+	}
+
+	/** Discards the serialized resource, used when the engine is using NullRHI */
+	void DiscardSerializedResource()
+	{
+		delete SerializedResource;
+		SerializedResource = nullptr;
 	}
 
 protected:
@@ -1739,6 +1759,30 @@ public:
 			FShaderPipeline* ShaderPipeline = new FShaderPipeline(SerializedPipeline->ShaderPipelineType, SerializedPipeline->ShaderStages);
 			AddShaderPipeline(SerializedPipeline->ShaderPipelineType, ShaderPipeline);
 
+			delete SerializedPipeline;
+		}
+		SerializedShaderPipelines.Empty();
+	}
+
+	/** Discards serialized shaders when they are not going to be used for anything (NullRHI) */
+	virtual void DiscardSerializedShaders()
+	{
+		for (FShader* Shader : SerializedShaders)
+		{
+			if (Shader)
+			{
+				Shader->DiscardSerializedResource();
+			}
+			delete Shader;
+		}
+		SerializedShaders.Empty();
+
+		for (FSerializedShaderPipeline* SerializedPipeline : SerializedShaderPipelines)
+		{
+			for (TRefCountPtr<FShader> Shader : SerializedPipeline->ShaderStages)
+			{
+				Shader->DiscardSerializedResource();
+			}
 			delete SerializedPipeline;
 		}
 		SerializedShaderPipelines.Empty();

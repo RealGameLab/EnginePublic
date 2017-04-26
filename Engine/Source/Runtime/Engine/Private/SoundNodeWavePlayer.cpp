@@ -4,8 +4,29 @@
 #include "Audio.h"
 #include "ActiveSound.h"
 #include "Sound/SoundWave.h"
+#include "FrameworkObjectVersion.h"
 
 #define LOCTEXT_NAMESPACE "SoundNodeWavePlayer"
+
+void USoundNodeWavePlayer::Serialize(FArchive& Ar)
+{
+	Super::Serialize(Ar);
+
+	Ar.UsingCustomVersion(FFrameworkObjectVersion::GUID);
+
+	if (Ar.CustomVer(FFrameworkObjectVersion::GUID) >= FFrameworkObjectVersion::HardSoundReferences)
+	{
+		if (Ar.IsLoading())
+		{
+			Ar << SoundWave;
+		}
+		else if (Ar.IsSaving())
+		{
+			USoundWave* HardReference = (ShouldHardReferenceAsset() ? SoundWave : nullptr);
+			Ar << HardReference;
+		}
+	}
+}
 
 void USoundNodeWavePlayer::LoadAsset(bool bAddToRoot)
 {
@@ -25,13 +46,21 @@ void USoundNodeWavePlayer::LoadAsset(bool bAddToRoot)
 		{
 			SoundWave->AddToRoot();
 		}
+		if (SoundWave)
+		{
+			SoundWave->AddToCluster(this);
+		}
 	}
 	else
 	{
 		SoundWave = SoundWaveAssetPtr.LoadSynchronous();
-		if (bAddToRoot && SoundWave)
+		if (SoundWave)
 		{
-			SoundWave->AddToRoot();
+			if (bAddToRoot)
+			{
+				SoundWave->AddToRoot();
+			}
+			SoundWave->AddToCluster(this);
 		}
 	}
 }
@@ -41,9 +70,13 @@ void USoundNodeWavePlayer::OnSoundWaveLoaded(const FName& PackageName, UPackage*
 	if (Result == EAsyncLoadingResult::Succeeded)
 	{
 		SoundWave = SoundWaveAssetPtr.Get();
-		if (bAddToRoot && SoundWave)
+		if (SoundWave)
 		{
-			SoundWave->AddToRoot();
+			if (bAddToRoot)
+			{
+				SoundWave->AddToRoot();
+			}
+			SoundWave->AddToCluster(this);
 		}
 	}
 	bAsyncLoading = false;

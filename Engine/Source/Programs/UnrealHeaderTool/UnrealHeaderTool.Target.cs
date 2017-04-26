@@ -5,29 +5,17 @@ using System.Collections.Generic;
 
 public class UnrealHeaderToolTarget : TargetRules
 {
-	public UnrealHeaderToolTarget(TargetInfo Target)
+	public UnrealHeaderToolTarget(TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Program;
 		LinkType = TargetLinkType.Modular;
-
+		LaunchModuleName = "UnrealHeaderTool";
         AdditionalPlugins.Add("LuaGeneraterPlugin");
-    }
+	}
 
 	//
 	// TargetRules interface.
 	//
-
-	public override void SetupBinaries(
-		TargetInfo Target,
-		ref List<UEBuildBinaryConfiguration> OutBuildBinaryConfigurations,
-		ref List<string> OutExtraModuleNames
-		)
-	{
-		OutBuildBinaryConfigurations.Add(
-			new UEBuildBinaryConfiguration(	InType: UEBuildBinaryType.Executable,
-											InModuleNames: new List<string>() { "UnrealHeaderTool" } )
-			);
-	}
 
 	public override void SetupGlobalEnvironment(
 		TargetInfo Target,

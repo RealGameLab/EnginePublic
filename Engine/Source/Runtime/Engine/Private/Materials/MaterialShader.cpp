@@ -13,14 +13,6 @@
 #include "ShaderDerivedDataVersion.h"
 #include "ProfilingDebugging/CookStats.h"
 
-int32 GCreateShadersOnLoad = 0;
-static FAutoConsoleVariableRef CVarCreateShadersOnLoad(
-	TEXT("r.CreateShadersOnLoad"),
-	GCreateShadersOnLoad,
-	TEXT("Whether to create shaders on load, which can reduce hitching, but use more memory.  Otherwise they will be created as needed.")
-	);
-
-
 #if ENABLE_COOK_STATS
 namespace MaterialShaderCookStats
 {
@@ -1886,6 +1878,7 @@ void FMaterialShaderMap::GetShaderPipelineList(TArray<FShaderPipeline*>& OutShad
  */
 void FMaterialShaderMap::Register(EShaderPlatform InShaderPlatform)
 {
+	extern int32 GCreateShadersOnLoad;
 	if (GCreateShadersOnLoad && Platform == InShaderPlatform)
 	{
 		for (auto KeyValue : GetShaders())
@@ -2162,7 +2155,7 @@ void FMaterialShaderMap::RegisterSerializedShaders()
 	{
 		if (OrderedMeshShaderMaps[VFIndex] && OrderedMeshShaderMaps[VFIndex]->IsEmpty())
 		{
-			OrderedMeshShaderMaps[VFIndex] = NULL;
+			OrderedMeshShaderMaps[VFIndex] = nullptr;
 		}
 	}
 
@@ -2173,6 +2166,22 @@ void FMaterialShaderMap::RegisterSerializedShaders()
 			MeshShaderMaps.RemoveAt(Index);
 		}
 	}
+}
+
+void FMaterialShaderMap::DiscardSerializedShaders()
+{
+	TShaderMap<FMaterialShaderType>::DiscardSerializedShaders();
+
+	for (int32 VFIndex = 0; VFIndex < OrderedMeshShaderMaps.Num(); VFIndex++)
+	{
+		OrderedMeshShaderMaps[VFIndex] = nullptr;
+	}
+
+	for (int32 Index = MeshShaderMaps.Num() - 1; Index >= 0; Index--)
+	{
+		MeshShaderMaps[Index].DiscardSerializedShaders();
+	}
+	MeshShaderMaps.Empty();
 }
 
 void FMaterialShaderMap::RemovePendingMaterial(FMaterial* Material)

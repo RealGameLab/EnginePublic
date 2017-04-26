@@ -86,12 +86,6 @@ bool FLinuxPlatformMisc::ControlScreensaver(EScreenSaverAction Action)
 	return true;
 }
 
-const TCHAR* FLinuxPlatformMisc::RootDir()
-{
-	const TCHAR* TrueRootDir = FGenericPlatformMisc::RootDir();
-	return TrueRootDir;
-}
-
 void FLinuxPlatformMisc::NormalizePath(FString& InPath)
 {
 	// only expand if path starts with ~, e.g. ~/ should be expanded, /~ should not
@@ -104,6 +98,7 @@ void FLinuxPlatformMisc::NormalizePath(FString& InPath)
 namespace
 {
 	bool GInitializedSDL = false;
+	uint32 GWindowStyleSDL = SDL_WINDOW_OPENGL;
 }
 
 size_t CORE_API GCacheLineSize = PLATFORM_CACHE_LINE_SIZE;
@@ -177,11 +172,27 @@ void FLinuxPlatformMisc::PlatformInit()
 	}
 }
 
+uint32 FLinuxPlatformMisc::WindowStyle()
+{
+	return GWindowStyleSDL;
+}
+
 bool FLinuxPlatformMisc::PlatformInitMultimedia()
 {
 	if (!GInitializedSDL)
 	{
 		UE_LOG(LogInit, Log, TEXT("Initializing SDL."));
+
+		if (FParse::Param(FCommandLine::Get(), TEXT("vulkan")))
+		{
+			GWindowStyleSDL = SDL_WINDOW_VULKAN;
+			UE_LOG(LogInit, Log, TEXT("Using SDL_WINDOW_VULKAN"));
+		}
+		else
+		{
+			GWindowStyleSDL = SDL_WINDOW_OPENGL;
+			UE_LOG(LogInit, Log, TEXT("Using SDL_WINDOW_OPENGL"));
+		}
 
 		SDL_SetHint("SDL_VIDEO_X11_REQUIRE_XRANDR", "1");  // workaround for misbuilt SDL libraries on X11.
 		// we don't use SDL for audio
