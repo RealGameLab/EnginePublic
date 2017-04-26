@@ -1,9 +1,0 @@
-[submodule "Engine/Extras/UnusedAssetsCollection"]
-	path = Engine/Extras/UnusedAssetsCollection
-	url = ../UnusedAssetsCollection.git
-[submodule "Engine/Plugins/RealGameLab/BitmapFont"]
-	path = Engine/Plugins/RealGameLab/BitmapFont
-	url = ../BitmapFont.git
-[submodule "Engine/Plugins/RealGameLab/BuglyCrashReport"]
-	path = Engine/Plugins/RealGameLab/BuglyCrashReport
-	url = ../BuglyCrashReport.git
