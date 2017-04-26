@@ -1577,6 +1577,7 @@ void FSlateApplication::TickApplication(float DeltaTime)
 		QueryCursor();
 	}
 
+#ifndef ODIN_ANDROID
 	{
 		SCOPE_CYCLE_COUNTER( STAT_SlateUpdateTooltip );
 		SLATE_CYCLE_COUNTER_SCOPE(GUpdateTooltipTime);
@@ -1586,6 +1587,7 @@ void FSlateApplication::TickApplication(float DeltaTime)
 		UpdateToolTip( AllowSpawningOfToolTips );
 	}
 	//FPlatformMisc::EndNamedEvent();
+#endif
 
 
 	// Advance time
@@ -5705,13 +5707,11 @@ bool FSlateApplication::ProcessMouseMoveEvent( FPointerEvent& MouseEvent, bool b
 
 		QueueSynthesizedMouseMove();
 
+#ifndef ODIN_ANDROID
 		// Detecting a mouse move of zero delta is our way of filtering out synthesized move events
-#if WITH_EDITOR || IS_PROGRAM
 		const bool AllowSpawningOfToolTips = true;
-#else
-		const bool AllowSpawningOfToolTips = false;
-#endif
 		UpdateToolTip( AllowSpawningOfToolTips );
+#endif
 		
 		// Guard against synthesized mouse moves and only track user interaction if the cursor pos changed
 		SetLastUserInteractionTime(this->GetCurrentTime());

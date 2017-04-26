@@ -99,7 +99,11 @@ void FOutputLogModule::StartupModule()
 		.SetTooltipText(NSLOCTEXT("UnrealEditor", "DeviceOutputLogTooltipText", "Open the Device Output Log tab."))
 		.SetGroup( WorkspaceMenu::GetMenuStructure().GetDeveloperToolsLogCategory() )
 		.SetIcon( FSlateIcon(FEditorStyle::GetStyleSetName(), "Log.TabIcon") )
+    #ifndef ODIN_EDITOR
 		.SetAutoGenerateMenuEntry(false); // remove once not Experimental
+    #else 
+        ;
+    #endif
 	
 	OutputLogHistory = MakeShareable(new FOutputLogHistory);
 }

@@ -2490,8 +2490,13 @@ struct FMeshBuildSettings
 		, bRecomputeNormals(true)
 		, bRecomputeTangents(true)
 		, bRemoveDegenerates(true)
-		, bBuildAdjacencyBuffer(true)
+    #ifdef ODIN_EDITOR
+		, bBuildAdjacencyBuffer(false)
+		, bBuildReversedIndexBuffer(false)
+    #else
+        , bBuildAdjacencyBuffer(true)
 		, bBuildReversedIndexBuffer(true)
+    #endif // ODIN_EDITOR
 		, bUseHighPrecisionTangentBasis(false)
 		, bUseFullPrecisionUVs(false)
 		, bGenerateLightmapUVs(true)
