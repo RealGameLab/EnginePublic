@@ -10,7 +10,7 @@ public class UnrealHeaderToolTarget : TargetRules
 		Type = TargetType.Program;
 		LinkType = TargetLinkType.Modular;
 		LaunchModuleName = "UnrealHeaderTool";
-        AdditionalPlugins.Add("LuaGeneraterPlugin");
+        //AdditionalPlugins.Add("LuaGeneraterPlugin");
 	}
 
 	//
