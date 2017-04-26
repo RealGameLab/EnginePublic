@@ -7,6 +7,3 @@
 [submodule "Engine/Plugins/RealGameLab/BuglyCrashReport"]
 	path = Engine/Plugins/RealGameLab/BuglyCrashReport
 	url = ../BuglyCrashReport.git
-[submodule "Engine/Plugins/RealGameLab/RenderDocPlugin"]
-	path = Engine/Plugins/RealGameLab/RenderDocPlugin
-	url = ../UE4RenderDocPlugin.git
