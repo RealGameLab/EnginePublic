@@ -104,12 +104,12 @@ namespace UnrealBuildTool
 			Target.bCompileSimplygonSSF = false;
 
 			Target.bCompileRecast = true;
-			Target.bDeployAfterCompile = true;
+			Target.bDeployAfterCompile = false;
 		}
 
 		public override bool CanUseXGE()
 		{
-			return false;
+			return true;
 		}
 
 		public override string GetBinaryExtension(UEBuildBinaryType InBinaryType)

@@ -245,6 +245,8 @@ namespace UnrealBuildTool
 		{
 			Process LocalProcess = new Process();
 			LocalProcess.StartInfo = StartInfo;
+			LocalProcess.StartInfo.StandardErrorEncoding = System.Text.Encoding.Default;
+			LocalProcess.StartInfo.StandardOutputEncoding = System.Text.Encoding.Default;
 			LocalProcess.OutputDataReceived += (Sender, Line) => { if (Line != null && Line.Data != null) Log.TraceInformation(Line.Data); };
 			LocalProcess.ErrorDataReceived += (Sender, Line) => { if (Line != null && Line.Data != null) Log.TraceError(Line.Data); };
 			return RunLocalProcess(LocalProcess);

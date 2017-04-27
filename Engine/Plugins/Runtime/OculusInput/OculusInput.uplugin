@@ -8,7 +8,7 @@
 	"CreatedByURL" : "http://epicgames.com",
 	"Description" : "Support for the Oculus input controllers (Oculus Touch, Remote, etc)",
 	"Category" : "Virtual Reality",
-	"EnabledByDefault" : true,
+	"EnabledByDefault" : false,
 
 	"Modules" :
 	[
