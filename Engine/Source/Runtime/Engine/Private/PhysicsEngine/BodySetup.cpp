@@ -101,7 +101,11 @@ UBodySetup::UBodySetup(const FObjectInitializer& ObjectInitializer)
 	CollisionTraceFlag = CTF_UseDefault;
 	bHasCookedCollisionData = true;
 	bNeverNeedsCookedCollisionData = false;
+#ifdef ODIN_ANDROID_PERF
+	bGenerateMirroredCollision = false;
+#else
 	bGenerateMirroredCollision = true;
+#endif
 	bGenerateNonMirroredCollision = true;
 	DefaultInstance.SetObjectType(ECC_PhysicsBody);
 	BuildScale_DEPRECATED = 1.0f;
