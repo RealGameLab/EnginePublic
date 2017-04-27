@@ -581,6 +581,12 @@ static int32_t HandleInputCB(struct android_app* app, AInputEvent* event)
 				float y = FMath::Min<float>(AMotionEvent_getY(event, actionPointer) / Height, 1.f);
 				y *= (ScreenRect.Bottom - 1);
 
+				#ifdef ODIN_TOUCH
+				float dx = AMotionEvent_getRawX(event, actionPointer);
+				float dy = AMotionEvent_getRawY(event, actionPointer);
+				int64 EventTime = AMotionEvent_getEventTime(event) / (int64)1000000;
+				#endif
+
 				UE_LOG(LogAndroid, Verbose, TEXT("Received targeted motion event from pointer %u (id %d) action %d: (%.2f, %.2f)"), actionPointer, pointerId, action, x, y);
 
 				TouchInput TouchMessage;
@@ -589,6 +595,11 @@ static int32_t HandleInputCB(struct android_app* app, AInputEvent* event)
 				TouchMessage.Type = type;
 				TouchMessage.Position = FVector2D(x, y);
 				TouchMessage.LastPosition = FVector2D(x, y);		//@todo android: AMotionEvent_getHistoricalRawX
+
+				#ifdef ODIN_TOUCH
+				TouchMessage.DeviceTouchLocation = FVector2D(dx, dy);
+				TouchMessage.EventTime = EventTime;
+				#endif
 				TouchesArray.Add(TouchMessage);
 			}
 			else
@@ -601,6 +612,11 @@ static int32_t HandleInputCB(struct android_app* app, AInputEvent* event)
 					x *= (ScreenRect.Right - 1);
 					float y = FMath::Min<float>(AMotionEvent_getY(event, i) / Height, 1.f);
 					y *= (ScreenRect.Bottom - 1);
+					#ifdef ODIN_TOUCH
+					float dx = AMotionEvent_getRawX(event, i);
+					float dy = AMotionEvent_getRawY(event, i);
+					int64 EventTime = AMotionEvent_getEventTime(event) / (int64)1000000;
+					#endif
 
 					UE_LOG(LogAndroid, Verbose, TEXT("Received motion event from index %u (id %d) action %d: (%.2f, %.2f)"), i, pointerId, action, x, y);
 
@@ -610,6 +626,10 @@ static int32_t HandleInputCB(struct android_app* app, AInputEvent* event)
 					TouchMessage.Type = type;
 					TouchMessage.Position = FVector2D(x, y);
 					TouchMessage.LastPosition = FVector2D(x, y);		//@todo android: AMotionEvent_getHistoricalRawX
+					#ifdef ODIN_TOUCH
+					TouchMessage.DeviceTouchLocation = FVector2D(dx, dy);
+					TouchMessage.EventTime = EventTime;
+					#endif
 					TouchesArray.Add(TouchMessage);
 				}
 			}

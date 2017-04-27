@@ -32,6 +32,19 @@ int32 FAndroidInputInterface::DeferredMessageQueueDroppedCount   = 0;
 TArray<FAndroidInputInterface::MotionData> FAndroidInputInterface::MotionDataStack
 	= TArray<FAndroidInputInterface::MotionData>();
 
+#ifdef ODIN_TOUCH
+// Touch优化, 提供高精度Touch信息
+TArray<TouchInput> FAndroidInputInterface::GetTouchInputStack()
+{
+	FScopeLock Lock(&TouchInputCriticalSection);
+
+	return TouchInputStack;
+}
+
+TouchInput FAndroidInputInterface::CurrentTouchInputInfo;
+
+TStaticArray<TouchInput, 10> FAndroidInputInterface::TouchInputInfo;
+#endif
 
 TSharedRef< FAndroidInputInterface > FAndroidInputInterface::Create(  const TSharedRef< FGenericApplicationMessageHandler >& InMessageHandler )
 {
@@ -846,6 +859,11 @@ void FAndroidInputInterface::SendControllerEvents()
 		TouchInput Touch = FAndroidInputInterface::TouchInputStack[i];
 		int32 ControllerId = FindExistingDevice(Touch.DeviceId);
 		ControllerId = (ControllerId == -1) ? 0 : ControllerId;
+		#ifdef ODIN_TOUCH
+		// Touch优化, 提供高精度Touch信息
+		// 设置当前Touch信息, 设置后GetCurrentTouchInput生效
+		SetCurrentTouchInputInfo(Touch);
+		#endif
 
 		// send input to handler
 		if (Touch.Type == TouchBegan)
@@ -860,6 +878,12 @@ void FAndroidInputInterface::SendControllerEvents()
 		{
 			MessageHandler->OnTouchMoved(Touch.Position, Touch.Handle, ControllerId);
 		}
+
+		#ifdef ODIN_TOUCH
+		// Touch优化, 提供高精度Touch信息
+		// 重置Touch信息, 重置后GetCurrentTouchInput非法
+		ResetCurrentTouchInputInfo();
+		#endif
 	}
 
 	// Extract differences in new and old states and send messages
