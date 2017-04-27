@@ -1012,6 +1012,13 @@ void FRenderCommandFence::Wait(bool bProcessGameThreadTasks) const
 			FTaskGraphInterface::Get().WaitUntilTaskCompletes(CompletionEvent, ENamedThreads::GameThread);
 		}
 #endif
+    #ifdef ODIN_PERF_IDLETASKGRAPH
+        if (bProcessGameThreadTasks)
+		{
+			QUICK_SCOPE_CYCLE_COUNTER(STAT_FRenderCommandFence_Wait);
+			FTaskGraphInterface::Get().WaitUntilTaskCompletes(CompletionEvent, ENamedThreads::GameThread);
+		}
+    #endif
 		GameThreadWaitForTask(CompletionEvent, bProcessGameThreadTasks);
 	}
 }
