@@ -691,11 +691,14 @@ void StartRenderingThread()
 	Fence.BeginFence();
 	Fence.Wait();
 
+#ifdef ODIN_ANDROID_PERF_DISABLE_RENDERHEARTBEAT
+#else
 	GRunRenderingThreadHeartbeat = true;
 	// Create the rendering thread heartbeat
 	GRenderingThreadRunnableHeartbeat = new FRenderingThreadTickHeartbeat();
 
 	GRenderingThreadHeartbeat = FRunnableThread::Create(GRenderingThreadRunnableHeartbeat, *FString::Printf(TEXT("RTHeartBeat %d"), ThreadCount), 16 * 1024, TPri_AboveNormal, FPlatformAffinity::GetRTHeartBeatMask());
+#endif
 
 	ThreadCount++;
 }
