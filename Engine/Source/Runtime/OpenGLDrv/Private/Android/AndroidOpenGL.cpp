@@ -161,6 +161,14 @@ void* PlatformGetWindow(FPlatformOpenGLContext* Context, void** AddParam)
 
 bool PlatformBlitToViewport( FPlatformOpenGLDevice* Device, const FOpenGLViewport& Viewport, uint32 BackbufferSizeX, uint32 BackbufferSizeY, bool bPresent,bool bLockToVsync, int32 SyncInterval )
 {
+#ifdef ODIN_ANDROID_BACKBUFFER
+	FOpenGLViewport& NoConstViewport = (FOpenGLViewport&)Viewport;
+	if (Viewport.PendingRequestAndroidBackBuffer != Viewport.RequestAndroidBackBuffer)
+	{
+		NoConstViewport.CurrentFrameRequestAndroidBackBuffer = Viewport.PendingRequestAndroidBackBuffer;
+		NoConstViewport.RequestAndroidBackBuffer = Viewport.PendingRequestAndroidBackBuffer;
+	}
+#endif
 	if (bPresent && Viewport.GetCustomPresent())
 	{
 		bPresent = Viewport.GetCustomPresent()->Present(SyncInterval);

@@ -61,7 +61,23 @@ FTexture2DRHIRef FEmptyDynamicRHI::RHIGetViewportBackBuffer(FViewportRHIParamRef
 
 	return FTexture2DRHIRef();
 }
+#ifdef ODIN_ANDROID_BACKBUFFER
+FTexture2DRHIRef FEmptyDynamicRHI::RHIGetViewportBackBufferAndroidEGL(FViewportRHIParamRef ViewportRHI)
+{
+	FEmptyViewport* Viewport = ResourceCast(ViewportRHI);
 
+	return FTexture2DRHIRef();
+}
+
+bool FEmptyDynamicRHI::RHIIsRequestAndroidBackBuffer(bool InRequestAndroidBackBuffer)
+{
+	return false;
+}
+
+void FEmptyDynamicRHI::RHISetPendingRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI, bool InRequestAndroidBackBuffer)
+{
+}
+#endif
 void FEmptyDynamicRHI::RHIAdvanceFrameForGetViewportBackBuffer()
 {
 }

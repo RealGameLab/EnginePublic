@@ -462,6 +462,21 @@ public:
 		return new FRHITexture2D(1,1,1,1,PF_B8G8R8A8,TexCreate_RenderTargetable, FClearValueBinding()); 
 	}
 
+#ifdef ODIN_ANDROID_BACKBUFFER
+	virtual FTexture2DRHIRef RHIGetViewportBackBufferAndroidEGL(FViewportRHIParamRef Viewport) final override
+	{
+		return new FRHITexture2D(1, 1, 1, 1, PF_B8G8R8A8, TexCreate_RenderTargetable, FClearValueBinding());
+	}
+
+	virtual bool RHIIsRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI)
+	{
+		return false;
+	}
+
+	virtual void RHISetPendingRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI, bool InRequestAndroidBackBuffer)
+	{
+	}
+#endif
 	virtual void RHIBeginFrame() final override
 	{
 

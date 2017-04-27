@@ -348,6 +348,23 @@ FTexture2DRHIRef FMetalDynamicRHI::RHIGetViewportBackBuffer(FViewportRHIParamRef
 	}
 }
 
+#ifdef ODIN_ANDROID_BACKBUFFER
+FTexture2DRHIRef FMetalDynamicRHI::RHIGetViewportBackBufferAndroidEGL(FViewportRHIParamRef ViewportRHI)
+{
+	FMetalViewport* Viewport = ResourceCast(ViewportRHI);
+	return Viewport->GetBackBuffer();
+}
+
+bool FMetalDynamicRHI::RHIIsRequestAndroidBackBuffer(bool InRequestAndroidBackBuffer)
+{
+	return false;
+}
+
+void FMetalDynamicRHI::RHISetPendingRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI, bool InRequestAndroidBackBuffer)
+{
+}
+#endif
+
 void FMetalDynamicRHI::RHIAdvanceFrameForGetViewportBackBuffer()
 {
 }
