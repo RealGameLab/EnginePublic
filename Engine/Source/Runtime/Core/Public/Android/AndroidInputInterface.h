@@ -10,6 +10,7 @@
 #include "Math/Vector.h"
 #include "Math/Vector2D.h"
 #include "Math/Color.h"
+#include "Containers/StaticArray.h"
 
 #if __ANDROID_API__ < 13
 
