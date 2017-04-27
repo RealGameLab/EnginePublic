@@ -165,7 +165,7 @@ void FOpenGLDynamicRHI::RHIEndDrawingViewport(FViewportRHIParamRef ViewportRHI,b
 	// Don't wait on the GPU when using SLI, let the driver determine how many frames behind the GPU should be allowed to get
 	if (GNumActiveGPUsForRendering == 1)
 	{
-    #ifdef ODIN_ANDROID
+    #ifdef ODIN_PROFILE
         QUICK_SCOPE_CYCLE_COUNTER(STAT_OpenGL_FlushTime);
     #endif // ODIN_ANDROID
 
@@ -211,6 +211,7 @@ FTexture2DRHIRef FOpenGLDynamicRHI::RHIGetViewportBackBuffer(FViewportRHIParamRe
 	return Viewport->GetBackBuffer();
 }
 
+#ifdef ODIN_ANDROID_BACKBUFFER
 FTexture2DRHIRef FOpenGLDynamicRHI::RHIGetViewportBackBufferAndroidEGL(FViewportRHIParamRef ViewportRHI)
 {
 	FOpenGLViewport* Viewport = ResourceCast(ViewportRHI);
@@ -228,7 +229,7 @@ void FOpenGLDynamicRHI::RHISetPendingRequestAndroidBackBuffer(FViewportRHIParamR
 	FOpenGLViewport* Viewport = ResourceCast(ViewportRHI);
 	Viewport->SetRequestAndroidBackBuffer(InRequestAndroidBackBuffer);
 }
-
+#endif
 void FOpenGLDynamicRHI::RHIAdvanceFrameForGetViewportBackBuffer()
 {
 }
@@ -243,9 +244,11 @@ FOpenGLViewport::FOpenGLViewport(FOpenGLDynamicRHI* InOpenGLRHI,void* InWindowHa
 	, PixelFormat(PreferredPixelFormat)
 	, bIsValid(true)
 	, FrameSyncEvent(InOpenGLRHI)
+#ifdef ODIN_ANDROID_BACKBUFFER
 	, RequestAndroidBackBuffer(false)
 	, PendingRequestAndroidBackBuffer(false)
 	, CurrentFrameRequestAndroidBackBuffer(false)
+#endif
 {
 	check(OpenGLRHI);
     //@to-do spurious check for HTML5, will need to go away. 
@@ -278,9 +281,10 @@ FOpenGLViewport::~FOpenGLViewport()
 	BackBuffer.SafeRelease();
 	check(!IsValidRef(BackBuffer));
 
+#ifdef ODIN_ANDROID_BACKBUFFER
 	BackBufferAndroidTemp.SafeRelease();
 	check(!IsValidRef(BackBufferAndroidTemp));
-
+#endif
 	PlatformDestroyOpenGLContext(OpenGLRHI->PlatformDevice,OpenGLContext);
 	OpenGLContext = NULL;
 	OpenGLRHI->Viewports.Remove(this);
@@ -301,8 +305,10 @@ void FOpenGLViewport::Resize(uint32 InSizeX,uint32 InSizeY,bool bInIsFullscreen)
 	}
 
 	BackBuffer.SafeRelease();	// when the rest of the engine releases it, its framebuffers will be released too (those the engine knows about)
-	BackBufferAndroidTemp.SafeRelease();
 
+#ifdef ODIN_ANDROID_BACKBUFFER
+	BackBufferAndroidTemp.SafeRelease();
+#endif
 	BackBuffer = (FOpenGLTexture2D*)PlatformCreateBuiltinBackBuffer(OpenGLRHI, InSizeX, InSizeY);
 	if (!BackBuffer)
 	{
@@ -322,9 +328,9 @@ void* FOpenGLViewport::GetNativeWindow(void** AddParam) const
 }
 
 
+#ifdef ODIN_ANDROID_BACKBUFFER
 FOpenGLTexture2D* FOpenGLViewport::GetBackBuffer()
 {
-#if PLATFORM_ANDROID
 	if ((GMaxRHIFeatureLevel == ERHIFeatureLevel::Type::ES2 || GMaxRHIFeatureLevel == ERHIFeatureLevel::Type::ES3_1)
 		&& RequestAndroidBackBuffer)
 	{
@@ -334,7 +340,7 @@ FOpenGLTexture2D* FOpenGLViewport::GetBackBuffer()
 		}
 		return BackBufferAndroidTemp;
 	}
-#endif
 
 	return BackBuffer;
 }
+#endif

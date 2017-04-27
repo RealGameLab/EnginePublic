@@ -2522,7 +2522,7 @@ struct FMeshBuildSettings
 		, bBuildAdjacencyBuffer(false)
 		, bBuildReversedIndexBuffer(false)
     #else
-        , bBuildAdjacencyBuffer(true)
+		, bBuildAdjacencyBuffer(true)
 		, bBuildReversedIndexBuffer(true)
     #endif // ODIN_EDITOR
 		, bUseHighPrecisionTangentBasis(false)

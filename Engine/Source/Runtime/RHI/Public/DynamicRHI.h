@@ -1158,10 +1158,11 @@ public:
 	// FlushType: Thread safe
 	virtual FTexture2DRHIRef RHIGetViewportBackBuffer(FViewportRHIParamRef Viewport) = 0;
 
+#ifdef ODIN_ANDROID_BACKBUFFER
 	virtual FTexture2DRHIRef RHIGetViewportBackBufferAndroidEGL(FViewportRHIParamRef Viewport) = 0;
 	virtual bool RHIIsRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI) = 0;
 	virtual void RHISetPendingRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI, bool InRequestAndroidBackBuffer) = 0;
-
+#endif
 	
 	virtual FUnorderedAccessViewRHIRef RHIGetViewportBackBufferUAV(FViewportRHIParamRef ViewportRHI)
 	{

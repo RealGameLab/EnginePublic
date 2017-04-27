@@ -3017,13 +3017,13 @@ void FEngineLoop::Tick()
 			FPlatformMisc::RequestExit(0);
 		}
 
-    #ifndef ODIN_CAMERA_PRESENTTIME
+    #ifndef ODIN_CAMERA_FRAMEENDSYNC
 		{
 			QUICK_SCOPE_CYCLE_COUNTER(STAT_FEngineLoop_UpdateTimeAndHandleMaxTickRate);
 			// Set FApp::CurrentTime, FApp::DeltaTime and potentially wait to enforce max tick rate.
 			GEngine->UpdateTimeAndHandleMaxTickRate();
 		}
-    #endif // ODIN_CAMERA_PRESENTTIME
+    #endif
 
 		{
 			QUICK_SCOPE_CYCLE_COUNTER(STAT_FEngineLoop_TickFPSChart);
@@ -3235,13 +3235,13 @@ void FEngineLoop::Tick()
 			TotalTickTime+=FApp::GetDeltaTime();
 		}
 
-    #ifndef ODIN_CAMERA_PRESENTTIME
+
+    #ifdef ODIN_CAMERA_FRAMEENDSYNC
+    #else
 		// Find the objects which need to be cleaned up the next frame.
 		FPendingCleanupObjects* PreviousPendingCleanupObjects = PendingCleanupObjects;
 		PendingCleanupObjects = GetPendingCleanupObjects();
-    #endif // ODIN_CAMERA_PRESENTTIME
 
-    #ifndef ODIN_CAMERA_PRESENTTIME
 		{
 			SCOPE_CYCLE_COUNTER( STAT_FrameSyncTime );
 			// this could be perhaps moved down to get greater parallelizm
@@ -3250,14 +3250,16 @@ void FEngineLoop::Tick()
 			static auto CVarAllowOneFrameThreadLag = IConsoleManager::Get().FindTConsoleVariableDataInt(TEXT("r.OneFrameThreadLag"));
 			FrameEndSync.Sync( CVarAllowOneFrameThreadLag->GetValueOnGameThread() != 0 );
 		}
-    #endif // ODIN_CAMERA_PRESENTTIME
+    #endif
 
 		{
 			SCOPE_CYCLE_COUNTER( STAT_DeferredTickTime );
 			// Delete the objects which were enqueued for deferred cleanup before the previous frame.
-    #ifndef ODIN_CAMERA_PRESENTTIME
+    #ifdef ODIN_CAMERA_FRAMEENDSYNC
+    #else
 			delete PreviousPendingCleanupObjects;
-    #endif // ODIN_CAMERA_PRESENTTIME
+
+    #endif
 			// Destroy all linkers pending delete
 #if WITH_COREUOBJECT
 			DeleteLoaders();

@@ -644,7 +644,8 @@ public:
 
 		void ReleaseClothSimulData()
 		{
-#ifndef ODIN_ANDROID
+#ifdef ODIN_PERF_STRIPAPEX
+#else
 			APEXClothUniformBuffer.SafeRelease();
 
 			for(uint32 i = 0; i < 2; ++i)
@@ -796,10 +797,11 @@ public:
 protected:
 	ClothShaderType ClothShaderData;
 
-#ifndef ODIN_ANDROID
+#ifdef ODIN_PERF_STRIPAPEX
+#else
 	/** Pool of buffers for clothing simulation data */
 	static TGlobalResource<FClothBufferPool> ClothSimulDataBufferPool;
-#endif // !ODIN_ANDROID
+#endif
 };
 
 /** Vertex factory with vertex stream components for GPU-skinned and morph target streams */

@@ -874,8 +874,9 @@ void FSlateRHIRenderer::DrawWindow_RenderThread(FRHICommandListImmediate& RHICmd
 					EDRF_UseTriangleOptimization);
 			}
 		}
+
 		{
-#if PLATFORM_ANDROID 
+#ifdef ODIN_ANDROID_BACKBUFFER
 			const auto FeatureLevel = GMaxRHIFeatureLevel;
 			if ((FeatureLevel == ERHIFeatureLevel::Type::ES2 || FeatureLevel == ERHIFeatureLevel::Type::ES3_1) && 
 				RHIIsRequestAndroidBackBuffer(ViewportInfo.ViewportRHI))

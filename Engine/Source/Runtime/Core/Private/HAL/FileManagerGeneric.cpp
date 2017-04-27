@@ -620,7 +620,9 @@ FArchiveFileReaderGeneric::FArchiveFileReaderGeneric( IFileHandle* InHandle, con
 void FArchiveFileReaderGeneric::Seek( int64 InPos )
 {
 	// http://coconutlizard.co.uk/blog/ue4/portrait-of-a-serialize/
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#ifdef ODIN_PERF
+	SeekLowLevel(InPos);
+#else
 	checkf(InPos >= 0, TEXT("Attempted to seek to a negative location (%lld/%lld), file: %s. The file is most likely corrupt."), InPos, Size, *Filename);
 	checkf(InPos <= Size, TEXT("Attempted to seek past the end of file (%lld/%lld), file: %s. The file is most likely corrupt."), InPos, Size, *Filename);
 	if( !SeekLowLevel( InPos ) )
@@ -629,8 +631,6 @@ void FArchiveFileReaderGeneric::Seek( int64 InPos )
 		ArIsError = true;
 		UE_LOG(LogFileManager, Error, TEXT("SetFilePointer on %s Failed %lld/%lld: %lld %s"), *Filename, InPos, Size, Pos, FPlatformMisc::GetSystemErrorMessage(ErrorBuffer, 1024, 0));
 	}
-#else
-	SeekLowLevel(InPos);
 #endif
 	Pos         = InPos;
 	BufferBase  = Pos;
@@ -678,10 +678,12 @@ bool FArchiveFileReaderGeneric::InternalPrecache( int64 PrecacheOffset, int64 Pr
 		BufferBase = Pos;
 		BufferCount = FMath::Min( FMath::Min( PrecacheSize,( int64 )( ARRAY_COUNT( Buffer ) -( Pos&( ARRAY_COUNT( Buffer )-1 ) ) ) ), Size-Pos );
 		BufferCount = FMath::Max( BufferCount, 0LL ); // clamp to 0
-		int64 Count; // BKP-MODS: Minor speedup
+		int64 Count = 0;
 
 		// http://coconutlizard.co.uk/blog/ue4/portrait-of-a-serialize/
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#ifdef ODIN_PERF
+		ReadLowLevel(Buffer, BufferCount, Count);
+#else
 		{
 			if (BufferCount > ARRAY_COUNT( Buffer ) || BufferCount <= 0)
 			{
@@ -700,8 +702,6 @@ bool FArchiveFileReaderGeneric::InternalPrecache( int64 PrecacheOffset, int64 Pr
 			ArIsError = true;
 			UE_LOG( LogFileManager, Warning, TEXT( "ReadFile failed: Count=%lld BufferCount=%lld Error=%s" ), Count, BufferCount, FPlatformMisc::GetSystemErrorMessage( ErrorBuffer, 1024, 0 ) );
 		}
-#else
-		ReadLowLevel(Buffer, BufferCount, Count);
 #endif
 	}
 	return true;
@@ -723,11 +723,12 @@ void FArchiveFileReaderGeneric::Serialize( void* V, int64 Length )
 		{
 			if( Length >= ARRAY_COUNT( Buffer ) )
 			{
-				int64 Count; // BKP-MODS: Minor speedup
+				int64 Count=0;
 				{
 					ReadLowLevel(( uint8* )V, Length, Count );
 				}
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#ifdef ODIN_PERF
+#else
 				if( Count!=Length )
 				{
 					TCHAR ErrorBuffer[1024];
@@ -746,7 +747,8 @@ void FArchiveFileReaderGeneric::Serialize( void* V, int64 Length )
 				return;
 			}
 			Copy = FMath::Min( Length, BufferBase+BufferCount-Pos );
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+#ifdef ODIN_PERF
+#else
 			if( Copy<=0 )
 			{
 				ArIsError = true;

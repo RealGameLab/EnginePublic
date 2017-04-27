@@ -518,6 +518,8 @@ private:
 
 private:
 #if WITH_EDITOR
+#ifdef ODIN_PERF
 	static FString RootPrefix;
-#endif // WITH_EDITOR
+#endif
+#endif
 };

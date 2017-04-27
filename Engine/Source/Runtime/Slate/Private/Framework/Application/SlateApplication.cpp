@@ -1615,7 +1615,8 @@ void FSlateApplication::TickApplication(ESlateTickType TickType, float DeltaTime
 			QueryCursor();
 		}
 
-#ifndef ODIN_ANDROID
+#ifdef ODIN_DISABLE_TOOLTIP
+#else
 		{
 			SCOPE_CYCLE_COUNTER(STAT_SlateUpdateTooltip);
 			SLATE_CYCLE_COUNTER_SCOPE(GUpdateTooltipTime);
@@ -5691,7 +5692,8 @@ bool FSlateApplication::ProcessMouseMoveEvent( FPointerEvent& MouseEvent, bool b
 
 		QueueSynthesizedMouseMove();
 
-#ifndef ODIN_ANDROID
+#ifdef ODIN_DISABLE_TOOLTIP
+#else
 		// Detecting a mouse move of zero delta is our way of filtering out synthesized move events
 		const bool AllowSpawningOfToolTips = true;
 		UpdateToolTip( AllowSpawningOfToolTips );

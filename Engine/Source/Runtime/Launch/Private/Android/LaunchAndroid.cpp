@@ -581,7 +581,7 @@ static int32_t HandleInputCB(struct android_app* app, AInputEvent* event)
 				float y = FMath::Min<float>(AMotionEvent_getY(event, actionPointer) / Height, 1.f);
 				y *= (ScreenRect.Bottom - 1);
 
-				#ifdef ODIN_CAMERA
+				#ifdef ODIN_TOUCH
 				float dx = AMotionEvent_getRawX(event, actionPointer);
 				float dy = AMotionEvent_getRawY(event, actionPointer);
 				int64 EventTime = AMotionEvent_getEventTime(event) / (int64)1000000;
@@ -596,7 +596,7 @@ static int32_t HandleInputCB(struct android_app* app, AInputEvent* event)
 				TouchMessage.Position = FVector2D(x, y);
 				TouchMessage.LastPosition = FVector2D(x, y);		//@todo android: AMotionEvent_getHistoricalRawX
 
-				#ifdef ODIN_CAMERA
+				#ifdef ODIN_TOUCH
 				TouchMessage.DeviceTouchLocation = FVector2D(dx, dy);
 				TouchMessage.EventTime = EventTime;
 				#endif
@@ -612,7 +612,7 @@ static int32_t HandleInputCB(struct android_app* app, AInputEvent* event)
 					x *= (ScreenRect.Right - 1);
 					float y = FMath::Min<float>(AMotionEvent_getY(event, i) / Height, 1.f);
 					y *= (ScreenRect.Bottom - 1);
-					#ifdef ODIN_CAMERA
+					#ifdef ODIN_TOUCH
 					float dx = AMotionEvent_getRawX(event, i);
 					float dy = AMotionEvent_getRawY(event, i);
 					int64 EventTime = AMotionEvent_getEventTime(event) / (int64)1000000;
@@ -626,7 +626,7 @@ static int32_t HandleInputCB(struct android_app* app, AInputEvent* event)
 					TouchMessage.Type = type;
 					TouchMessage.Position = FVector2D(x, y);
 					TouchMessage.LastPosition = FVector2D(x, y);		//@todo android: AMotionEvent_getHistoricalRawX
-					#ifdef ODIN_CAMERA
+					#ifdef ODIN_TOUCH
 					TouchMessage.DeviceTouchLocation = FVector2D(dx, dy);
 					TouchMessage.EventTime = EventTime;
 					#endif

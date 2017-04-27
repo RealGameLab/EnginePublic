@@ -167,10 +167,11 @@ TAutoConsoleVariable<int32> CVarRequestAndroidBackBuffer(
 
 bool PlatformBlitToViewport( FPlatformOpenGLDevice* Device, const FOpenGLViewport& Viewport, uint32 BackbufferSizeX, uint32 BackbufferSizeY, bool bPresent,bool bLockToVsync, int32 SyncInterval )
 {
+#ifdef ODIN_ANDROID_BACKBUFFER
 	FOpenGLViewport& NoConstViewport = (FOpenGLViewport&)Viewport;
 
 	// @Mashiyuan
-	// åŠæ°¸ä¹…å¼€å…³r.rab, ç†è®ºä¸Šè¯·æ±‚BackBufferæ—¶ä¼šæœ‰é¢å¤–æ¶ˆè€—ï¼Œä½†çº¢ç±³3ï¼ˆAdreno 405ï¼‰ä¸Šå´æ€§èƒ½æ›´å¥½ï¼Œæœ‰å¾…è¿›ä¸€æ­¥æµ‹è¯•ã€‚
+	// °ëÓÀ¾Ã¿ª¹Ør.rab, ÀíÂÛÉÏÇëÇóBackBufferÊ±»áÓÐ¶îÍâÏûºÄ£¬µ«ºìÃ×3£¨Adreno 405£©ÉÏÈ´ÐÔÄÜ¸üºÃ£¬ÓÐ´ý½øÒ»²½²âÊÔ¡£
 	*((bool*)&Viewport.PendingRequestAndroidBackBuffer) = CVarRequestAndroidBackBuffer.GetValueOnAnyThread();
 
 	if (Viewport.PendingRequestAndroidBackBuffer != Viewport.RequestAndroidBackBuffer)
@@ -178,7 +179,7 @@ bool PlatformBlitToViewport( FPlatformOpenGLDevice* Device, const FOpenGLViewpor
 		NoConstViewport.CurrentFrameRequestAndroidBackBuffer = Viewport.PendingRequestAndroidBackBuffer;
 		NoConstViewport.RequestAndroidBackBuffer = Viewport.PendingRequestAndroidBackBuffer;
 	}
-
+#endif
 	if (bPresent && Viewport.GetCustomPresent())
 	{
 		bPresent = Viewport.GetCustomPresent()->Present(SyncInterval);

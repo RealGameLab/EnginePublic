@@ -3653,7 +3653,7 @@ int32 FShaderCompileXGEThreadRunnable::CompilingLoop()
             #ifdef ODIN_EDITOR
 			FString XGConsoleArgs = TEXT("/BUILD \"") + ScriptFilename + TEXT("\"");
             #else
-            FString XGConsoleArgs = TEXT("/VIRTUALIZEDIRECTX /STOPONERRORS /BUILD \"") + ScriptFilename + TEXT("\"");
+			FString XGConsoleArgs = TEXT("/VIRTUALIZEDIRECTX /STOPONERRORS /BUILD \"") + ScriptFilename + TEXT("\"");
             #endif // ODIN_EDITOR
 
 			// Kick off the XGE process...

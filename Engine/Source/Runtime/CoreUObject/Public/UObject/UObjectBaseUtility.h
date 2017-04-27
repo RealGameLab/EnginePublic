@@ -128,7 +128,7 @@ public:
 	 */
 	FORCEINLINE bool IsPendingKill() const
 	{
-#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+#ifdef ODIN_PERF
 		return GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->IsPendingKill();
 #else
 		return GUObjectArray.IndexToObject(InternalIndex)->IsPendingKill();
@@ -141,10 +141,10 @@ public:
 	FORCEINLINE void MarkPendingKill()
 	{
 		check(!IsRooted());
-#if UE_BUILD_TEST || UE_BUILD_SHIPPING
-		return GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->SetPendingKill();
+#ifdef ODIN_PERF
+		GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->SetPendingKill();
 #else
-		return GUObjectArray.IndexToObject(InternalIndex)->SetPendingKill();
+		GUObjectArray.IndexToObject(InternalIndex)->SetPendingKill();
 #endif
 	}
 
@@ -153,7 +153,7 @@ public:
 	*/
 	FORCEINLINE void ClearPendingKill()
 	{
-#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+#ifdef ODIN_PERF
 		GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->ClearPendingKill();
 #else
 		GUObjectArray.IndexToObject(InternalIndex)->ClearPendingKill();
@@ -166,7 +166,7 @@ public:
 	//
 	FORCEINLINE void AddToRoot()
 	{
-#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+#ifdef ODIN_PERF
 		GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->SetRootSet();
 #else
 		GUObjectArray.IndexToObject(InternalIndex)->SetRootSet();
@@ -178,7 +178,7 @@ public:
 	//
 	FORCEINLINE void RemoveFromRoot()
 	{
-#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+#ifdef ODIN_PERF
 		GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->ClearRootSet();
 #else
 		GUObjectArray.IndexToObject(InternalIndex)->ClearRootSet();
@@ -192,7 +192,7 @@ public:
 	 */
 	FORCEINLINE bool IsRooted()
 	{
-#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+#ifdef ODIN_PERF
 		return GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->IsRootSet();
 #else
 		return GUObjectArray.IndexToObject(InternalIndex)->IsRootSet();
@@ -206,7 +206,7 @@ public:
 	**/
 	FORCEINLINE bool ThisThreadAtomicallyClearedRFUnreachable()
 	{
-#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+#ifdef ODIN_PERF
 		return GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->ThisThreadAtomicallyClearedRFUnreachable();
 #else
 		return GUObjectArray.IndexToObject(InternalIndex)->ThisThreadAtomicallyClearedRFUnreachable();
@@ -218,7 +218,7 @@ public:
 	**/
 	FORCEINLINE bool IsUnreachable() const
 	{
-#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+#ifdef ODIN_PERF
 		return GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->IsUnreachable();
 #else
 		return GUObjectArray.IndexToObject(InternalIndex)->IsUnreachable();
@@ -238,7 +238,7 @@ public:
 	**/
 	FORCEINLINE bool IsNative() const
 	{
-#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+#ifdef ODIN_PERF
 		return GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->HasAnyFlags(EInternalObjectFlags::Native);
 #else
 		return GUObjectArray.IndexToObject(InternalIndex)->HasAnyFlags(EInternalObjectFlags::Native);
@@ -253,7 +253,7 @@ public:
 	 */
 	FORCEINLINE void SetInternalFlags(EInternalObjectFlags FlagsToSet) const
 	{
-#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+#ifdef ODIN_PERF
 		GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->SetFlags(FlagsToSet);
 #else
 		GUObjectArray.IndexToObject(InternalIndex)->SetFlags(FlagsToSet);
@@ -279,7 +279,7 @@ public:
 	 */
 	FORCEINLINE bool HasAnyInternalFlags(EInternalObjectFlags FlagsToCheck) const
 	{
-#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+#ifdef ODIN_PERF
 		return GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->HasAnyFlags(FlagsToCheck);
 #else
 		return GUObjectArray.IndexToObject(InternalIndex)->HasAnyFlags(FlagsToCheck);
@@ -294,7 +294,7 @@ public:
 	 */
 	FORCEINLINE void ClearInternalFlags(EInternalObjectFlags FlagsToClear) const
 	{
-#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+#ifdef ODIN_PERF
 		GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->ClearFlags(FlagsToClear);
 #else
 		GUObjectArray.IndexToObject(InternalIndex)->ClearFlags(FlagsToClear);
@@ -309,7 +309,7 @@ public:
 	*/
 	FORCEINLINE bool AtomicallyClearInternalFlags(EInternalObjectFlags FlagsToClear) const
 	{
-#if UE_BUILD_TEST || UE_BUILD_SHIPPING
+#ifdef ODIN_PERF
 		return GUObjectArray.IndexToObjectUnsafeForGC(InternalIndex)->ThisThreadAtomicallyClearedFlag(FlagsToClear);
 #else
 		return GUObjectArray.IndexToObject(InternalIndex)->ThisThreadAtomicallyClearedFlag(FlagsToClear);

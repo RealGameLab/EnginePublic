@@ -177,7 +177,7 @@ struct CORE_API FAndroidMisc : public FGenericPlatformMisc
 		__sync_synchronize();
 	}
 
-#ifdef ODIN_ANDROID
+#ifdef ODIN_ANDROID_PERF
      FORCEINLINE static void Prefetch(void const* Ptr, int32 Offset = 0)
      {
          __builtin_prefetch(static_cast<char const*>(Ptr) + Offset);

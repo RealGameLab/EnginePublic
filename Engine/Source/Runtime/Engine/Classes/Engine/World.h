@@ -482,7 +482,6 @@ private:
 public:
 
 	bool IsRemoteOwned() const { return bRemoteOwned; }
-    void SetRemoteOwned(bool owned) { bRemoteOwned = owned ? 1 : 0; } // 修改@roger.
 
 	/* Determines whether spawning will not fail if certain conditions are not met. If true, spawning will not fail because the class being spawned is `bStatic=true` or because the class of the template Actor is not the same as the class of the Actor being spawned. */
 	uint16	bNoFail:1;
@@ -2283,7 +2282,7 @@ public:
 			, bCreatePhysicsScene(true)
 			, bCreateNavigation(true)
 			, bCreateAISystem(true)
-        #ifdef ODIN_ANDROID
+        #ifdef ODIN_PERF_DISABLE_PHYSIC
 			, bShouldSimulatePhysics(false)
         #else
 			, bShouldSimulatePhysics(true)

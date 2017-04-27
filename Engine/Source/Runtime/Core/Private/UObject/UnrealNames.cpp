@@ -901,8 +901,8 @@ FString FName::ToString() const
 	ToString(Out);
 	return Out;
 }
-#define USE_NEW_TOSTRING 1
-#if USE_NEW_TOSTRING //http://coconutlizard.co.uk/blog/ue4/to-string-or-not/
+
+#ifdef ODIN_PERF //http://coconutlizard.co.uk/blog/ue4/to-string-or-not/
 int32 GetNameEntryLength(const FNameEntry* NameEntry, const bool IsWide)
 {
 	uint32 NameLength = 0;

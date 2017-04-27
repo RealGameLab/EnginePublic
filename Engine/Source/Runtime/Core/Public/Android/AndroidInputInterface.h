@@ -10,7 +10,9 @@
 #include "Math/Vector.h"
 #include "Math/Vector2D.h"
 #include "Math/Color.h"
+#ifdef ODIN_TOUCH
 #include "Containers/StaticArray.h"
+#endif
 
 #if __ANDROID_API__ < 13
 
@@ -143,7 +145,7 @@ struct TouchInput
 	TouchType Type;
 	FVector2D LastPosition;
 	FVector2D Position;
-	#ifdef ODIN_CAMERA
+	#ifdef ODIN_TOUCH
 	FVector2D DeviceTouchLocation;
 	int64 EventTime;
 	#endif
@@ -298,7 +300,7 @@ private:
 	/** List of input devices implemented in external modules. */
 	TArray<TSharedPtr<class IInputDevice>> ExternalInputDevices;
 
-	#ifdef ODIN_CAMERA
+	#ifdef ODIN_TOUCH
 public:
 	static TArray<TouchInput> GetTouchInputStack();
 

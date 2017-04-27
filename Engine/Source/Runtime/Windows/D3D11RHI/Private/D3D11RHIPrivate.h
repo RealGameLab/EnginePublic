@@ -430,9 +430,11 @@ public:
 	virtual FRenderQueryRHIRef RHICreateRenderQuery(ERenderQueryType QueryType) final override;
 	virtual bool RHIGetRenderQueryResult(FRenderQueryRHIParamRef RenderQuery, uint64& OutResult, bool bWait) final override;
 	virtual FTexture2DRHIRef RHIGetViewportBackBuffer(FViewportRHIParamRef Viewport) final override;
+#ifdef ODIN_ANDROID_BACKBUFFER
 	virtual FTexture2DRHIRef RHIGetViewportBackBufferAndroidEGL(FViewportRHIParamRef Viewport) final override;
 	virtual bool RHIIsRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI) final override;
 	virtual void RHISetPendingRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI, bool InRequestAndroidBackBuffer) final override;
+#endif
 	virtual void RHIAdvanceFrameForGetViewportBackBuffer() final override;
 	virtual void RHIAcquireThreadOwnership() final override;
 	virtual void RHIReleaseThreadOwnership() final override;

@@ -652,8 +652,10 @@ void UResavePackagesCommandlet::LoadAndSaveOnePackage(const FString& Filename)
 
 		static int32 Counter = 0;
 
+		#ifdef ODIN_EDITOR
 		// wutongfei http://coconutlizard.co.uk/blog/ue4/the-cook-the-resave-his-garbage-and-her-optimization/
 		GarbageCollectionFrequency = 100;
+		#endif
 		if (!GarbageCollectionFrequency || Counter++ % GarbageCollectionFrequency == 0)
 		{
 			if (GarbageCollectionFrequency > 1)

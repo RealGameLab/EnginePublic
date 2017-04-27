@@ -632,7 +632,7 @@ void USceneComponent::PropagateTransformUpdate(bool bTransformChanged, EUpdateTr
 	const TArray<USceneComponent*>& AttachedChildren = GetAttachChildren();
 	FPlatformMisc::Prefetch(AttachedChildren.GetData());
 
-    #ifdef ODIN_ANDROID
+    #ifdef ODIN_PERF_TRANSFORMUPDATEBOUND
     bool isBoundsChanged = false;
     FBoxSphereBounds OldBounds = Bounds;
     auto IsEqualToBound = [](FBoxSphereBounds const& A, FBoxSphereBounds const& B)
@@ -700,8 +700,9 @@ void USceneComponent::PropagateTransformUpdate(bool bTransformChanged, EUpdateTr
 			//QUICK_SCOPE_CYCLE_COUNTER(STAT_USceneComponent_PropagateTransformUpdate_UpdateBounds);
 			// We update bounds even if transform doesn't change, as shape/mesh etc might have done
 			UpdateBounds();
+		}
 
-        #ifdef ODIN_ANDROID
+        #ifdef ODIN_PERF_TRANSFORMUPDATEBOUND
             isBoundsChanged = !(IsEqualToBound(Bounds, OldBounds));
         #endif // ODIN_ANDROID
 
@@ -717,7 +718,7 @@ void USceneComponent::PropagateTransformUpdate(bool bTransformChanged, EUpdateTr
 		}
 
 		// If registered, tell subsystems about the change in transform
-        #ifndef ODIN_ANDROID
+        #ifndef ODIN_PERF_TRANSFORMUPDATEBOUND
 		if (bRegistered)
         #else
 		if (bRegistered && isBoundsChanged)

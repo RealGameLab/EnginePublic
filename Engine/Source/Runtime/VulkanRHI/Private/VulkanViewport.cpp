@@ -698,6 +698,7 @@ FTexture2DRHIRef FVulkanDynamicRHI::RHIGetViewportBackBuffer(FViewportRHIParamRe
 	return Viewport->GetBackBuffer(FRHICommandListExecutor::GetImmediateCommandList());
 }
 
+#ifdef ODIN_ANDROID_BACKBUFFER
 FTexture2DRHIRef FVulkanDynamicRHI::RHIGetViewportBackBufferAndroidEGL(FViewportRHIParamRef ViewportRHI)
 {
 	check(IsInRenderingThread());
@@ -714,7 +715,7 @@ bool FVulkanDynamicRHI::RHIIsRequestAndroidBackBuffer(FViewportRHIParamRef Viewp
 void FVulkanDynamicRHI::RHISetPendingRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI, bool InRequestAndroidBackBuffer)
 {
 }
-
+#endif
 void FVulkanDynamicRHI::RHIAdvanceFrameForGetViewportBackBuffer()
 {
 	for (FVulkanViewport* Viewport : Viewports)

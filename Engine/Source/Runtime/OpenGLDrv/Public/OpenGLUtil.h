@@ -25,7 +25,8 @@
 /** Set to 1 to enable calls to place event markers into the OpenGL stream
     this is purposefully not considered for OPENGL_PERFORMANCE_DATA_INVALID, 
 	since there is an additional cvar OpenGLConsoleVariables::bEnableARBDebug*/
-#ifndef ODIN_ANDROID
+
+#ifndef ODIN_ANDROID_PERF_DISABLE_OPENGLDEBUG
 #define ENABLE_OPENGL_DEBUG_GROUPS 1
 #else
 #define ENABLE_OPENGL_DEBUG_GROUPS 0

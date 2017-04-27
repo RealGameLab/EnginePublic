@@ -708,7 +708,7 @@ bool FPaths::IsDrive(const FString& InPath)
 }
 
 #if WITH_EDITOR
-#ifdef ODIN
+#ifdef ODIN_PERF
 FString FPaths::RootPrefix = TEXT("root:/");
 #endif
 #endif // WITH_EDITOR
@@ -718,7 +718,7 @@ bool FPaths::IsRelative(const FString& InPath)
 {
 	// The previous implementation of this function seemed to handle normalized and unnormalized paths, so this one does too for legacy reasons.
 
-#ifndef ODIN
+#ifndef ODIN_PERF
 	const bool IsRooted = InPath.StartsWith(TEXT("\\"), ESearchCase::CaseSensitive)	||					// Root of the current directory on Windows. Also covers "\\" for UNC or "network" paths.
 						  InPath.StartsWith(TEXT("/"), ESearchCase::CaseSensitive)	||					// Root of the current directory on Windows, root on UNIX-likes.  Also covers "\\", considering normalization replaces "\\" with "//".						
 						  InPath.StartsWith(TEXT("root:/"), ESearchCase::IgnoreCase) ||					// Feature packs use this
