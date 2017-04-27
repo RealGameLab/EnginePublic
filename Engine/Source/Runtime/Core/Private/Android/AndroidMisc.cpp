@@ -437,6 +437,10 @@ bool FAndroidMisc::AllowRenderThread()
 int32 FAndroidMisc::NumberOfCores()
 {
 	int32 NumberOfCores = android_getCpuCount();
+#ifdef ODIN_ANDROID_PERF_LIMITCORE
+    static int MaxAndroidCore = 4;
+    NumberOfCores = FMath::Min(NumberOfCores, MaxAndroidCore);
+#endif
 	return NumberOfCores;
 }
 
