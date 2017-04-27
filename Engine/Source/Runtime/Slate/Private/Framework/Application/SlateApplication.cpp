@@ -1624,9 +1624,9 @@ void FSlateApplication::TickApplication(ESlateTickType TickType, float DeltaTime
 			const bool AllowSpawningOfToolTips = false;
 			UpdateToolTip(AllowSpawningOfToolTips);
 		}
+#endif
 	}
 	//FPlatformMisc::EndNamedEvent();
-#endif
 
 
 	// Advance time
