@@ -25,7 +25,12 @@ UBoneMaskFilter::UBoneMaskFilter(const FObjectInitializer& ObjectInitializer)
 
 bool FBoneReference::Initialize(const FBoneContainer& RequiredBones)
 {
+#ifdef ODIN_PERF
+	// http://coconutlizard.co.uk/blog/ue4/patch-content-early/
+	check(!BoneName.ToString().Contains(" "));
+#else
 	BoneName = *BoneName.ToString().Trim().TrimTrailing();
+#endif
 	BoneIndex = RequiredBones.GetPoseBoneIndexForBoneName(BoneName);
 
 	bUseSkeletonIndex = false;

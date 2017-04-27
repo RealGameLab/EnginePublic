@@ -295,7 +295,11 @@ FString UEnum::GenerateEnumPrefix() const
 		// This will be the longest common prefix since as little as possible is trimmed at each step.
 		for (int32 NameIdx = 1; NameIdx < Names.Num(); NameIdx++)
 		{
+#ifdef ODIN_PERF
+			FString EnumItemName = Names[NameIdx].Key.ToString();
+#else
 			FString EnumItemName = *Names[NameIdx].Key.ToString();
+#endif
 
 			// Find the length of the longest common prefix of Prefix and EnumItemName.
 			int32 PrefixIdx = 0;

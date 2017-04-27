@@ -707,14 +707,37 @@ bool FPaths::IsDrive(const FString& InPath)
 	return false;
 }
 
+#if WITH_EDITOR
+#ifdef ODIN_PERF
+FString FPaths::RootPrefix = TEXT("root:/");
+#endif
+#endif // WITH_EDITOR
+
+// wutongfei http://coconutlizard.co.uk/blog/ue4/using-the-disassembler/
 bool FPaths::IsRelative(const FString& InPath)
 {
 	// The previous implementation of this function seemed to handle normalized and unnormalized paths, so this one does too for legacy reasons.
 
+#ifndef ODIN_PERF
 	const bool IsRooted = InPath.StartsWith(TEXT("\\"), ESearchCase::CaseSensitive)	||					// Root of the current directory on Windows. Also covers "\\" for UNC or "network" paths.
 						  InPath.StartsWith(TEXT("/"), ESearchCase::CaseSensitive)	||					// Root of the current directory on Windows, root on UNIX-likes.  Also covers "\\", considering normalization replaces "\\" with "//".						
 						  InPath.StartsWith(TEXT("root:/"), ESearchCase::IgnoreCase) ||					// Feature packs use this
 						  (InPath.Len() >= 2 && FChar::IsAlpha(InPath[0]) && InPath[1] == TEXT(':'));	// Starts with "<DriveLetter>:"
+
+#else
+	const uint32 PathLen = InPath.Len();
+	const bool IsRooted = PathLen &&
+		((InPath[0] == '/') ||
+			(PathLen >= 2 && (
+				((InPath[0] == '\\') && (InPath[1] == '\\'))
+				|| (InPath[1] == ':' && FChar::IsAlpha(InPath[0]))
+#if WITH_EDITOR
+				|| (InPath.StartsWith(RootPrefix))
+#endif // WITH_EDITOR
+				))
+			);
+
+#endif
 
 	return !IsRooted;
 }

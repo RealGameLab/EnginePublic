@@ -1130,7 +1130,11 @@ void FModuleManager::MakeUniqueModuleFilename( const FName InModuleName, FString
 		// Use a random number as the unique file suffix, but mod it to keep it of reasonable length
 		UniqueSuffix = FString::FromInt( FMath::Rand() % 10000 );
 
+#ifdef ODIN_PERF
+		const FString ModuleName = InModuleName.ToString();
+#else
 		const FString ModuleName = *InModuleName.ToString();
+#endif
 		const int32 MatchPos = Module->OriginalFilename.Find(ModuleName, ESearchCase::IgnoreCase, ESearchDir::FromEnd);
 
 		if (ensure(MatchPos != INDEX_NONE))
@@ -1277,7 +1281,11 @@ FModuleManager::ModuleInfoRef FModuleManager::GetOrCreateModule(FName InModuleNa
 		return ModuleInfo;
 	}
 
+#ifdef ODIN_PERF
+	const FString ModuleName = InModuleName.ToString();
+#else
 	const FString ModuleName = *InModuleName.ToString();
+#endif
 	const int32 MatchPos = ModuleInfo->OriginalFilename.Find(ModuleName, ESearchCase::IgnoreCase, ESearchDir::FromEnd);
 	if (!ensureMsgf(MatchPos != INDEX_NONE, TEXT("Could not find module name '%s' in module filename '%s'"), *ModuleName, *ModuleInfo->OriginalFilename))
 	{

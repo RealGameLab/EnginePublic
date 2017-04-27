@@ -902,6 +902,96 @@ FString FName::ToString() const
 	return Out;
 }
 
+#ifdef ODIN_PERF //http://coconutlizard.co.uk/blog/ue4/to-string-or-not/
+int32 GetNameEntryLength(const FNameEntry* NameEntry, const bool IsWide)
+{
+	uint32 NameLength = 0;
+	if (IsWide)
+	{
+		const WIDECHAR* pChar = NameEntry->GetWideName();
+		while (*pChar++)
+			NameLength++;
+	}
+	else
+	{
+		const ANSICHAR* pChar = NameEntry->GetAnsiName();
+		while (*pChar++)
+			NameLength++;
+	}
+	return NameLength;
+}
+void NameToTCHARBuffer(const FNameEntry* NameEntry, const bool IsWide, TCHAR* OutChar)
+{
+	if (IsWide)
+	{
+		const WIDECHAR* pChar = NameEntry->GetWideName();
+		while (WIDECHAR ThisChar = *pChar++)
+		{
+			*OutChar++ = ThisChar;
+		}
+	}
+	else
+	{
+		const ANSICHAR* pChar = NameEntry->GetAnsiName();
+		while (ANSICHAR ThisChar = *pChar++)
+		{
+			*OutChar++ = ThisChar;
+		}
+	}
+}
+uint32 NumberToTCHARBuffer(uint32 Number, TCHAR* Buffer, const uint32 BufferLen)
+{
+	uint32 NumberLength = 0;
+	TCHAR* Out = &Buffer[BufferLen];
+	do
+	{
+		*(--Out) = '0' + (Number % 10);
+		NumberLength++;
+		Number /= 10;
+	} while (Number > 0);
+	return NumberLength;
+}
+void FName::ToString(FString& Out) const
+{
+	const FNameEntry* const NameEntry = GetDisplayNameEntry();
+	bool IsWide = NameEntry->IsWide();
+	// Calculate the length of the name element
+	uint32 NameLength = GetNameEntryLength(NameEntry, IsWide);
+	// Get the number, if there is one
+	uint32 Num = GetNumber();
+	uint32 NumberLength = 0;
+	const uint32 HasNumber = (Num != NAME_NO_NUMBER_INTERNAL) ? 1 : 0;
+	// Calculate the length of the number element
+	// Also, pre-fill NumberTC, from the back, with the number in string form
+	static const uint32 NumberTC_Len = 16; // max length (10 should've been enough)
+	TCHAR NumberTC[NumberTC_Len];
+	if (HasNumber)
+	{
+		Num = NAME_INTERNAL_TO_EXTERNAL(Num); // convert to the number we wish to output
+		NumberLength = NumberToTCHARBuffer(Num, NumberTC, NumberTC_Len);
+	}
+	// Calculate the final string length (Name[_Number]\0)
+	uint32 TotalLen = (NameLength)+(HasNumber + NumberLength) + 1;
+	// Prepare the memory that we're going to write to (this is "unsafe" because we're guaranteeing that we won't write off the end)
+	Out.Empty(TotalLen);
+	Out.GetCharArray().SetNumUninitialized(TotalLen);
+	TCHAR* OutChar = Out.GetCharArray().GetData();
+	OutChar[TotalLen - 1] = 0; // NULL Terminate
+							   // Copy the string part
+	NameToTCHARBuffer(NameEntry, IsWide, OutChar);
+	OutChar += NameLength;
+	// Copy the number part
+	if (HasNumber)
+	{
+		*OutChar++ = '_';
+		TCHAR* pNumberTC = &NumberTC[NumberTC_Len - NumberLength];
+		for (uint32 It = 0; It < NumberLength; It++)
+		{
+			*OutChar++ = *(pNumberTC++);
+		}
+	}
+}
+#else
 void FName::ToString(FString& Out) const
 {
 	// a version of ToString that saves at least one string copy
@@ -909,6 +999,7 @@ void FName::ToString(FString& Out) const
 	Out.Empty( NameEntry->GetNameLength() + 6);
 	AppendString(Out);
 }
+#endif
 
 void FName::AppendString(FString& Out) const
 {
