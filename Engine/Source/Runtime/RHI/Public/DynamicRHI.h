@@ -1461,6 +1461,7 @@ FORCEINLINE FTexture2DRHIRef RHIGetViewportBackBuffer(FViewportRHIParamRef Viewp
 	return GDynamicRHI->RHIGetViewportBackBuffer(Viewport);
 }
 
+#ifdef ODIN_ANDROID_BACKBUFFER
 FORCEINLINE FTexture2DRHIRef RHIGetViewportBackBufferAndroidEGL(FViewportRHIParamRef Viewport)
 {
 	return GDynamicRHI->RHIGetViewportBackBufferAndroidEGL(Viewport);
@@ -1475,6 +1476,7 @@ FORCEINLINE void RHISetPendingRequestAndroidBackBuffer(FViewportRHIParamRef View
 {
 	GDynamicRHI->RHISetPendingRequestAndroidBackBuffer(ViewportRHI, InRequestAndroidBackBuffer);
 }
+#endif
 
 FORCEINLINE void RHIAdvanceFrameForGetViewportBackBuffer()
 {
