@@ -12,9 +12,6 @@ public class UE4EditorTarget : TargetRules
 		bBuildAllPlugins = true;
 		bPrecompile = true;
 		ExtraModuleNames.Add("UE4Game");
-
-        GlobalDefinitions.Add("ODIN");
-        GlobalDefinitions.Add("ODIN_EDITOR");
 	}
 
 	public override void SetupGlobalEnvironment(
