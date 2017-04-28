@@ -706,8 +706,6 @@ void USceneComponent::PropagateTransformUpdate(bool bTransformChanged, EUpdateTr
             isBoundsChanged = !(IsEqualToBound(Bounds, OldBounds));
         #endif // ODIN_ANDROID
 
-		}
-
 		{
 			//QUICK_SCOPE_CYCLE_COUNTER(STAT_USceneComponent_PropagateTransformUpdate_UpdateChildTransforms);
 			// Now go and update children

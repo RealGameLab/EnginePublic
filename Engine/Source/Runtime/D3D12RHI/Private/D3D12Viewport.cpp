@@ -854,7 +854,6 @@ bool FD3D12DynamicRHI::RHIIsRequestAndroidBackBuffer(FViewportRHIParamRef Viewpo
 void FD3D12DynamicRHI::RHISetPendingRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI, bool InRequestAndroidBackBuffer)
 {
 }
-#endif
 
 FTexture2DRHIRef FD3D12DynamicRHI::RHIGetViewportBackBufferAndroidEGL(FViewportRHIParamRef ViewportRHI)
 {
@@ -874,6 +873,7 @@ bool FD3D12DynamicRHI::RHIIsRequestAndroidBackBuffer(FViewportRHIParamRef Viewpo
 void FD3D12DynamicRHI::RHISetPendingRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI, bool InRequestAndroidBackBuffer)
 {
 }
+#endif
 
 #if defined(D3D12_WITH_DWMAPI) && D3D12_WITH_DWMAPI
 #include "HideWindowsPlatformTypes.h"
