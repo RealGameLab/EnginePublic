@@ -1411,7 +1411,7 @@ namespace UnrealBuildTool
 					for (int Index = 0; Index < ProjectName.Length; Index++)
 					{
 						char c = ProjectName[Index];
-						if (c != '.' && !IsDigit(c) && !IsLetter(c))
+						if (c != '.' && c != '_' && !IsDigit(c) && !IsLetter(c))
 						{
 							throw new BuildException("Project name contains illegal characters (only letters, numbers, and underscore allowed); please replace [PROJECT] with a valid name");
 						}
@@ -1438,7 +1438,7 @@ namespace UnrealBuildTool
 				for (int Index = 0; Index < PackageName.Length; Index++)
 				{
 					char c = PackageName[Index];
-					if (c != '.' && !IsDigit(c) && !IsLetter(c))
+					if (c != '.' && c != '_' && !IsDigit(c) && !IsLetter(c))
 					{
 						throw new BuildException("Package name contains illegal characters (only letters, numbers, and underscore allowed); please change in Android Project Settings. Currently set to '" + PackageName + "'");
 					}
@@ -1565,7 +1565,7 @@ namespace UnrealBuildTool
 
 			string InstallLocation;
 			Ini.GetString("/Script/AndroidRuntimeSettings.AndroidRuntimeSettings", "InstallLocation", out InstallLocation);
-			switch(InstallLocation.ToLower())
+			switch (InstallLocation.ToLower())
 			{
 				case "preferexternal":
 					InstallLocation = "preferExternal";
@@ -1629,7 +1629,7 @@ namespace UnrealBuildTool
 			}
 			else
 			{
-				switch(CookFlavor)
+				switch (CookFlavor)
 				{
 					case "_Multi":
 						//need to check ini to determine which are supported
@@ -1695,7 +1695,7 @@ namespace UnrealBuildTool
 					Text.AppendLine("\t             " + Line);
 				}
 			}
-            Text.AppendLine("\t             android:hardwareAccelerated=\"true\">");
+			Text.AppendLine("\t             android:hardwareAccelerated=\"true\">");
 			Text.AppendLine("\t             android:hasCode=\"true\">");
 			if (bShowLaunchImage)
 			{
@@ -1781,7 +1781,10 @@ namespace UnrealBuildTool
 			Text.AppendLine(string.Format("\t\t<meta-data android:name=\"com.epicgames.ue4.GameActivity.bHasOBBFiles\" android:value=\"{0}\"/>", bHasOBBFiles ? "true" : "false"));
 			Text.AppendLine(string.Format("\t\t<meta-data android:name=\"com.epicgames.ue4.GameActivity.BuildConfiguration\" android:value=\"{0}\"/>", Configuration));
 			Text.AppendLine(string.Format("\t\t<meta-data android:name=\"com.epicgames.ue4.GameActivity.bUseExternalFilesDir\" android:value=\"{0}\"/>", bUseExternalFilesDir ? "true" : "false"));
-			Text.AppendLine(string.Format("\t\t<meta-data android:name=\"com.epicgames.ue4.GameActivity.bDaydream\" android:value=\"{0}\"/>", bPackageForDaydream ? "true" : "false"));
+			if (bPackageForDaydream)
+			{
+				Text.AppendLine(string.Format("\t\t<meta-data android:name=\"com.epicgames.ue4.GameActivity.bDaydream\" android:value=\"true\"/>"));
+			}
 			Text.AppendLine("\t\t<meta-data android:name=\"com.google.android.gms.games.APP_ID\"");
 			Text.AppendLine("\t\t           android:value=\"@string/app_id\" />");
 			Text.AppendLine("\t\t<meta-data android:name=\"com.google.android.gms.version\"");
@@ -2122,51 +2125,51 @@ namespace UnrealBuildTool
 			string AntBatFilename = Path.Combine(AntBinPath, "ant.bat");
 			string AntOrigBatFilename = Path.Combine(AntBinPath, "ant.orig.bat");
 
-			if (!File.Exists(AntOrigBatFilename))
+			// check for an unused drive letter
+			string UnusedDriveLetter = "";
+			bool bFound = true;
+			DriveInfo[] AllDrives = DriveInfo.GetDrives();
+			for (char DriveLetter = 'Z'; DriveLetter >= 'A'; DriveLetter--)
 			{
-				// check for an unused drive letter
-				string UnusedDriveLetter = "";
-				bool bFound = true;
-				DriveInfo[] AllDrives = DriveInfo.GetDrives();
-				for (char DriveLetter = 'Z'; DriveLetter >= 'A'; DriveLetter--)
+				UnusedDriveLetter = Char.ToString(DriveLetter) + ":";
+				bFound = false;
+				for (int DriveIndex = AllDrives.Length-1; DriveIndex >= 0; DriveIndex--)
 				{
-					UnusedDriveLetter = Char.ToString(DriveLetter) + ":";
-					bFound = false;
-					foreach (DriveInfo drive in AllDrives)
+					if (AllDrives[DriveIndex].Name.ToUpper().StartsWith(UnusedDriveLetter))
 					{
-						if (drive.Name.ToUpper().StartsWith(UnusedDriveLetter))
-						{
-							bFound = true;
-							break;
-						}
-					}
-
-					if (!bFound)
-					{
+						bFound = true;
 						break;
 					}
 				}
-
-				if (bFound)
+				if (!bFound)
 				{
-					Log.TraceInformation("\nUnable to apply fixed ant.bat (all drive letters in use!)");
-					return;
+					break;
 				}
+			}
 
-				Log.TraceInformation("\nPatching ant.bat to work around commandline length limit (using unused drive letter {0})", UnusedDriveLetter);
+			if (bFound)
+			{
+				Log.TraceInformation("\nUnable to apply fixed ant.bat (all drive letters in use!)");
+				return;
+			}
 
+			Log.TraceInformation("\nPatching ant.bat to work around commandline length limit (using unused drive letter {0})", UnusedDriveLetter);
+
+			if (!File.Exists(AntOrigBatFilename))
+			{
 				// copy the existing ant.bat to ant.orig.bat
 				File.Copy(AntBatFilename, AntOrigBatFilename, true);
+			}
 
-				// make sure ant.bat isn't read-only
-				FileAttributes Attribs = File.GetAttributes(AntBatFilename);
-				if (Attribs.HasFlag(FileAttributes.ReadOnly))
-				{
-					File.SetAttributes(AntBatFilename, Attribs & ~FileAttributes.ReadOnly);
-				}
+			// make sure ant.bat isn't read-only
+			FileAttributes Attribs = File.GetAttributes(AntBatFilename);
+			if (Attribs.HasFlag(FileAttributes.ReadOnly))
+			{
+				File.SetAttributes(AntBatFilename, Attribs & ~FileAttributes.ReadOnly);
+			}
 
-				// generate new ant.bat with an unused drive letter for subst
-				string AntBatText =
+			// generate new ant.bat with an unused drive letter for subst
+			string AntBatText =
 					"@echo off\n" +
 					"set ANTPATH=%~dp0\n" +
 					"set ANT_CMD_LINE_ARGS =\n" +
@@ -2178,12 +2181,11 @@ namespace UnrealBuildTool
 					":doneStart\n" +
 					"subst " + UnusedDriveLetter + " \"%CD%\"\n" +
 					"pushd " + UnusedDriveLetter + "\n" +
-					"call %ANTPATH%\\ant.orig.bat %ANT_CMD_LINE_ARGS%\n" +
+					"call \"%ANTPATH%\\ant.orig.bat\" %ANT_CMD_LINE_ARGS%\n" +
 					"popd\n" +
 					"subst " + UnusedDriveLetter + " /d\n";
 
-				File.WriteAllText(AntBatFilename, AntBatText);
-			}
+			File.WriteAllText(AntBatFilename, AntBatText);
 		}
 
 		private void MakeApk(AndroidToolChain ToolChain, string ProjectName, string ProjectDirectory, string OutputPath, string EngineDirectory, bool bForDistribution, string CookFlavor, bool bMakeSeparateApks, bool bIncrementalPackage, bool bDisallowPackagingDataInApk, bool bDisallowExternalFilesDir)
