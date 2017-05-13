@@ -462,6 +462,10 @@ protected:
 	/** Returns if we have access to property guids */
 	virtual bool ArePropertyGuidsAvailable() const { return false; }
 
+#ifdef ODIN_LUA
+public:
+    int32 LuaRegisterRef = 0;
+#endif
 };
 
 enum EStructFlags

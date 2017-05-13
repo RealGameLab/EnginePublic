@@ -1615,6 +1615,8 @@ void FSlateApplication::TickApplication(ESlateTickType TickType, float DeltaTime
 			QueryCursor();
 		}
 
+#ifdef ODIN_DISABLE_TOOLTIP
+#else
 		{
 			SCOPE_CYCLE_COUNTER(STAT_SlateUpdateTooltip);
 			SLATE_CYCLE_COUNTER_SCOPE(GUpdateTooltipTime);
@@ -1623,6 +1625,7 @@ void FSlateApplication::TickApplication(ESlateTickType TickType, float DeltaTime
 			const bool AllowSpawningOfToolTips = false;
 			UpdateToolTip(AllowSpawningOfToolTips);
 		}
+#endif
 	}
 	//FPlatformMisc::EndNamedEvent();
 
@@ -5689,9 +5692,12 @@ bool FSlateApplication::ProcessMouseMoveEvent( FPointerEvent& MouseEvent, bool b
 
 		QueueSynthesizedMouseMove();
 
+#ifdef ODIN_DISABLE_TOOLTIP
+#else
 		// Detecting a mouse move of zero delta is our way of filtering out synthesized move events
 		const bool AllowSpawningOfToolTips = true;
 		UpdateToolTip( AllowSpawningOfToolTips );
+#endif
 		
 		// Guard against synthesized mouse moves and only track user interaction if the cursor pos changed
 		SetLastUserInteractionTime(this->GetCurrentTime());

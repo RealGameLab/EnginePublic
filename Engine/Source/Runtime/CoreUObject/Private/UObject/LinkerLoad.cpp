@@ -376,7 +376,12 @@ static FTexture2DResourceMem* CreateResourceMem(int32 SizeX, int32 SizeY, int32 
 
 static inline int32 HashNames(FName Object, FName Class, FName Package)
 {
+	// http://coconutlizard.co.uk/blog/ue4/the-case-of-the-exporthash-string-monster/
+#ifdef ODIN_PERF
+	return Object.GetComparisonIndex() + 7 * Class.GetComparisonIndex() + 31 * Package.GetComparisonIndex();
+#else
 	return Object.GetComparisonIndex() + 7 * Class.GetComparisonIndex() + 31 * FPackageName::GetShortFName(Package).GetComparisonIndex();
+#endif
 }
 
 static FORCEINLINE bool IsCoreUObjectPackage(const FName& PackageName)
@@ -839,10 +844,17 @@ bool FLinkerLoad::IsTimeLimitExceeded( const TCHAR* CurrentTask, int32 Granulari
 	IsTimeLimitExceededCallCount++;
 	if( !bTimeLimitExceeded 
 	&&	bUseTimeLimit 
+#ifdef ODIN_PERF
+    // http://coconutlizard.co.uk/blog/ue4/the-case-of-the-exporthash-string-monster/
+	&&  ((Granularity <= 1) || IsTimeLimitExceededCallCount % Granularity) == 0 ))
+#else
 	&&  (IsTimeLimitExceededCallCount % Granularity) == 0 )
+#endif
 	{
 		double CurrentTime = FPlatformTime::Seconds();
 		bTimeLimitExceeded = CurrentTime - TickStartTime > TimeLimit;
+#ifdef ODIN_PERF
+#else
 		if (!FPlatformProperties::HasEditorOnlyData())
 		{
 			// Log single operations that take longer than timelimit.
@@ -853,6 +865,7 @@ bool FLinkerLoad::IsTimeLimitExceeded( const TCHAR* CurrentTask, int32 Granulari
 					(CurrentTime - TickStartTime) * 1000);
 			}
 		}
+#endif
 	}
 	return bTimeLimitExceeded;
 }
@@ -1705,14 +1718,23 @@ FLinkerLoad::ELinkerStatus FLinkerLoad::CreateExportHash()
 	// Zero initialize hash on first iteration.
 	if( ExportHashIndex == 0 )
 	{
+ // http://coconutlizard.co.uk/blog/ue4/the-case-of-the-exporthash-string-monster/
+#ifdef ODIN_PERF
+		ExportHash[0] = INDEX_NONE;
+#else
 		for( int32 i=0; i<ARRAY_COUNT(ExportHash); i++ )
 		{
 			ExportHash[i] = INDEX_NONE;
 		}
+#endif
 	}
 
 	// Set up export hash, potentially spread across several frames.
+#ifdef ODIN_PERF
 	while( ExportHashIndex < ExportMap.Num() && !IsTimeLimitExceeded(TEXT("creating export hash"),100) )
+#else
+	while (ExportHashIndex < ExportMap.Num())
+#endif
 	{
 		FObjectExport& Export = ExportMap[ExportHashIndex];
 
@@ -1724,7 +1746,11 @@ FLinkerLoad::ELinkerStatus FLinkerLoad::CreateExportHash()
 	}
 
 	// Return whether we finished this step and it's safe to start with the next.
+#ifdef ODIN_PERF
+	return LINKER_Loaded;
+#else
 	return ((ExportHashIndex == ExportMap.Num()) && !IsTimeLimitExceeded( TEXT("creating export hash") )) ? LINKER_Loaded : LINKER_TimedOut;
+#endif
 }
 
 /**

@@ -515,4 +515,11 @@ private:
 		static FCriticalSection Lock;
 		return &Lock; 
 	}
+
+private:
+#if WITH_EDITOR
+#ifdef ODIN_PERF
+	static FString RootPrefix;
+#endif
+#endif
 };

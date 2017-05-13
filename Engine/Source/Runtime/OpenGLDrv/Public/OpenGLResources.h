@@ -1473,7 +1473,14 @@ public:
 
 	// Accessors.
 	FIntPoint GetSizeXY() const { return FIntPoint(SizeX, SizeY); }
+#ifdef ODIN_ANDROID_BACKBUFFER
+	FOpenGLTexture2D *GetBackBuffer();
+	FOpenGLTexture2D *GetBackBufferAndroidEGL() const { return BackBuffer; }
+	bool IsRequestAndroidBackBuffer() { return CurrentFrameRequestAndroidBackBuffer; }
+	void SetRequestAndroidBackBuffer(bool InRequestAndroidBackBuffer) { PendingRequestAndroidBackBuffer = InRequestAndroidBackBuffer; }
+#else
 	FOpenGLTexture2D *GetBackBuffer() const { return BackBuffer; }
+#endif
 	bool IsFullscreen( void ) const { return bIsFullscreen; }
 
 	void WaitForFrameEventCompletion()
@@ -1496,6 +1503,12 @@ public:
 		CustomPresent = InCustomPresent;
 	}
 	FRHICustomPresent* GetCustomPresent() const { return CustomPresent.GetReference(); }
+
+#ifdef ODIN_ANDROID_BACKBUFFER
+	bool RequestAndroidBackBuffer;
+	bool PendingRequestAndroidBackBuffer;
+	bool CurrentFrameRequestAndroidBackBuffer;
+#endif
 private:
 
 	friend class FOpenGLDynamicRHI;
@@ -1508,6 +1521,9 @@ private:
 	EPixelFormat PixelFormat;
 	bool bIsValid;
 	TRefCountPtr<FOpenGLTexture2D> BackBuffer;
+#ifdef ODIN_ANDROID_BACKBUFFER
+	TRefCountPtr<FOpenGLTexture2D> BackBufferAndroidTemp;
+#endif
 	FOpenGLEventQuery FrameSyncEvent;
 	FCustomPresentRHIRef CustomPresent;
 };

@@ -3180,6 +3180,18 @@ public:
 		return RHIGetViewportBackBuffer(Viewport);
 	}
 	
+
+#ifdef ODIN_ANDROID_BACKBUFFER
+	FORCEINLINE FTexture2DRHIRef GetViewportBackBufferEGL(FViewportRHIParamRef Viewport)
+	{
+		return RHIGetViewportBackBufferAndroidEGL(Viewport);
+	}
+	
+	FORCEINLINE FTexture2DRHIRef GetViewportBackBufferEGL(FViewportRHIParamRef Viewport)
+	{
+		return RHIGetViewportBackBufferAndroidEGL(Viewport);
+	}
+#endif
 	FORCEINLINE void AdvanceFrameForGetViewportBackBuffer()
 	{
 		return RHIAdvanceFrameForGetViewportBackBuffer();

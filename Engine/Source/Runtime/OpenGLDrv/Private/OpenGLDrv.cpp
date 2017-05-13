@@ -509,7 +509,11 @@ void FOpenGLBase::ProcessExtensions( const FString& ExtensionsString )
 
 	bSupportsSeamlessCubemap = ExtensionsString.Contains(TEXT("GL_ARB_seamless_cube_map"));
 	
+#ifdef ODIN_PERF_DISABLE_ANIS
+	bSupportsTextureFilterAnisotropic = false;
+#else
 	bSupportsTextureFilterAnisotropic = ExtensionsString.Contains(TEXT("GL_EXT_texture_filter_anisotropic"));
+#endif // ODIN_PERF_DISABLE_ANIS
 
 	bSupportsDrawBuffersBlend = ExtensionsString.Contains(TEXT("GL_ARB_draw_buffers_blend"));
 

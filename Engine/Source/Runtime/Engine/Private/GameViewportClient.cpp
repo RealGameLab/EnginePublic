@@ -917,6 +917,22 @@ static void GatherViewExtensions(FViewport* InViewport, TArray<TSharedPtr<class 
 
 void UGameViewportClient::Draw(FViewport* InViewport, FCanvas* SceneCanvas)
 {
+#ifdef ODIN_CAMERA_FRAMEENDSYNC
+	{
+        // Find the objects which need to be cleaned up the next frame.
+        FPendingCleanupObjects* PreviousPendingCleanupObjects = PendingCleanupObjects;
+        PendingCleanupObjects = GetPendingCleanupObjects();
+
+		SCOPE_CYCLE_COUNTER( STAT_FrameSyncTime );
+		static FFrameEndSync FrameEndSync;
+		static auto CVarAllowOneFrameThreadLag = IConsoleManager::Get().FindTConsoleVariableDataInt(TEXT("r.OneFrameThreadLag"));
+		FrameEndSync.Sync( CVarAllowOneFrameThreadLag->GetValueOnGameThread() != 0 );
+
+		delete PreviousPendingCleanupObjects;
+
+        GEngine->UpdateTimeAndHandleMaxTickRate();
+	}
+#endif // ODIN_CAMERA_FRAMEENDSYNC
 	//Valid SceneCanvas is required.  Make this explicit.
 	check(SceneCanvas);
 

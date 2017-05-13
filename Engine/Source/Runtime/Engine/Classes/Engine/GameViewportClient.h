@@ -923,4 +923,9 @@ private:
 
 	/** Is the mouse currently over the viewport client */
 	bool bIsMouseOverClient;
+
+    #ifdef ODIN_CAMERA_FRAMEENDSYNC
+	FPendingCleanupObjects* PendingCleanupObjects;
+    #endif
+
 };

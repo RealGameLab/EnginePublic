@@ -130,7 +130,7 @@ namespace AutomationTool
 					}
 
 					// Get the latest version of it
-					int NewCL = SubmitP4.CreateChange(Description: String.Format("[CL {0}] Updated binaries", P4Env.Changelist));
+					int NewCL = SubmitP4.CreateChange(Description: String.Format("[CL {0}] Updated binaries", P4Env.CodeChangelist));
 					SubmitP4.Sync(String.Format("-k \"{0}\"", ArchivePath), AllowSpew:false);
 					CommandUtils.CopyFile(ZipFileName, WhereZipFile.Path);
 					SubmitP4.Add(NewCL, String.Format("\"{0}\"", ArchivePath));

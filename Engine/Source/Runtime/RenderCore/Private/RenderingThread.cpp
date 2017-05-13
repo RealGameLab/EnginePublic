@@ -691,11 +691,14 @@ void StartRenderingThread()
 	Fence.BeginFence();
 	Fence.Wait();
 
+#ifdef ODIN_ANDROID_PERF_DISABLE_RENDERHEARTBEAT
+#else
 	GRunRenderingThreadHeartbeat = true;
 	// Create the rendering thread heartbeat
 	GRenderingThreadRunnableHeartbeat = new FRenderingThreadTickHeartbeat();
 
 	GRenderingThreadHeartbeat = FRunnableThread::Create(GRenderingThreadRunnableHeartbeat, *FString::Printf(TEXT("RTHeartBeat %d"), ThreadCount), 16 * 1024, TPri_AboveNormal, FPlatformAffinity::GetRTHeartBeatMask());
+#endif
 
 	ThreadCount++;
 }
@@ -1009,6 +1012,13 @@ void FRenderCommandFence::Wait(bool bProcessGameThreadTasks) const
 			FTaskGraphInterface::Get().WaitUntilTaskCompletes(CompletionEvent, ENamedThreads::GameThread);
 		}
 #endif
+    #ifdef ODIN_PERF_IDLETASKGRAPH
+        if (bProcessGameThreadTasks)
+		{
+			QUICK_SCOPE_CYCLE_COUNTER(STAT_FRenderCommandFence_Wait);
+			FTaskGraphInterface::Get().WaitUntilTaskCompletes(CompletionEvent, ENamedThreads::GameThread);
+		}
+    #endif
 		GameThreadWaitForTask(CompletionEvent, bProcessGameThreadTasks);
 	}
 }

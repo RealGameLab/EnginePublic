@@ -875,6 +875,40 @@ void FSlateRHIRenderer::DrawWindow_RenderThread(FRHICommandListImmediate& RHICmd
 			}
 		}
 
+		{
+#ifdef ODIN_ANDROID_BACKBUFFER
+			const auto FeatureLevel = GMaxRHIFeatureLevel;
+			if ((FeatureLevel == ERHIFeatureLevel::Type::ES2 || FeatureLevel == ERHIFeatureLevel::Type::ES3_1) && 
+				RHIIsRequestAndroidBackBuffer(ViewportInfo.ViewportRHI))
+			{
+				SetRenderTarget(RHICmdList, RHICmdList.GetViewportBackBufferEGL(ViewportInfo.ViewportRHI), FTextureRHIRef(), ESimpleRenderTargetMode::EClearColorAndDepth);
+
+				RHICmdList.SetBlendState(TStaticBlendState<>::GetRHI());
+				RHICmdList.SetRasterizerState(TStaticRasterizerState<>::GetRHI());
+				RHICmdList.SetDepthStencilState(TStaticDepthStencilState<false, CF_Always>::GetRHI());
+
+				auto ShaderMap = GetGlobalShaderMap(FeatureLevel);
+				TShaderMapRef<FScreenVS> VertexShader(ShaderMap);
+				TShaderMapRef<FScreenPS> PixelShader(ShaderMap);
+
+				static FGlobalBoundShaderState BoundShaderState;
+				static const FName RendererModuleName("Renderer");
+				IRendererModule& RendererModule = FModuleManager::GetModuleChecked<IRendererModule>(RendererModuleName);
+				SetGlobalBoundShaderState(RHICmdList, FeatureLevel, BoundShaderState, RendererModule.GetFilterVertexDeclaration().VertexDeclarationRHI, *VertexShader, *PixelShader);
+				PixelShader->SetParameters(RHICmdList, TStaticSamplerState<SF_Bilinear>::GetRHI(), RHICmdList.GetViewportBackBuffer(ViewportInfo.ViewportRHI));
+				RendererModule.DrawRectangle(
+					RHICmdList,
+					0, 0,
+					ViewportWidth, ViewportHeight,
+					0.0f, 0.0f,
+					1.0f, 1.0f,
+					FIntPoint(ViewportWidth, ViewportHeight),
+					FIntPoint(1, 1),
+					*VertexShader,
+					EDRF_Default);
+			}
+#endif 
+		}
 	if (!bRenderedStereo && GEngine && IsValidRef(ViewportInfo.GetRenderTargetTexture()) && GEngine->StereoRenderingDevice.IsValid())
 	{
 		GEngine->StereoRenderingDevice->RenderTexture_RenderThread(RHICmdList, RHICmdList.GetViewportBackBuffer(ViewportInfo.ViewportRHI), ViewportInfo.GetRenderTargetTexture());

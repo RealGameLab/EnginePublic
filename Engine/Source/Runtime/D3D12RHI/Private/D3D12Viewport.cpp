@@ -835,6 +835,26 @@ FTexture2DRHIRef FD3D12DynamicRHI::RHIGetViewportBackBuffer(FViewportRHIParamRef
 
 	return BackBuffer;
 }
+#ifdef ODIN_ANDROID_BACKBUFFER
+FTexture2DRHIRef FD3D12DynamicRHI::RHIGetViewportBackBufferAndroidEGL(FViewportRHIParamRef ViewportRHI)
+{
+	FD3D12Viewport* Viewport = FD3D12DynamicRHI::ResourceCast(ViewportRHI);
+
+	if (GRHISupportsRHIThread)
+		return Viewport->GetBackBuffer(ViewportFrameCounter);
+	else
+		return Viewport->GetBackBuffer();
+}
+
+bool FD3D12DynamicRHI::RHIIsRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI)
+{
+	return false;
+}
+
+void FD3D12DynamicRHI::RHISetPendingRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI, bool InRequestAndroidBackBuffer)
+{
+}
+#endif
 
 #if defined(D3D12_WITH_DWMAPI) && D3D12_WITH_DWMAPI
 #include "HideWindowsPlatformTypes.h"

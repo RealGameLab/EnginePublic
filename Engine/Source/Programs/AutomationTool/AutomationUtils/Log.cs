@@ -29,6 +29,9 @@ namespace AutomationTool
                 Console.OutputEncoding = new System.Text.UTF8Encoding(false, false);
             }
 
+			//Console.OutputEncoding = Encoding.GetEncoding(936);
+			Console.OutputEncoding = Encoding.Default;
+
 			UnrealBuildTool.Log.InitLogging(
                 bLogTimestamps: CommandUtils.ParseParam(CommandLine, "-Timestamps"),
 				InLogLevel: (UnrealBuildTool.LogEventType)Enum.Parse(typeof(UnrealBuildTool.LogEventType), CommandUtils.ParseParamValue(CommandLine, "-Verbose=", "Log")),

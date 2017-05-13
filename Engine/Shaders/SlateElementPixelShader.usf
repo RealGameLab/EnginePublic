@@ -6,6 +6,7 @@
 #include "SlateShaderCommon.usf"
 
 
+#if !((ES2_PROFILE && COMPILER_GLSL_ES2) || (ES3_1_PROFILE && COMPILER_GLSL_ES3_1))
 /** Enable to debug clipping issues */
 #define DEBUG_CLIPPING 0
 
@@ -342,3 +343,154 @@ float4 DebugOverdrawMain( VertexToPixelInterpolants VIn ) : SV_Target0
 
 	return .1;
 }
+
+#else // !((ES2_PROFILE && COMPILER_GLSL_ES2) || (ES3_1_PROFILE && COMPILER_GLSL_ES3_1))
+
+
+
+
+// @wutongfei
+#include "OdinUIShaderCommon.usf"
+half2 GammaValues;
+float4 ShaderParams;
+Texture2D ElementTexture;
+SamplerState ElementTextureSampler;
+
+#if USE_MATERIALS
+void OdinUIFillTexCoords( inout FMaterialPixelParameters Parameters, OdinUIVertexToPixelInterpolants InVertex, float2 InDefaultUV )
+{
+#if SHADER_TYPE == ST_Font
+	#if NUM_MATERIAL_TEXCOORDS == 1
+		Parameters.TexCoords[0] = OdinUIGetUV( InVertex, 1 );
+	#elif NUM_MATERIAL_TEXCOORDS == 2
+		Parameters.TexCoords[0] = OdinUIGetUV( InVertex, 1 );
+		Parameters.TexCoords[1] = InVertex.MaterialTexCoords;
+	#endif
+#elif (NUM_CUSTOMIZED_UVS != 0) && NUM_MATERIAL_TEXCOORDS > 0
+	UNROLL
+	for( int CoordinateIndex = 0; CoordinateIndex < NUM_MATERIAL_TEXCOORDS; CoordinateIndex++ )
+	{
+		Parameters.TexCoords[CoordinateIndex] = OdinUIGetUV( InVertex, CoordinateIndex );
+	}
+#else
+	#if NUM_MATERIAL_TEXCOORDS == 1
+		Parameters.TexCoords[0] = InDefaultUV;
+	#elif NUM_MATERIAL_TEXCOORDS == 2
+		Parameters.TexCoords[0] = InDefaultUV;
+		Parameters.TexCoords[1] = OdinUIGetUV( InVertex, 0 );
+	#elif NUM_MATERIAL_TEXCOORDS == 3
+		Parameters.TexCoords[0] = InDefaultUV;
+		Parameters.TexCoords[1] = OdinUIGetUV( InVertex, 0 );
+		Parameters.TexCoords[2] = OdinUIGetUV( InVertex, 1 );
+	#elif NUM_MATERIAL_TEXCOORDS >= 4
+		Parameters.TexCoords[0] = InDefaultUV;
+		Parameters.TexCoords[1] = OdinUIGetUV( InVertex, 0 );
+		Parameters.TexCoords[2] = OdinUIGetUV( InVertex, 1 );
+		UNROLL
+		for( int CoordinateIndex = 3; CoordinateIndex < NUM_MATERIAL_TEXCOORDS; CoordinateIndex++ )
+		{
+			Parameters.TexCoords[CoordinateIndex] = OdinUIGetUV( InVertex, CoordinateIndex );
+		}
+	#endif // NUM_MATERIAL_TEXCOORDS == 1
+#endif	// SHADER_TYPE
+}
+
+half4 OdinUIGetMaterialColor( OdinUIVertexToPixelInterpolants InVertex, float2 MeshUV )
+{
+	ResolvedView = ResolveView();
+	FMaterialPixelParameters Parameters = MakeInitializedMaterialPixelParameters();
+
+	OdinUIFillTexCoords( Parameters, InVertex, MeshUV );
+
+	Parameters.VertexColor = InVertex.Color;
+   
+	FPixelMaterialInputs PixelMaterialInputs;
+	CalcMaterialParameters( Parameters, PixelMaterialInputs, InVertex.Position, true );
+
+	GetMaterialCoverageAndClipping( Parameters, PixelMaterialInputs );
+	
+	half Opacity = GetMaterialOpacity(PixelMaterialInputs);
+	half3 Color = GetMaterialEmissive(PixelMaterialInputs);
+
+	half4 OutColor;
+
+	#if MATERIALBLENDING_ADDITIVE
+		OutColor = half4( Color * Opacity, 0.0f );
+	#else
+		OutColor = half4( Color, Opacity );
+	#endif
+
+	return OutColor;
+}
+#endif
+
+#if !USE_MATERIALS
+half4 OdinUIGetTextureColor( OdinUIVertexToPixelInterpolants InVertex, float2 UV )
+{
+	half4 BaseColor = Texture2DSample(ElementTexture, ElementTextureSampler, UV );
+#if !USE_TEXTURE_ALPHA
+	BaseColor.a = 1.0f;
+#endif
+
+	return BaseColor;
+}
+#endif
+
+half4 OdinUIGetColor( OdinUIVertexToPixelInterpolants InVertex, float2 UV )
+{
+	half4 FinalColor;
+	
+#if USE_MATERIALS
+	half4 BaseColor = OdinUIGetMaterialColor( InVertex, UV );
+#else
+	half4 BaseColor = OdinUIGetTextureColor( InVertex, UV );
+#endif
+
+	FinalColor = BaseColor*InVertex.Color;
+	return FinalColor;
+}
+
+#if SHADER_TYPE == ST_Font
+half4 OdinGetFontElementColor( OdinUIVertexToPixelInterpolants InVertex )
+{
+	float2 AtlasTextureCoordinates = OdinUIGetUV( InVertex, 0 );
+#if USE_MATERIALS
+	half4 BaseColor = OdinUIGetMaterialColor( InVertex, float2(0,0) ) * InVertex.Color;
+#else
+	half4 BaseColor = InVertex.Color;
+#endif
+	half4 OutColor = BaseColor;
+
+	OutColor.a *= Texture2DSample_A8( ElementTexture, ElementTextureSampler, AtlasTextureCoordinates );
+
+	return OutColor;
+}
+#endif
+
+#if SHADER_TYPE == ST_Default
+half4 OdinUIGetDefaultElementColor( OdinUIVertexToPixelInterpolants InVertex )
+{
+	return OdinUIGetColor( InVertex, OdinUIGetUV( InVertex, 0) * OdinUIGetUV( InVertex, 1 ) );
+}
+#endif
+
+half4 Main( OdinUIVertexToPixelInterpolants VIn ) : SV_Target0
+{
+	half4 OutColor = float4(1, 0, 0, 1);
+#if SHADER_TYPE == ST_Default
+	OutColor = OdinUIGetDefaultElementColor( VIn );
+#elif SHADER_TYPE == ST_Font
+	OutColor = OdinGetFontElementColor( VIn );
+#endif
+
+	half2 Factor = (half2(1.0, 1.0) - abs(VIn.ClipMask)) * 500;
+	OutColor.a *= clamp( min(Factor.x, Factor.y), 0.0, 1.0);
+
+	return OutColor;
+}
+
+float4 DebugOverdrawMain( VertexToPixelInterpolants VIn ) : SV_Target0
+{
+	return .1;
+}
+#endif // !((ES2_PROFILE && COMPILER_GLSL_ES2) || (ES3_1_PROFILE && COMPILER_GLSL_ES3_1))

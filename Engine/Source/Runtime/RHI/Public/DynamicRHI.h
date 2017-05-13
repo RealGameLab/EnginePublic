@@ -1158,6 +1158,12 @@ public:
 	// FlushType: Thread safe
 	virtual FTexture2DRHIRef RHIGetViewportBackBuffer(FViewportRHIParamRef Viewport) = 0;
 
+#ifdef ODIN_ANDROID_BACKBUFFER
+	virtual FTexture2DRHIRef RHIGetViewportBackBufferAndroidEGL(FViewportRHIParamRef Viewport) = 0;
+	virtual bool RHIIsRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI) = 0;
+	virtual void RHISetPendingRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI, bool InRequestAndroidBackBuffer) = 0;
+#endif
+	
 	virtual FUnorderedAccessViewRHIRef RHIGetViewportBackBufferUAV(FViewportRHIParamRef ViewportRHI)
 	{
 		return FUnorderedAccessViewRHIRef();
@@ -1454,6 +1460,23 @@ FORCEINLINE FTexture2DRHIRef RHIGetViewportBackBuffer(FViewportRHIParamRef Viewp
 {
 	return GDynamicRHI->RHIGetViewportBackBuffer(Viewport);
 }
+
+#ifdef ODIN_ANDROID_BACKBUFFER
+FORCEINLINE FTexture2DRHIRef RHIGetViewportBackBufferAndroidEGL(FViewportRHIParamRef Viewport)
+{
+	return GDynamicRHI->RHIGetViewportBackBufferAndroidEGL(Viewport);
+}
+
+FORCEINLINE bool RHIIsRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI)
+{
+	return GDynamicRHI->RHIIsRequestAndroidBackBuffer(ViewportRHI);
+}
+
+FORCEINLINE void RHISetPendingRequestAndroidBackBuffer(FViewportRHIParamRef ViewportRHI, bool InRequestAndroidBackBuffer)
+{
+	GDynamicRHI->RHISetPendingRequestAndroidBackBuffer(ViewportRHI, InRequestAndroidBackBuffer);
+}
+#endif
 
 FORCEINLINE void RHIAdvanceFrameForGetViewportBackBuffer()
 {

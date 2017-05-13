@@ -2282,7 +2282,11 @@ public:
 			, bCreatePhysicsScene(true)
 			, bCreateNavigation(true)
 			, bCreateAISystem(true)
+        #ifdef ODIN_PERF_DISABLE_PHYSIC
+			, bShouldSimulatePhysics(false)
+        #else
 			, bShouldSimulatePhysics(true)
+        #endif // ODIN_ANDROID
 			, bEnableTraceCollision(false)
 			, bTransactional(true)
 			, bCreateFXSystem(true)

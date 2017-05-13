@@ -492,7 +492,7 @@ namespace UnrealBuildTool
 
 				Result += " -march=armv7-a";
 				Result += " -mfloat-abi=softfp";
-				Result += " -mfpu=vfpv3-d16";			//@todo android: UE3 was just vfp. arm7a should all support v3 with 16 registers
+				Result += " -mfpu=neon";			//@todo android: UE3 was just vfp. arm7a should all support v3 with 16 registers
 
 				// Add flags for on-device debugging	
 				if (CompileEnvironment.Configuration == CppConfiguration.Debug)

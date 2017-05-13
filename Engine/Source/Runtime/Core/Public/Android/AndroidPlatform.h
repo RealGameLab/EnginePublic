@@ -46,6 +46,9 @@ typedef FAndroidTypes FPlatformTypes;
 #define PLATFORM_HAS_TOUCH_MAIN_SCREEN				1
 #define PLATFORM_SUPPORTS_STACK_SYMBOLS				1
 #define PLATFORM_NUM_AUDIODECOMPRESSION_PRECACHE_BUFFERS 1
+#ifdef ODIN_ANDROID_PERF_NEON
+#define PLATFORM_ENABLE_VECTORINTRINSICS_NEON		1
+#endif // ODIN_ANDROID
 
 // Function type macros.
 #define VARARGS													/* Functions with variable arguments */
