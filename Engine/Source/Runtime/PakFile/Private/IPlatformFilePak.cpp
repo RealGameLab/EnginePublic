@@ -3955,7 +3955,12 @@ void FPakPlatformFile::FindPakFilesInDirectory(IPlatformFile* LowLevelFile, cons
 			if (bIsDirectory == false)
 			{
 				FString Filename(FilenameOrDirectory);
+#ifdef ODIN_HOTRELOAD
+				// 只加载 main.pak, 其他 pak 要通过 mount 加载 by: lixingtong 
+				if (FPaths::GetCleanFilename(Filename) == TEXT("main.pak"))
+#else
 				if (FPaths::GetExtension(Filename) == TEXT("pak"))
+#endif // ODIN_HOTRELOAD
 				{
 					// if a platform supports chunk style installs, make sure that the chunk a pak file resides in is actually fully installed before accepting pak files from it
 					if (ChunkInstall)
@@ -4010,11 +4015,16 @@ void FPakPlatformFile::GetPakFolders(const TCHAR* CmdLine, TArray<FString>& OutP
 	}
 #endif
 
+#ifdef ODIN_HOTRELOAD
+	extern FString GAndroidDataDir;
+	OutPakFolders.Add(FString::Printf(TEXT("%s/Bin/Paks/"), *GAndroidDataDir));
+#else
 	// @todo plugin urgent: Needs to handle plugin Pak directories, too
 	// Hardcoded locations
 	OutPakFolders.Add(FString::Printf(TEXT("%sPaks/"), *FPaths::GameContentDir()));
 	OutPakFolders.Add(FString::Printf(TEXT("%sPaks/"), *FPaths::GameSavedDir()));
 	OutPakFolders.Add(FString::Printf(TEXT("%sPaks/"), *FPaths::EngineContentDir()));
+#endif // ODIN_HOTRELOAD
 }
 
 bool FPakPlatformFile::CheckIfPakFilesExist(IPlatformFile* LowLevelFile, const TArray<FString>& PakFolders)

@@ -27,16 +27,23 @@ static jmethodID _AcquirePermissionMethodId;
 
 void UAndroidPermissionFunctionLibrary::Initialize()
 {
+#ifdef ODIN_NOANDROIDPERMISS
+#else
 #if PLATFORM_ANDROID
 	JNIEnv* env = FAndroidApplication::GetJavaEnv();
 	_PermissionHelperClass = (jclass)env->NewGlobalRef(FAndroidApplication::FindJavaClass("com/google/vr/sdk/samples/permission/PermissionHelper"));
 	_CheckPermissionMethodId = env->GetStaticMethodID(_PermissionHelperClass, "checkPermission", "(Ljava/lang/String;)Z");
 	_AcquirePermissionMethodId = env->GetStaticMethodID(_PermissionHelperClass, "acquirePermissions", "([Ljava/lang/String;)V");
 #endif
+#endif
 }
 
 bool UAndroidPermissionFunctionLibrary::CheckPermission(const FString& permission)
 {
+#ifdef ODIN_NOANDROIDPERMISS
+	UE_LOG(LogAndroidPermission, Log, TEXT("UAndroidPermissionFunctionLibrary::CheckPermission (ODIN_NOANDROIDPERMISS)"));
+	return false;
+#else
 #if PLATFORM_ANDROID
 	UE_LOG(LogAndroidPermission, Log, TEXT("UAndroidPermissionFunctionLibrary::CheckPermission %s (Android)"), *permission);
 	JNIEnv* env = FAndroidApplication::GetJavaEnv();
@@ -48,10 +55,15 @@ bool UAndroidPermissionFunctionLibrary::CheckPermission(const FString& permissio
 	UE_LOG(LogAndroidPermission, Log, TEXT("UAndroidPermissionFunctionLibrary::CheckPermission (Else)"));
 	return false;
 #endif
+#endif
 }
 
 UAndroidPermissionCallbackProxy* UAndroidPermissionFunctionLibrary::AcquirePermissions(const TArray<FString>& permissions)
 {
+#ifdef ODIN_NOANDROIDPERMISS
+	UE_LOG(LogAndroidPermission, Log, TEXT("UAndroidPermissionFunctionLibrary::AcquirePermissions (ODIN_NOANDROIDPERMISS)"));
+	return UAndroidPermissionCallbackProxy::GetInstance();
+#else
 #if PLATFORM_ANDROID
 	UE_LOG(LogAndroidPermission, Log, TEXT("UAndroidPermissionFunctionLibrary::AcquirePermissions"));
 	JNIEnv* env = FAndroidApplication::GetJavaEnv();
@@ -67,5 +79,6 @@ UAndroidPermissionCallbackProxy* UAndroidPermissionFunctionLibrary::AcquirePermi
 #else
 	UE_LOG(LogAndroidPermission, Log, TEXT("UAndroidPermissionFunctionLibrary::AcquirePermissions %s (Android)"), *(permissions[0]));
 	return UAndroidPermissionCallbackProxy::GetInstance();
+#endif
 #endif
 }

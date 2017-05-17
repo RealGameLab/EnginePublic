@@ -104,7 +104,7 @@ namespace UnrealBuildTool
 			Target.bCompileSimplygonSSF = false;
 
 			Target.bCompileRecast = true;
-			Target.bDeployAfterCompile = true;
+			Target.bDeployAfterCompile = false;
 		}
 
 		public override bool CanUseXGE()

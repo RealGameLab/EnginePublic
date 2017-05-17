@@ -1216,6 +1216,18 @@ JNI_METHOD void Java_com_epicgames_ue4_GameActivity_nativeSetGlobalActivity(JNIE
 	}
 }
 
+// libUE4.so µÄÂ·¾¶ by: lixingtong
+extern "C" void Java_com_epicgames_ue4_GameActivity_nativeSetAndroidDataDir(JNIEnv* Jenv, jobject Thiz, jstring DataDir)
+{
+#ifdef ODIN_HOTRELOAD
+	extern FString GAndroidDataDir;
+
+	const char* CharsLibDir = Jenv->GetStringUTFChars(DataDir, 0);
+	GAndroidDataDir = FString(UTF8_TO_TCHAR(CharsLibDir));
+	Jenv->ReleaseStringUTFChars(DataDir, CharsLibDir);
+	FPlatformMisc::LowLevelOutputDebugStringf(TEXT("GAndroidDataDir '%s'\n"), *GAndroidDataDir);
+#endif // ODIN_HOTRELOAD
+}
 
 JNI_METHOD bool Java_com_epicgames_ue4_GameActivity_nativeIsShippingBuild(JNIEnv* LocalJNIEnv, jobject LocalThiz)
 {

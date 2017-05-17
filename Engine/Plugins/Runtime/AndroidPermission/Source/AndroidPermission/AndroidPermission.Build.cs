@@ -65,5 +65,6 @@ public class AndroidPermission : ModuleRules
             string PluginPath = Utils.MakePathRelativeTo(ModuleDirectory, BuildConfiguration.RelativeEnginePath);
             AdditionalPropertiesForReceipt.Add(new ReceiptProperty("AndroidPlugin", Path.Combine(PluginPath, "AndroidPermission_APL.xml")));
         }
+        Definitions.Add("ODIN_NOANDROIDPERMISS");
     }
 }
