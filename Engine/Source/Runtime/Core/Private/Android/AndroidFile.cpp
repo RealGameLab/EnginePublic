@@ -72,10 +72,10 @@ FString GExternalFilePath;
 // External font path base - setup during load
 FString GFontPathBase;
 
-#ifdef ODIN_HOTRELOAD
+#ifdef ODIN_GRADLE
 // libUE4.so 的路径 (applicationInfo.dataDir) by: lixingtong
 FString GAndroidDataDir;
-#endif // ODIN_HOTRELOAD
+#endif // ODIN_GRADLE
 
 // Is the OBB in an APK file or not
 bool GOBBinAPK;
@@ -905,7 +905,7 @@ public:
 			return false;
 		}
 
-#ifndef ODIN_HOTRELOAD
+#ifndef ODIN_GRADLE
 		if (GOBBinAPK)
 		{
 			// Open the APK as a ZIP
@@ -960,7 +960,7 @@ public:
 				MountOBB(*(OBBDir2 / PatchOBBName));
 			}
 		}
-#endif // ODIN_HOTRELOAD
+#endif // ODIN_GRADLE
 
 		// make sure the base path directory exists (UE4Game and UE4Game/ProjectName)
 		FString FileBaseDir = GFilePathBase + FString(FILEBASE_DIRECTORY);
@@ -1873,7 +1873,7 @@ private:
 					AndroidPath = TEXT("");
 				}
 
-#ifdef ODIN_HOTRELOAD
+#ifdef ODIN_GRADLE
 				// 使UE4可以访问 local 文件 
 				// 资源先在pak里找，没找到会使用 local path 找
 				// 相对路径的 local path 是 GExternalFilePath / AndroidPath
@@ -1890,7 +1890,7 @@ private:
 				// Local filepaths are directly in the deployment directory.
 				static FString BasePath = GetFileBasePath();
 				LocalPath = BasePath + AndroidPath;
-#endif // ODIN_HOTRELOAD
+#endif // ODIN_GRADLE
 
 				// Asset paths are relative to the base directory.
 				AssetPath = AndroidPath;

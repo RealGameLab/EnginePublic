@@ -616,7 +616,7 @@ public:
 	 * @param OldManifest		The Build Manifest that is currently installed. Shared Ref - Implicitly valid.
 	 * @param Filename			The Build installation directory, so that it can be checked for missing files.
 	 */
-	bool IsFileOutdated(const FBuildPatchAppManifestRef& OldManifest, const FString& Filename) const;
+	BUILDPATCHSERVICES_API bool IsFileOutdated(const FBuildPatchAppManifestRef& OldManifest, const FString& Filename) const;
 
 	/**
 	 * Populates a map of FFileChunkParts referring to the chunks in the given array, that should be accessible locally.
