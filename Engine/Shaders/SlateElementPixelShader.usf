@@ -483,7 +483,7 @@ half4 Main( OdinUIVertexToPixelInterpolants VIn ) : SV_Target0
 	OutColor = OdinGetFontElementColor( VIn );
 #endif
 
-	half2 Factor = (half2(1.0, 1.0) - abs(VIn.ClipMask)) * 500;
+	half2 Factor = (half2(1.0, 1.0) - abs(VIn.ClipMask)) * 5000;
 	OutColor.a *= clamp( min(Factor.x, Factor.y), 0.0, 1.0);
 
 	return OutColor;
