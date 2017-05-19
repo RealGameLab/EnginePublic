@@ -474,6 +474,20 @@ half4 OdinUIGetDefaultElementColor( OdinUIVertexToPixelInterpolants InVertex )
 }
 #endif
 
+half3 OdinGammaCorrect(half3 InColor)
+{
+	half3 CorrectedColor = InColor;
+
+#if (!(ES2_PROFILE || ES3_1_PROFILE)) || USE_MATERIALS || METAL_PROFILE //  Metal supports sRGB textures
+	FLATTEN if( GammaValues.y != 1.0f )
+	{
+		CorrectedColor = ApplyGammaCorrection(CorrectedColor, GammaValues.x);
+	}
+#endif
+
+	return CorrectedColor;
+}
+
 half4 Main( OdinUIVertexToPixelInterpolants VIn ) : SV_Target0
 {
 	half4 OutColor = float4(1, 0, 0, 1);
@@ -482,6 +496,7 @@ half4 Main( OdinUIVertexToPixelInterpolants VIn ) : SV_Target0
 #elif SHADER_TYPE == ST_Font
 	OutColor = OdinGetFontElementColor( VIn );
 #endif
+	OutColor.rgb = OdinGammaCorrect(OutColor.rgb);
 
 	half2 Factor = (half2(1.0, 1.0) - abs(VIn.ClipMask)) * 5000;
 	OutColor.a *= clamp( min(Factor.x, Factor.y), 0.0, 1.0);
