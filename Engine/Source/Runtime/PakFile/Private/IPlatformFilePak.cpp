@@ -3955,12 +3955,7 @@ void FPakPlatformFile::FindPakFilesInDirectory(IPlatformFile* LowLevelFile, cons
 			if (bIsDirectory == false)
 			{
 				FString Filename(FilenameOrDirectory);
-#ifdef ODIN_GRADLE
-				// 只加载 main.pak, 其他 pak 要通过 mount 加载 by: lixingtong 
-				if (FPaths::GetCleanFilename(Filename) == TEXT("main.pak"))
-#else
 				if (FPaths::GetExtension(Filename) == TEXT("pak"))
-#endif // ODIN_GRADLE
 				{
 					// if a platform supports chunk style installs, make sure that the chunk a pak file resides in is actually fully installed before accepting pak files from it
 					if (ChunkInstall)
@@ -4014,17 +4009,11 @@ void FPakPlatformFile::GetPakFolders(const TCHAR* CmdLine, TArray<FString>& OutP
 		OutPakFolders.Append(CmdLineFolders);
 	}
 #endif
-
-#ifdef ODIN_GRADLE
-	extern FString GAndroidDataDir;
-	OutPakFolders.Add(FString::Printf(TEXT("%s/Bin/Paks/"), *GAndroidDataDir));
-#else
 	// @todo plugin urgent: Needs to handle plugin Pak directories, too
 	// Hardcoded locations
 	OutPakFolders.Add(FString::Printf(TEXT("%sPaks/"), *FPaths::GameContentDir()));
 	OutPakFolders.Add(FString::Printf(TEXT("%sPaks/"), *FPaths::GameSavedDir()));
 	OutPakFolders.Add(FString::Printf(TEXT("%sPaks/"), *FPaths::EngineContentDir()));
-#endif // ODIN_GRADLE
 }
 
 bool FPakPlatformFile::CheckIfPakFilesExist(IPlatformFile* LowLevelFile, const TArray<FString>& PakFolders)
@@ -4036,6 +4025,9 @@ bool FPakPlatformFile::CheckIfPakFilesExist(IPlatformFile* LowLevelFile, const T
 
 bool FPakPlatformFile::ShouldBeUsed(IPlatformFile* Inner, const TCHAR* CmdLine) const
 {
+#ifdef ODIN_GRADLE
+	return true;
+#else
 	bool Result = false;
 	if (FPlatformProperties::RequiresCookedData() && !FParse::Param(CmdLine, TEXT("NoPak")))
 	{
@@ -4044,6 +4036,7 @@ bool FPakPlatformFile::ShouldBeUsed(IPlatformFile* Inner, const TCHAR* CmdLine) 
 		Result = CheckIfPakFilesExist(Inner, PakFolders);
 	}
 	return Result;
+#endif
 }
 
 bool FPakPlatformFile::Initialize(IPlatformFile* Inner, const TCHAR* CmdLine)
@@ -4086,6 +4079,25 @@ bool FPakPlatformFile::Initialize(IPlatformFile* Inner, const TCHAR* CmdLine)
 
 	if (bMountPaks)
 	{	
+#ifdef ODIN_GRADLE
+		extern int32 GLoadMode;
+		extern FString GAndroidDataDir;
+		switch (GLoadMode)
+		{
+		case 0: // Load_Without_Update
+			Mount(TEXT("assets/Bin/Paks/main.png"), 4);
+			Mount(TEXT("assets/Bin/Paks/main_P.png"), 104);
+			break;
+		case 1: // Load_First
+			Mount(TEXT("assets/Bin/Paks/main.png"), 4);
+			break;
+		case 2: // Load_Normal
+			Mount(*(GAndroidDataDir / TEXT("Bin/Paks/main.pak")), 4);
+			break;
+		default:
+			break;
+		}
+#else
 		// Find and mount pak files from the specified directories.
 		TArray<FString> PakFolders;
 		GetPakFolders(CmdLine, PakFolders);
@@ -4127,6 +4139,7 @@ bool FPakPlatformFile::Initialize(IPlatformFile* Inner, const TCHAR* CmdLine)
 				Mount(*PakFilename, PakOrder);
 			}
 		}
+#endif // ODIN_GRADLE
 	}
 
 #if !UE_BUILD_SHIPPING
@@ -4189,6 +4202,9 @@ bool FPakPlatformFile::Mount(const TCHAR* InPakFilename, uint32 PakOrder, const 
 				PakFiles.StableSort();
 			}
 			bSuccess = true;
+#ifdef ODIN_GRADLE
+			FPlatformMisc::LowLevelOutputDebugStringf(TEXT("mount pak \"%s\", success."), InPakFilename);
+#endif
 		}
 		else
 		{

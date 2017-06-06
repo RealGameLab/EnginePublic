@@ -1217,17 +1217,45 @@ JNI_METHOD void Java_com_epicgames_ue4_GameActivity_nativeSetGlobalActivity(JNIE
 }
 
 // libUE4.so µÄÂ·¾¶ by: lixingtong
-extern "C" void Java_com_epicgames_ue4_GameActivity_nativeSetAndroidDataDir(JNIEnv* Jenv, jobject Thiz, jstring DataDir)
+extern "C" void Java_com_epicgames_ue4_GameActivity_nativeSetAndroidDataDir(JNIEnv* Jenv, jobject Thiz, jstring DataDir, jint LoadMode)
 {
 #ifdef ODIN_GRADLE
 	extern FString GAndroidDataDir;
-
+	extern int32 GLoadMode;
+	GLoadMode = LoadMode;
 	const char* CharsLibDir = Jenv->GetStringUTFChars(DataDir, 0);
 	GAndroidDataDir = FString(UTF8_TO_TCHAR(CharsLibDir));
 	Jenv->ReleaseStringUTFChars(DataDir, CharsLibDir);
 	FPlatformMisc::LowLevelOutputDebugStringf(TEXT("GAndroidDataDir '%s'\n"), *GAndroidDataDir);
+	FPlatformMisc::LowLevelOutputDebugStringf(TEXT("GLoadMode = '%d'\n"), GLoadMode);
 #endif // ODIN_GRADLE
 }
+
+#ifdef ODIN_GRADLE
+int64 AndroidThunkCpp_GetDiskFreeSpace(const FString& InPath)
+{
+	if (JNIEnv* Env = FAndroidApplication::GetJavaEnv())
+	{
+		static jmethodID Method = FJavaWrapper::FindMethod(Env, FJavaWrapper::GameActivityClassID, "AndroidThunkJava_GetDiskFreeSpace", "(Ljava/lang/String;)J", false);
+		jstring Path = Env->NewStringUTF(TCHAR_TO_UTF8(*InPath));
+		jlong SpaceInBytes = Env->CallLongMethod(FJavaWrapper::GameActivityThis, Method, Path);
+		return (int64)SpaceInBytes;
+	}
+	return 0;
+}
+
+int64 AndroidThunkJava_GetDiskTotalSpace(const FString& InPath)
+{
+	if (JNIEnv* Env = FAndroidApplication::GetJavaEnv())
+	{
+		static jmethodID Method = FJavaWrapper::FindMethod(Env, FJavaWrapper::GameActivityClassID, "AndroidThunkJava_GetDiskTotalSpace", "(Ljava/lang/String;)J", false);
+		jstring Path = Env->NewStringUTF(TCHAR_TO_UTF8(*InPath));
+		jlong SpaceInBytes = Env->CallLongMethod(FJavaWrapper::GameActivityThis, Method, Path);
+		return (int64)SpaceInBytes;
+	}
+	return 0;
+}
+#endif // ODIN_GRADLE
 
 JNI_METHOD bool Java_com_epicgames_ue4_GameActivity_nativeIsShippingBuild(JNIEnv* LocalJNIEnv, jobject LocalThiz)
 {

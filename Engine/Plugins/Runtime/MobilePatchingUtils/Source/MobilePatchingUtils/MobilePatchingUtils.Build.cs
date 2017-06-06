@@ -13,6 +13,7 @@ namespace UnrealBuildTool.Rules
                 "Core",
                 "CoreUObject",
                 "Engine",
+                "Launch"
             });
 
             PrivateDependencyModuleNames.AddRange(new string[]

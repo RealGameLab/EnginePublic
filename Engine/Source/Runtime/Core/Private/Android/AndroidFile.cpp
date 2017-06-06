@@ -73,8 +73,9 @@ FString GExternalFilePath;
 FString GFontPathBase;
 
 #ifdef ODIN_GRADLE
-// libUE4.so 的路径 (applicationInfo.dataDir) by: lixingtong
+// applicationInfo.dataDir by: lixingtong
 FString GAndroidDataDir;
+int32 GLoadMode;
 #endif // ODIN_GRADLE
 
 // Is the OBB in an APK file or not
@@ -905,7 +906,6 @@ public:
 			return false;
 		}
 
-#ifndef ODIN_GRADLE
 		if (GOBBinAPK)
 		{
 			// Open the APK as a ZIP
@@ -917,8 +917,10 @@ public:
 				return false;
 			}
 			FFileHandleAndroid* APKFile = new FFileHandleAndroid(GAPKFilename, Handle);
+#ifdef ODIN_GRADLE
+			ZipResource.AddPatchFile(MakeShareable(APKFile));
+#else
 			APKZip.AddPatchFile(MakeShareable(APKFile));
-
 			// Now open the OBB in the APK and mount it
 			if (APKZip.HasEntry("assets/main.obb.png"))
 			{
@@ -933,6 +935,7 @@ public:
 				FPlatformMisc::LowLevelOutputDebugStringf(TEXT("OBB not found in APK: %s"), *GAPKFilename);
 				return false;
 			}
+#endif // ODIN_GRADLE
 		}
 		else
 		{
@@ -960,7 +963,6 @@ public:
 				MountOBB(*(OBBDir2 / PatchOBBName));
 			}
 		}
-#endif // ODIN_GRADLE
 
 		// make sure the base path directory exists (UE4Game and UE4Game/ProjectName)
 		FString FileBaseDir = GFilePathBase + FString(FILEBASE_DIRECTORY);
@@ -1874,10 +1876,6 @@ private:
 				}
 
 #ifdef ODIN_GRADLE
-				// 使UE4可以访问 local 文件 
-				// 资源先在pak里找，没找到会使用 local path 找
-				// 相对路径的 local path 是 GExternalFilePath / AndroidPath
-				// 以 GExternalFilePath， GAndroidDataDir 开头的绝对路径不作处理
 				if (AndroidPath.StartsWith(GExternalFilePath) || AndroidPath.StartsWith(GAndroidDataDir))
 				{
 					LocalPath = AndroidPath;

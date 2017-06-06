@@ -85,6 +85,12 @@ public:
 	virtual void BeginDestroy() override;
 	//~ End UObject Interface.
 
+	// ODIN_GRADLE by:lixingtong
+	UFUNCTION(BlueprintPure, Category = "Ark Mobile Patch")
+	bool IsFileOutdated(const FString& FileName);
+
+	UFUNCTION(BlueprintPure, Category = "Ark Mobile Patch")
+	bool IsComplete();
 public:
 	// User specified URL from where manifest can be downloaded
 	FString RemoteManifestURL;
@@ -109,6 +115,18 @@ enum class ERequestContentError
 
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRequestContentSucceeded, UMobilePendingContent*, MobilePendingContent);
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FOnRequestContentFailed, FText, ErrorText, int32, ErrorCode);
+
+// ODIN_GRADLE by:lixingtong
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRequestVersionSucceeded, FString, Version);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnRequestVersionFailed, int32, ErrorCode);
+
+UENUM()
+enum class EOdinLoadMode : uint8
+{
+	Load_Without_Update,
+	Load_First,
+	Load_Normal
+};
 
 UCLASS()
 class UMobilePatchingLibrary : public UBlueprintFunctionLibrary
@@ -147,5 +165,24 @@ public:
 	// Get the list of supported platform names on this device. Example: Android_ETC2, Android_ASTC
 	UFUNCTION(BlueprintPure, Category="Mobile Patching")
 	static TArray<FString> GetSupportedPlatformNames();
+
+	// ODIN_GRADLE by:lixingtong
+	UFUNCTION(BlueprintPure, Category = "Mobile Patching")
+	static FString GetInstallDir();
+
+	UFUNCTION(BlueprintCallable, Category = "Mobile Patching")
+	static void RestartApp();
+
+	UFUNCTION(BlueprintCallable, Category = "Mobile Patching")
+	static void RequestVersion(const FString& RemoteVersionURL, FOnRequestVersionSucceeded OnSucceeded, FOnRequestVersionFailed OnFailed);
+
+	UFUNCTION(BlueprintCallable, Category = "Mobile Patching")
+	static void UnCompressData();
+
+	UFUNCTION(BlueprintCallable, Category = "Mobile Patching")
+	static int32 UnCompressDataStat();
+
+	UFUNCTION(BlueprintPure, Category = "Mobile Patching")
+	static EOdinLoadMode GetLoadMode();
 };
 

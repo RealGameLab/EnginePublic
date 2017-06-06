@@ -21,6 +21,9 @@ struct CORE_API FAndroidMisc : public FGenericPlatformMisc
 {
 	static class GenericApplication* CreateApplication();
 
+#ifdef ODIN_GRADLE
+	static bool GetDiskTotalAndFreeSpace(const FString& InPath, uint64& TotalNumberOfBytes, uint64& NumberOfFreeBytes);
+#endif // ODIN_GRADLE
 	static void RequestMinimize();
 	static void RequestExit( bool Force );
 	static void LowLevelOutputDebugString(const TCHAR *Message);

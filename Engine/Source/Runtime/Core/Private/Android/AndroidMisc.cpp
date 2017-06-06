@@ -1617,3 +1617,16 @@ FString FAndroidMisc::GetOSVersion()
 {
 	return GetAndroidVersion();
 }
+
+#ifdef ODIN_GRADLE
+
+bool FAndroidMisc::GetDiskTotalAndFreeSpace(const FString& InPath, uint64& TotalNumberOfBytes, uint64& NumberOfFreeBytes)
+{
+	extern int64 AndroidThunkCpp_GetDiskFreeSpace(const FString& InPath);
+	extern int64 AndroidThunkJava_GetDiskTotalSpace(const FString& InPath);
+	TotalNumberOfBytes = AndroidThunkJava_GetDiskTotalSpace(InPath);
+	NumberOfFreeBytes = AndroidThunkCpp_GetDiskFreeSpace(InPath);
+	return true;
+}
+
+#endif // ODIN_GRADLE

@@ -96,7 +96,11 @@ bool UMobileInstalledContent::Mount(int32 InPakOrder, const FString& InMountPoin
 	TArray<FString> InstalledFileNames = InstalledManifest->GetBuildFileList();
 	for (const FString& FileName : InstalledFileNames)
 	{
+#ifdef ODIN_GRADLE
+		if (FileName.EndsWith(TEXT("_P.pak")))
+#else
 		if (FPaths::GetExtension(FileName) == TEXT("pak"))
+#endif // ODIN_GRADLE
 		{
 			FString PakFullName = InstallDir / FileName;
 			if (PakFileMgr->Mount(*PakFullName, PakOrder, MountPount))
@@ -194,10 +198,18 @@ static void OnInstallComplete(bool bSuccess, IBuildManifestRef RemoteManifest, U
 	if (bSuccess)
 	{
 		IBuildPatchServicesModule* BuildPatchServices = GetBuildPatchServices();
+#ifdef ODIN_GRADLE
+		FString ManifestFilename = TEXT("Current.manifest");
+#else
 		FString ManifestFilename = FPaths::GetCleanFilename(MobilePendingContent->RemoteManifestURL);
+#endif // ODIN_GRADLE
 		FString ManifestFullFilename = MobilePendingContent->InstallDir / ManifestFilename;
-		
+	
+#ifdef ODIN_GRADLE
+		if (!BuildPatchServices->SaveManifestToFile(ManifestFullFilename, RemoteManifest, false))
+#else
 		if (!BuildPatchServices->SaveManifestToFile(ManifestFullFilename, RemoteManifest))
+#endif // ODIN_GRADLE
 		{
 			UE_LOG(LogMobilePatchingUtils, Error, TEXT("Failed to save manifest to disk. %s"), *ManifestFullFilename);
 		}
@@ -289,12 +301,22 @@ static IBuildManifestPtr GetInstalledManifest(const FString& InstallDirectory)
 {
 	IBuildManifestPtr InstalledManifest;
 	
+#ifdef ODIN_GRADLE
+	FString FullInstallDir = InstallDirectory;
+#else
 	FString FullInstallDir = FPaths::GamePersistentDownloadDir() / InstallDirectory;
+#endif // ODIN_GRADLE
 	TArray<FString> InstalledManifestNames;
 	IFileManager::Get().FindFiles(InstalledManifestNames, *(FullInstallDir / TEXT("*.manifest")), true, false);
 
 	if (InstalledManifestNames.Num()) 
 	{
+#ifdef ODIN_GRADLE
+		if (InstalledManifestNames.Num() > 1)
+		{
+			UE_LOG(LogMobilePatchingUtils, Error, TEXT("manifest number > 1"));
+		}
+#endif // ODIN_GRADLE
 		const FString& InstalledManifestName = InstalledManifestNames[0];// should we warn if there more than one manifest?
 		IBuildPatchServicesModule* BuildPatchServices = GetBuildPatchServices();
 		InstalledManifest = BuildPatchServices->LoadManifestFromFile(FullInstallDir / InstalledManifestName);
@@ -311,7 +333,11 @@ UMobileInstalledContent* UMobilePatchingLibrary::GetInstalledContent(const FStri
 	if (InstalledManifest.IsValid())
 	{
 		InstalledContent = NewObject<UMobileInstalledContent>();
+#ifdef ODIN_GRADLE
+		InstalledContent->InstallDir = InstallDirectory;
+#else
 		InstalledContent->InstallDir = FPaths::GamePersistentDownloadDir() / InstallDirectory;
+#endif // ODIN_GRADLE
 		InstalledContent->InstalledManifest = InstalledManifest;
 	}
 	
@@ -350,7 +376,11 @@ void UMobilePatchingLibrary::RequestContent(const FString& RemoteManifestURL, co
 	}
 		
 	UMobilePendingContent* MobilePendingContent = NewObject<UMobilePendingContent>();
+#ifdef ODIN_GRADLE
+	MobilePendingContent->InstallDir = InstallDirectory;
+#else
 	MobilePendingContent->InstallDir = FPaths::GamePersistentDownloadDir() / InstallDirectory;
+#endif // ODIN_GRADLE
 	MobilePendingContent->RemoteManifestURL = RemoteManifestURL;
 	MobilePendingContent->CloudURL = CloudURL;
 	MobilePendingContent->InstalledManifest = GetInstalledManifest(InstallDirectory);
@@ -381,5 +411,166 @@ TArray<FString> UMobilePatchingLibrary::GetSupportedPlatformNames()
 	FPlatformMisc::GetValidTargetPlatforms(Result);
 	return Result;
 }
+
+#ifdef ODIN_GRADLE
+
+#include <jni.h>
+#include "Android/AndroidJNI.h"
+#include "AndroidApplication.h"
+
+void AndroidThunkCpp_RestartApp()
+{
+	if (JNIEnv* Env = FAndroidApplication::GetJavaEnv())
+	{
+		static jmethodID RestartMethod = FJavaWrapper::FindMethod(Env, FJavaWrapper::GameActivityClassID, "AndroidThunkJava_RestartApp", "()V", false);
+		FJavaWrapper::CallVoidMethod(Env, FJavaWrapper::GameActivityThis, RestartMethod);
+	}
+}
+
+void UMobilePatchingLibrary::RestartApp()
+{
+	AndroidThunkCpp_RestartApp();
+}
+
+static void OnRemoteVersionReady(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bSucceeded, FOnRequestVersionSucceeded OnSucceeded, FOnRequestVersionFailed OnFailed)
+{
+	ERequestContentError ErrorCode = ERequestContentError::NoError;
+	ON_SCOPE_EXIT
+	{
+		if (ErrorCode != ERequestContentError::NoError)
+		{
+			UE_LOG(LogMobilePatchingUtils, Error, TEXT("Error Code %d"), (int32)ErrorCode);
+			OnFailed.ExecuteIfBound((int32)ErrorCode);
+		}
+	};
+
+	if (!bSucceeded || !Response.IsValid())
+	{
+		ErrorCode = ERequestContentError::FailedToDownloadManifestNoResponse;
+		return;
+	}
+
+	int32 ResponseCode = Response->GetResponseCode();
+	if (!EHttpResponseCodes::IsOk(ResponseCode))
+	{
+		UE_LOG(LogMobilePatchingUtils, Error, TEXT("Failed to download version. ResponseCode = %d, ResponseMsg = %s"), ResponseCode, *Response->GetContentAsString());
+		ErrorCode = ERequestContentError::FailedToDownloadManifest;
+		return;
+	}
+
+	FString Version = Response->GetContentAsString();
+	UE_LOG(LogMobilePatchingUtils, Log, TEXT("Get Version %s"), *Version);
+	OnSucceeded.ExecuteIfBound(Version);
+}
+
+void UMobilePatchingLibrary::RequestVersion(const FString& RemoteVersionURL, FOnRequestVersionSucceeded OnSucceeded, FOnRequestVersionFailed OnFailed)
+{
+	TSharedRef<class IHttpRequest> HttpRequest = FHttpModule::Get().CreateRequest();
+	HttpRequest->OnProcessRequestComplete().BindStatic(OnRemoteVersionReady, OnSucceeded, OnFailed);
+	HttpRequest->SetURL(*RemoteVersionURL);
+	HttpRequest->SetVerb(TEXT("GET"));
+	HttpRequest->ProcessRequest();
+}
+
+void UMobilePatchingLibrary::UnCompressData()
+{
+	UE_LOG(LogMobilePatchingUtils, Log, TEXT("AndroidThunkJava_UnCompressData"));
+	if (JNIEnv* Env = FAndroidApplication::GetJavaEnv())
+	{
+		static jmethodID Method = FJavaWrapper::FindMethod(Env, FJavaWrapper::GameActivityClassID, "AndroidThunkJava_UnCompressData", "()V", false);
+		FJavaWrapper::CallVoidMethod(Env, FJavaWrapper::GameActivityThis, Method);
+	}
+}
+
+int32 UMobilePatchingLibrary::UnCompressDataStat()
+{
+	UE_LOG(LogMobilePatchingUtils, Log, TEXT("AndroidThunkJava_UnCompressDataProgress"));
+	if (JNIEnv* Env = FAndroidApplication::GetJavaEnv())
+	{
+		static jmethodID Method = FJavaWrapper::FindMethod(Env, FJavaWrapper::GameActivityClassID, "AndroidThunkJava_UnCompressDataStat", "()I", false);
+		return FJavaWrapper::CallIntMethod(Env, FJavaWrapper::GameActivityThis, Method);
+	}
+	return 0;
+}
+
+FString UMobilePatchingLibrary::GetInstallDir()
+{
+	extern FString GAndroidDataDir;
+	return GAndroidDataDir / TEXT("Bin");
+}
+
+EOdinLoadMode UMobilePatchingLibrary::GetLoadMode()
+{
+	extern int32 GLoadMode;
+	return (EOdinLoadMode)GLoadMode;
+}
+
+#include "Private/BuildPatchManifest.h"
+
+bool UMobilePendingContent::IsFileOutdated(const FString& FileName)
+{
+	if (InstalledManifest.IsValid())
+	{
+		TSet<FString> OutArray;
+		StaticCastSharedPtr<FBuildPatchAppManifest>(RemoteManifest)->GetOutdatedFiles(StaticCastSharedPtr<FBuildPatchAppManifest>(InstalledManifest), InstallDir, OutArray);
+		for (auto Str : OutArray)
+		{
+			UE_LOG(LogMobilePatchingUtils, Log, TEXT("FileOutdated %s"), *Str);
+		}
+		return StaticCastSharedPtr<FBuildPatchAppManifest>(RemoteManifest)->IsFileOutdated(StaticCastSharedRef<FBuildPatchAppManifest>(InstalledManifest.ToSharedRef()), FileName);
+	}
+	return true;
+}
+
+bool UMobilePendingContent::IsComplete()
+{
+	if (Installer.IsValid())
+	{
+		return Installer->IsComplete();
+	}
+	return true;
+}
+
+#else 
+
+
+FString UMobilePatchingLibrary::GetInstallDir()
+{
+	return TEXT("");
+}
+
+void UMobilePatchingLibrary::RestartApp()
+{
+}
+
+void UMobilePatchingLibrary::RequestVersion(const FString& RemoteVersionURL, FOnRequestVersionSucceeded OnSucceeded, FOnRequestVersionFailed OnFailed)
+{
+}
+
+void UMobilePatchingLibrary::UnCompressData()
+{
+}
+
+int32 UMobilePatchingLibrary::UnCompressDataStat()
+{
+	return 0;
+}
+
+EOdinLoadMode UMobilePatchingLibrary::GetLoadMode()
+{
+	return EOdinLoadMode::Load_Without_Update;
+}
+
+bool UMobilePendingContent::IsFileOutdated(const FString& FileName)
+{
+	return false;
+}
+
+bool UMobilePendingContent::IsComplete()
+{
+	return true;
+}
+
+#endif // ODIN_GRADLE
 
 #undef LOCTEXT_NAMESPACE
