@@ -110,6 +110,13 @@ enum EMaterialCommonBasis
 	MCB_MAX,
 };
 
+//when setting deferred scene resources whether to throw warnings when we fall back to defaults.
+enum struct EDeferredParamStrictness
+{
+	ELoose, // no warnings
+	EStrict, // throw warnings
+};
+
 /** Defines the domain of a material. */
 UENUM()
 enum EMaterialDomain
@@ -530,8 +537,9 @@ class FMeshMaterialShaderMap : public TShaderMap<FMeshMaterialShaderType>
 {
 public:
 
-	FMeshMaterialShaderMap(FVertexFactoryType* InVFType) :
-		VertexFactoryType(InVFType)
+	FMeshMaterialShaderMap(EShaderPlatform InPlatform, FVertexFactoryType* InVFType) 
+		: TShaderMap<FMeshMaterialShaderType>(InPlatform)
+		, VertexFactoryType(InVFType)
 	{}
 
 	/**
@@ -620,7 +628,8 @@ public:
 	 */
 	static void LoadFromDerivedDataCache(const FMaterial* Material, const FMaterialShaderMapId& ShaderMapId, EShaderPlatform Platform, TRefCountPtr<FMaterialShaderMap>& InOutShaderMap);
 
-	FMaterialShaderMap();
+	inline FMaterialShaderMap() : FMaterialShaderMap(EShaderPlatform::SP_NumPlatforms) {}
+	FMaterialShaderMap(EShaderPlatform InPlatform);
 
 	// Destructor.
 	~FMaterialShaderMap();
@@ -743,7 +752,6 @@ public:
 	// Accessors.
 	ENGINE_API const FMeshMaterialShaderMap* GetMeshShaderMap(FVertexFactoryType* VertexFactoryType) const;
 	const FMaterialShaderMapId& GetShaderMapId() const { return ShaderMapId; }
-	EShaderPlatform GetShaderPlatform() const { return Platform; }
 	const FString& GetFriendlyName() const { return FriendlyName; }
 	uint32 GetCompilingId() const { return CompilingId; }
 	bool IsCompilationFinalized() const { return bCompilationFinalized; }
@@ -793,9 +801,6 @@ private:
 
 	/** The material's user friendly name, typically the object name. */
 	FString FriendlyName;
-
-	/** The platform this shader map was compiled with */
-	EShaderPlatform Platform;
 
 	/** The static parameter set that this shader map was compiled with */
 	FMaterialShaderMapId ShaderMapId;

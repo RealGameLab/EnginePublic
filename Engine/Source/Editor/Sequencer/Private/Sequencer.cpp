@@ -3224,6 +3224,8 @@ FGuid FSequencer::AddSpawnable(UObject& Object)
 
 	FGuid NewGuid = OwnerMovieScene->AddSpawnable(NewSpawnable.Name, *NewSpawnable.ObjectTemplate);
 
+	ForceEvaluate();
+
 	UpdateRuntimeInstances();
 	
 	return NewGuid;
@@ -3516,7 +3518,7 @@ void FSequencer::OnNewActorsDropped(const TArray<UObject*>& DroppedObjects, cons
 			{
 				FMovieSceneSpawnable* Spawnable = ConvertToSpawnableInternal(PossessableGuid);
 
-				UpdateRuntimeInstances();
+				ForceEvaluate();
 
 				for (TWeakObjectPtr<> WeakObject : FindBoundObjects(Spawnable->GetGuid(), ActiveTemplateIDs.Top()))
 				{
@@ -3555,7 +3557,7 @@ void FSequencer::OnNewActorsDropped(const TArray<UObject*>& DroppedObjects, cons
 				{
 					FMovieSceneSpawnable* Spawnable = ConvertToSpawnableInternal(NewCameraGuid);
 
-					UpdateRuntimeInstances();
+					ForceEvaluate();
 
 					for (TWeakObjectPtr<> WeakObject : FindBoundObjects(Spawnable->GetGuid(), ActiveTemplateIDs.Top()))
 					{
@@ -3874,13 +3876,18 @@ void FSequencer::AddActors(const TArray<TWeakObjectPtr<AActor> >& InActors)
 void FSequencer::OnSelectedOutlinerNodesChanged()
 {
 	SynchronizeExternalSelectionWithSequencerSelection();
+
 	FSequencerEdMode* SequencerEdMode = (FSequencerEdMode*)(GLevelEditorModeTools().GetActiveMode(FSequencerEdMode::EM_SequencerMode));
-	AActor* NewlySelectedActor = GEditor->GetSelectedActors()->GetTop<AActor>();
-	// If we selected an Actor or a node for an Actor that is a potential autokey candidate, clean up any existing mesh trails
-	if (NewlySelectedActor && !NewlySelectedActor->IsEditorOnly())
+	if (SequencerEdMode != nullptr)
 	{
-		SequencerEdMode->CleanUpMeshTrails();
+		AActor* NewlySelectedActor = GEditor->GetSelectedActors()->GetTop<AActor>();
+		// If we selected an Actor or a node for an Actor that is a potential autokey candidate, clean up any existing mesh trails
+		if (NewlySelectedActor && !NewlySelectedActor->IsEditorOnly())
+		{
+			SequencerEdMode->CleanUpMeshTrails();
+		}
 	}
+
 	OnSelectionChangedObjectGuidsDelegate.Broadcast(Selection.GetBoundObjectsGuids());
 	OnSelectionChangedTracksDelegate.Broadcast(Selection.GetSelectedTracks());
 }
@@ -4818,7 +4825,7 @@ void FSequencer::ConvertSelectedNodesToSpawnables()
 
 			if (Spawnable)
 			{
-				UpdateRuntimeInstances();
+				ForceEvaluate();
 
 				for (TWeakObjectPtr<> WeakObject : FindBoundObjects(Spawnable->GetGuid(), ActiveTemplateIDs.Top()))
 				{
@@ -4973,7 +4980,7 @@ void FSequencer::ConvertSelectedNodesToPossessables()
 			{
 				FMovieScenePossessable* Possessable = ConvertToPossessableInternal(Spawnable->GetGuid());
 
-				UpdateRuntimeInstances();
+				ForceEvaluate();
 
 				for (TWeakObjectPtr<> WeakObject : FindBoundObjects(Possessable->GetGuid(), ActiveTemplateIDs.Top()))
 				{
@@ -5937,6 +5944,40 @@ void FSequencer::FixActorReferences()
 	}
 }
 
+void FSequencer::RebindPossessableReferences()
+{
+	FScopedTransaction Transaction(LOCTEXT("RebindAllPossessables", "Rebind Possessable References"));
+
+	UMovieSceneSequence* FocusedSequence = GetFocusedMovieSceneSequence();
+	FocusedSequence->Modify();
+
+	UMovieScene* FocusedMovieScene = FocusedSequence->GetMovieScene();
+
+	TMap<FGuid, TArray<UObject*, TInlineAllocator<1>>> AllObjects;
+
+	UObject* PlaybackContext = PlaybackContextAttribute.Get(nullptr);
+
+	for (int32 Index = 0; Index < FocusedMovieScene->GetPossessableCount(); Index++)
+	{
+		const FMovieScenePossessable& Possessable = FocusedMovieScene->GetPossessable(Index);
+
+		TArray<UObject*, TInlineAllocator<1>>& References = AllObjects.FindOrAdd(Possessable.GetGuid());
+		FocusedSequence->LocateBoundObjects(Possessable.GetGuid(), PlaybackContext, References);
+	}
+
+	for (auto& Pair : AllObjects)
+	{
+		// Only rebind things if they exist
+		if (Pair.Value.Num() > 0)
+		{
+			FocusedSequence->UnbindPossessableObjects(Pair.Key);
+			for (UObject* Object : Pair.Value)
+			{
+				FocusedSequence->BindPossessableObject(Pair.Key, *Object, PlaybackContext);
+			}
+		}
+	}
+}
 
 float SnapTime( float TimeValue, float TimeInterval )
 {
@@ -6723,6 +6764,11 @@ void FSequencer::BindCommands()
 	SequencerCommandBindings->MapAction(
 		Commands.FixActorReferences,
 		FExecuteAction::CreateSP( this, &FSequencer::FixActorReferences ),
+		FCanExecuteAction::CreateLambda( []{ return true; } ) );
+
+	SequencerCommandBindings->MapAction(
+		Commands.RebindPossessableReferences,
+		FExecuteAction::CreateSP( this, &FSequencer::RebindPossessableReferences ),
 		FCanExecuteAction::CreateLambda( []{ return true; } ) );
 
 	SequencerCommandBindings->MapAction(

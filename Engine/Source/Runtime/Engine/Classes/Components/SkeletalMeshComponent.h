@@ -306,6 +306,9 @@ public:
 	/** Temporary storage for curves */
 	FBlendedHeapCurve AnimCurves;
 
+	/** Temporary fix for local space kinematics. This only works for bodies that have no constraints and is needed by vehicles. Proper support will remove this flag */
+	bool bLocalSpaceKinematics;
+
 	// Update Rate
 
 	/** Cached BoneSpaceTransforms for Update Rate optimization. */
@@ -728,6 +731,17 @@ public:
 	*/
 	UFUNCTION(BlueprintCallable, Category = "Components|SkeletalMesh", meta = (DevelopmentOnly, UnsafeDuringActorConstruction = "true"))
 	void SetUpdateAnimationInEditor(const bool NewUpdateState);
+
+#if WITH_EDITOR
+	/**
+	 * return true if currently updating in editor is true
+	 * this is non BP because this is only used for slave component to detect master component ticking state
+	 */
+	bool GetUpdateAnimationInEditor() const 
+	{		
+		return bUpdateAnimationInEditor;	
+	}
+#endif 
 
 	/** We detach the Component once we are done playing it.
 	 *

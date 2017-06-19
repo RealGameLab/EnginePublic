@@ -1657,6 +1657,11 @@ void UEngine::InitializeObjectReferences()
 		DefaultBokehTexture = LoadObject<UTexture2D>(NULL, *DefaultBokehTextureName.ToString(), NULL, LOAD_None, NULL);
 	}
 
+	if (DefaultBloomKernelTexture == NULL)
+	{
+		DefaultBloomKernelTexture = LoadObject<UTexture2D>(NULL, *DefaultBloomKernelTextureName.ToString(), NULL, LOAD_None, NULL);
+	}
+
 	if( PreIntegratedSkinBRDFTexture == NULL )
 	{
 		PreIntegratedSkinBRDFTexture = LoadObject<UTexture2D>(NULL, *PreIntegratedSkinBRDFTextureName.ToString(), NULL, LOAD_None, NULL);
@@ -2290,7 +2295,7 @@ bool UEngine::InitializeHMDDevice()
 
 void UEngine::RecordHMDAnalytics()
 {
-	if(HMDDevice.IsValid() && !FParse::Param(FCommandLine::Get(),TEXT("nohmd")))
+	if(HMDDevice.IsValid() && !FParse::Param(FCommandLine::Get(),TEXT("nohmd")) && HMDDevice->IsHMDConnected())
 	{
 		HMDDevice->RecordAnalytics();
 	}
@@ -11497,7 +11502,7 @@ public:
 		ArPortFlags |= Params.bCopyDeprecatedProperties ? PPF_UseDeprecatedProperties : PPF_None;
 
 #if USE_STABLE_LOCALIZATION_KEYS
-		if (GIsEditor && !(ArPortFlags & PPF_DuplicateForPIE))
+		if (GIsEditor && !(ArPortFlags & (PPF_DuplicateVerbatim | PPF_DuplicateForPIE)))
 		{
 			SetLocalizationNamespace(TextNamespaceUtil::EnsurePackageNamespace(DstObject));
 		}
@@ -11556,7 +11561,7 @@ public:
 		ArIgnoreClassRef = true;
 
 #if USE_STABLE_LOCALIZATION_KEYS
-		if (GIsEditor && !(ArPortFlags & PPF_DuplicateForPIE))
+		if (GIsEditor && !(ArPortFlags & (PPF_DuplicateVerbatim | PPF_DuplicateForPIE)))
 		{
 			SetLocalizationNamespace(TextNamespaceUtil::EnsurePackageNamespace(DstObject));
 		}
